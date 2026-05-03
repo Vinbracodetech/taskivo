@@ -173,7 +173,6 @@ export default function App() {
             {/* ── PUBLIC PAGES ── */}
             {view === "landing" && (
   <ComingSoon title="Landing — building now" />
-)}
               />
             )}
             {view === "auth" && (
