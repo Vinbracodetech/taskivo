@@ -6,7 +6,7 @@ import Toast from "./components/Toast.jsx";
 import useToast from "./components/useToast.js";
 
 // ── Pages (we add more imports as we build each file) ──
-// import Landing from "./pages/Landing.jsx";
+import Landing from "./pages/Landing.jsx";
 
 // ── Placeholder shown for pages not built yet ──
 function ComingSoon({ title }) {
@@ -172,8 +172,12 @@ export default function App() {
 
             {/* ── PUBLIC PAGES ── */}
             {view === "landing" && (
-  <ComingSoon title="Landing — building now" />
-              />
+  {view === "landing" && (
+  <Landing
+    navigate={navigate}
+    setAuthMode={setAuthMode}
+  />
+)}
             )}
             {view === "auth" && (
               <ComingSoon title="Auth Page — File 7" />
