@@ -1,16 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Landing from './pages/Landing'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-      </Routes>
-    </BrowserRouter>
+    <div style={{ background: '#0A0A0F', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <h1 style={{ color: '#A8FF3E', fontSize: '40px', fontFamily: 'sans-serif' }}>Hello</h1>
+    </div>
   )
 }
