@@ -1,455 +1,240 @@
-import { useState, useEffect } from 'react';
-import { supabase } from './lib/supabase';
+import { useState, useEffect } from "react";
+import { supabase } from "./lib/supabase.js";
+import CSS from "./styles/global.js";
+import Sidebar from "./components/Sidebar.jsx";
+import Toast from "./components/Toast.jsx";
+import useToast from "./components/useToast.js";
 
-// Premium Gold + Navy color scheme
-const colors = {
-  navy: '#0F1A2E',
-  navyLight: '#162240',
-  navyDark: '#0A1222',
-  gold: '#C9A84C',
-  goldLight: '#DFC278',
-  goldDark: '#A68A34',
-  white: '#FFFFFF',
-  textMuted: 'rgba(255,255,255,0.5)',
-  border: 'rgba(201,168,76,0.15)'
-};
+// ── Pages (we add more imports as we build each file) ──
+import Landing from "./pages/Landing.jsx";
 
-export default function App() {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState('landing');
-
-  useEffect(function() {
-    async function init() {
-      try {
-        var result = await supabase.auth.getSession();
-        setSession(result.data.session);
-        
-        supabase.auth.onAuthStateChange(function(event, newSession) {
-          setSession(newSession);
-          if (newSession) {
-            setCurrentPage('dashboard');
-          }
-        });
-      } catch (e) {
-        console.error('Session error:', e);
-      }
-      setLoading(false);
-    }
-    init();
-  }, []);
-
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0A1222 0%, #0F1A2E 50%, #162240 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{
-            color: colors.gold,
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: '16px',
-            marginBottom: '12px',
-            fontWeight: '600'
-          }}>
-            Taskivo
-          </p>
-          <p style={{
-            color: colors.textMuted,
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: '13px'
-          }}>
-            Loading your dashboard...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  function navigate(page) {
-    setCurrentPage(page);
-  }
-
-  function handleLogout() {
-    supabase.auth.signOut();
-    setSession(null);
-    setCurrentPage('landing');
-  }
-
-  // User is logged in
-  if (session) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0A1222 0%, #0F1A2E 50%, #162240 100%)',
-        fontFamily: "'DM Sans', sans-serif",
-        color: colors.white
-      }}>
-        {/* Top Navigation Bar */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '16px 24px',
-          background: 'rgba(15,26,46,0.9)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid ' + colors.border,
-          position: 'sticky',
-          top: 0,
-          zIndex: 100
-        }}>
-          <div style={{
-            fontFamily: "'Syne', sans-serif",
-            fontSize: '22px',
-            fontWeight: '700',
-            color: colors.gold,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <span style={{
-              width: '8px',
-              height: '8px',
-              background: 'linear-gradient(135deg, ' + colors.gold + ', ' + colors.goldLight + ')',
-              borderRadius: '50%',
-              display: 'inline-block'
-            }} />
-            Taskivo
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <span style={{
-              color: colors.textMuted,
-              fontSize: '13px'
-            }}>
-              {session.user.email}
-            </span>
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: '8px 16px',
-                background: 'rgba(201,168,76,0.1)',
-                color: colors.gold,
-                border: '1px solid ' + colors.border,
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: '13px',
-                fontWeight: '500'
-              }}
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-
-        {/* Dashboard Content */}
-        <div style={{
-          maxWidth: '800px',
-          margin: '0 auto',
-          padding: '40px 20px'
-        }}>
-          {/* Welcome Card */}
-          <div style={{
-            background: 'linear-gradient(135deg, ' + colors.navyLight + ' 0%, rgba(201,168,76,0.08) 100%)',
-            border: '1px solid ' + colors.border,
-            borderRadius: '16px',
-            padding: '32px',
-            marginBottom: '24px'
-          }}>
-            <h1 style={{
-              fontFamily: "'Syne', sans-serif",
-              fontSize: '28px',
-              fontWeight: '700',
-              marginBottom: '8px',
-              marginTop: 0,
-              color: colors.white
-            }}>
-              Welcome to your Dashboard
-            </h1>
-            <p style={{
-              color: colors.textMuted,
-              fontSize: '14px',
-              marginBottom: '20px',
-              marginTop: 0
-            }}>
-              Your connected account: {session.user.email}
-            </p>
-            
-            {/* Stats Grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '12px'
-            }}>
-              <div style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid ' + colors.border,
-                borderRadius: '12px',
-                padding: '16px',
-                textAlign: 'center'
-              }}>
-                <p style={{
-                  color: colors.textMuted,
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  marginBottom: '8px',
-                  marginTop: 0
-                }}>
-                  Points
-                </p>
-                <p style={{
-                  fontFamily: "'Syne', sans-serif",
-                  fontSize: '28px',
-                  fontWeight: '700',
-                  color: colors.gold,
-                  margin: 0
-                }}>
-                  0
-                </p>
-              </div>
-
-              <div style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid ' + colors.border,
-                borderRadius: '12px',
-                padding: '16px',
-                textAlign: 'center'
-              }}>
-                <p style={{
-                  color: colors.textMuted,
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  marginBottom: '8px',
-                  marginTop: 0
-                }}>
-                  Tasks Done
-                </p>
-                <p style={{
-                  fontFamily: "'Syne', sans-serif",
-                  fontSize: '28px',
-                  fontWeight: '700',
-                  color: colors.gold,
-                  margin: 0
-                }}>
-                  0
-                </p>
-              </div>
-
-              <div style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid ' + colors.border,
-                borderRadius: '12px',
-                padding: '16px',
-                textAlign: 'center'
-              }}>
-                <p style={{
-                  color: colors.textMuted,
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  marginBottom: '8px',
-                  marginTop: 0
-                }}>
-                  Status
-                </p>
-                <p style={{
-                  fontFamily: "'Syne', sans-serif",
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: colors.goldLight,
-                  margin: 0,
-                  textTransform: 'capitalize'
-                }}>
-                  Active
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '12px',
-            marginBottom: '24px'
-          }}>
-            <button style={{
-              padding: '16px',
-              background: 'linear-gradient(135deg, ' + colors.gold + ', ' + colors.goldLight + ')',
-              color: colors.navyDark,
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '14px',
-              fontWeight: '700',
-              fontFamily: "'DM Sans', sans-serif",
-              cursor: 'pointer'
-            }}>
-              Browse Tasks
-            </button>
-            
-            <button style={{
-              padding: '16px',
-              background: 'rgba(201,168,76,0.08)',
-              color: colors.gold,
-              border: '1px solid ' + colors.border,
-              borderRadius: '12px',
-              fontSize: '14px',
-              fontWeight: '600',
-              fontFamily: "'DM Sans', sans-serif",
-              cursor: 'pointer'
-            }}>
-              My Wallet
-            </button>
-          </div>
-
-          {/* Empty State for Tasks */}
-          <div style={{
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid ' + colors.border,
-            borderRadius: '16px',
-            padding: '40px',
-            textAlign: 'center'
-          }}>
-            <p style={{
-              fontSize: '32px',
-              marginBottom: '12px',
-              marginTop: 0
-            }}>
-              📋
-            </p>
-            <p style={{
-              fontFamily: "'Syne', sans-serif",
-              fontSize: '18px',
-              fontWeight: '600',
-              color: colors.white,
-              marginBottom: '8px',
-              marginTop: 0
-            }}>
-              No tasks yet
-            </p>
-            <p style={{
-              color: colors.textMuted,
-              fontSize: '13px',
-              marginBottom: '16px',
-              marginTop: 0
-            }}>
-              Tasks from creators will appear here. Start as a creator or wait for new tasks.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Not logged in - Landing Page
+// ── Placeholder shown for pages not built yet ──
+function ComingSoon({ title }) {
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0A1222 0%, #0F1A2E 50%, #162240 100%)',
-      fontFamily: "'DM Sans', sans-serif"
-    }}>
-      {/* Nav */}
+    <div className="page animate-slideUp">
       <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '20px 30px',
-        maxWidth: '1200px',
-        margin: '0 auto'
+        textAlign: "center",
+        padding: "80px 20px"
       }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>🔧</div>
         <div style={{
-          fontFamily: "'Syne', sans-serif",
-          fontSize: '24px',
-          fontWeight: '700',
-          color: colors.gold,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
+          fontFamily: "var(--font-display)",
+          fontSize: 24,
+          fontWeight: 700,
+          marginBottom: 8
         }}>
-          <span style={{
-            width: '8px',
-            height: '8px',
-            background: 'linear-gradient(135deg, ' + colors.gold + ', ' + colors.goldLight + ')',
-            borderRadius: '50%',
-            display: 'inline-block'
-          }} />
-          Taskivo
+          {title}
         </div>
-        <button
-          onClick={function() { navigate('login') }}
-          style={{
-            padding: '10px 24px',
-            background: 'linear-gradient(135deg, ' + colors.gold + ', ' + colors.goldLight + ')',
-            color: colors.navyDark,
-            border: 'none',
-            borderRadius: '10px',
-            fontSize: '14px',
-            fontWeight: '600',
-            fontFamily: "'DM Sans', sans-serif",
-            cursor: 'pointer'
-          }}
-        >
-          Sign In
-        </button>
-      </div>
-
-      {/* Hero */}
-      <div style={{
-        maxWidth: '600px',
-        margin: '0 auto',
-        padding: '80px 20px',
-        textAlign: 'center'
-      }}>
-        <h1 style={{
-          fontFamily: "'Syne', sans-serif",
-          fontSize: '48px',
-          fontWeight: '700',
-          color: colors.white,
-          marginBottom: '16px',
-          lineHeight: '1.1',
-          marginTop: 0
-        }}>
-          Complete Tasks.
-          <br />
-          <span style={{ color: colors.gold }}>Get Paid.</span>
-        </h1>
-        <p style={{
-          color: colors.textMuted,
-          fontSize: '16px',
-          lineHeight: '1.7',
-          marginBottom: '32px',
-          marginTop: 0
-        }}>
-          A global platform connecting creators with real audiences. 
-          Complete tasks, earn points, withdraw anytime.
-        </p>
-        <button
-          onClick={function() { navigate('login') }}
-          style={{
-            padding: '14px 32px',
-            background: 'linear-gradient(135deg, ' + colors.gold + ', ' + colors.goldLight + ')',
-            color: colors.navyDark,
-            border: 'none',
-            borderRadius: '12px',
-            fontSize: '16px',
-            fontWeight: '700',
-            fontFamily: "'DM Sans', sans-serif",
-            cursor: 'pointer'
-          }}
-        >
-          Get Started Free
-        </button>
+        <div style={{ color: "var(--slate)", fontSize: 14 }}>
+          This page is being built. Check back soon.
+        </div>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  var [view, setView] = useState("landing");
+  var [authMode, setAuthMode] = useState("login");
+  var [user, setUser] = useState(null);
+  var [loading, setLoading] = useState(true);
+  var [activeTask, setActiveTask] = useState(null);
+  var { toasts, show: showToast } = useToast();
+
+  // ── On app load: check if user is already logged in ──
+  useEffect(function () {
+    supabase.auth.getSession().then(function (result) {
+      var session = result.data.session;
+      if (session) {
+        loadProfile(session.user);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    var listener = supabase.auth.onAuthStateChange(function (event, session) {
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setView("landing");
+        setLoading(false);
+      }
+    });
+
+    return function () {
+      listener.data.subscription.unsubscribe();
+    };
+  }, []);
+
+  // ── Load user profile from Supabase ──
+  async function loadProfile(authUser) {
+    setLoading(true);
+
+    var result = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
+
+    if (result.data) {
+      setUser(result.data);
+      routeByRole(result.data.role);
+    } else {
+      // First time login — create profile automatically
+      var newProfile = {
+        id: authUser.id,
+        email: authUser.email,
+        full_name: authUser.user_metadata
+          ? authUser.user_metadata.full_name || ""
+          : "",
+        role: "earner",
+        points: 0,
+      };
+      await supabase.from("profiles").insert(newProfile);
+      setUser(newProfile);
+      setView("user-dashboard");
+    }
+
+    setLoading(false);
+  }
+
+  function routeByRole(role) {
+    if (role === "admin") setView("admin-dashboard");
+    else if (role === "creator") setView("creator-dashboard");
+    else setView("user-dashboard");
+  }
+
+  function navigate(v) {
+    setView(v);
+    window.scrollTo(0, 0);
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+    setUser(null);
+    setView("landing");
+    showToast("Logged out successfully.", "info");
+  }
+
+  // ── Loading screen ──
+  if (loading) {
+    return (
+      <>
+        <style>{CSS}</style>
+        <div style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--surface)"
+        }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 32,
+              fontWeight: 700,
+              marginBottom: 16
+            }}>
+              ⚡ Taskivo
+            </div>
+            <div style={{
+              width: 32,
+              height: 32,
+              border: "3px solid var(--line)",
+              borderTopColor: "var(--lime)",
+              borderRadius: "50%",
+              margin: "0 auto",
+              animation: "spin 1s linear infinite"
+            }} />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Main app ──
+  return (
+    <>
+      <style>{CSS}</style>
+      <div className="app-shell">
+
+        {/* Sidebar — only shown when logged in */}
+        {user && (
+          <Sidebar
+            user={user}
+            view={view}
+            navigate={navigate}
+            logout={logout}
+          />
+        )}
+
+        <div className="main-content">
+          <div className="animate-fadeIn" key={view}>
+
+            {/* ── PUBLIC PAGES ── */}
+            {view === "landing" && (
+              <Landing
+                navigate={navigate}
+                setAuthMode={setAuthMode}
+              />
+            )}
+            {view === "auth" && (
+              <ComingSoon title="Auth Page — File 7" />
+            )}
+            {view === "blog" && (
+              <ComingSoon title="Blog — coming soon" />
+            )}
+
+            {/* ── EARNER PAGES ── */}
+            {view === "user-dashboard" && user && (
+              <ComingSoon title="Dashboard — File 8" />
+            )}
+            {view === "tasks" && user && (
+              <ComingSoon title="Tasks — File 9" />
+            )}
+            {view === "task-player" && user && activeTask && (
+              <ComingSoon title="Task Player — File 10" />
+            )}
+            {view === "wallet" && user && (
+              <ComingSoon title="Wallet — File 11" />
+            )}
+            {view === "withdraw" && user && (
+              <ComingSoon title="Withdraw — File 11" />
+            )}
+
+            {/* ── CREATOR PAGES ── */}
+            {view === "creator-dashboard" && user && (
+              <ComingSoon title="Creator Dashboard — File 12" />
+            )}
+            {view === "create-task" && user && (
+              <ComingSoon title="Create Task — File 12" />
+            )}
+            {view === "creator-tasks" && user && (
+              <ComingSoon title="Creator Tasks — File 12" />
+            )}
+            {view === "creator-analytics" && user && (
+              <ComingSoon title="Analytics — File 12" />
+            )}
+
+            {/* ── ADMIN PAGES ── */}
+            {view === "admin-dashboard" && user && (
+              <ComingSoon title="Admin Dashboard — File 12" />
+            )}
+            {view === "admin-users" && user && (
+              <ComingSoon title="Admin Users — File 12" />
+            )}
+            {view === "admin-tasks" && user && (
+              <ComingSoon title="Admin Tasks — File 12" />
+            )}
+            {view === "admin-withdrawals" && user && (
+              <ComingSoon title="Admin Withdrawals — File 12" />
+            )}
+
+          </div>
+        </div>
+      </div>
+
+      {/* Toast notifications */}
+      <Toast toasts={toasts} />
+    </>
   );
 }
