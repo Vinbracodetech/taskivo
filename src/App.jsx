@@ -10,6 +10,8 @@ import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import TaskPlayer from "./pages/TaskPlayer.jsx";
+import Wallet from "./pages/Wallet.jsx";
+import Withdraw from "./pages/Withdraw.jsx";
 
 // ── Placeholder shown for pages not built yet ──
 function ComingSoon({ title }) {
@@ -212,11 +214,20 @@ export default function App() {
   />
 )}
             {view === "wallet" && user && (
-              <ComingSoon title="Wallet — File 11" />
-            )}
-            {view === "withdraw" && user && (
-              <ComingSoon title="Withdraw — File 11" />
-            )}
+  <Wallet
+    user={user}
+    navigate={navigate}
+    showToast={showToast}
+  />
+)}
+{view === "withdraw" && user && (
+  <Withdraw
+    user={user}
+    setUser={setUser}
+    navigate={navigate}
+    showToast={showToast}
+  />
+)}
 
             {/* ── CREATOR PAGES ── */}
             {view === "creator-dashboard" && user && (
