@@ -5,18 +5,34 @@ export default function Sidebar({ user, view, navigate, logout }) {
 
   var role = user ? user.role : "earner";
 
-  // ── Nav items per role ──
+  var pageTitles = {
+    "user-dashboard":     "Dashboard",
+    "tasks":              "Browse Tasks",
+    "task-player":        "Task Player",
+    "wallet":             "Wallet",
+    "withdraw":           "Withdraw",
+    "creator-dashboard":  "Dashboard",
+    "create-task":        "Create Task",
+    "creator-tasks":      "My Tasks",
+    "creator-analytics":  "Analytics",
+    "admin-dashboard":    "Overview",
+    "admin-users":        "Users",
+    "admin-tasks":        "Tasks",
+    "admin-withdrawals":  "Withdrawals",
+  };
+
   var earnerLinks = [
-    { icon: "⚡", label: "Dashboard",  view: "user-dashboard" },
-    { icon: "🎯", label: "Tasks",      view: "tasks" },
-    { icon: "👛", label: "Wallet",     view: "wallet" },
-    { icon: "💸", label: "Withdraw",   view: "withdraw" },
+    { icon: "⚡", label: "Dashboard", view: "user-dashboard" },
+    { icon: "🎯", label: "Tasks",     view: "tasks" },
+    { icon: "👛", label: "Wallet",    view: "wallet" },
+    { icon: "💸", label: "Withdraw",  view: "withdraw" },
   ];
 
   var creatorLinks = [
-    { icon: "⚡", label: "Dashboard",  view: "creator-dashboard" },
-    { icon: "✦",  label: "Create Task",view: "create-task" },
-    { icon: "📋", label: "My Tasks",   view: "creator-tasks" },
+    { icon: "⚡", label: "Dashboard",   view: "creator-dashboard" },
+    { icon: "✦",  label: "Create Task", view: "create-task" },
+    { icon: "📋", label: "My Tasks",    view: "creator-tasks" },
+    { icon: "📊", label: "Analytics",   view: "creator-analytics" },
   ];
 
   var adminLinks = [
@@ -32,26 +48,13 @@ export default function Sidebar({ user, view, navigate, logout }) {
     ? creatorLinks
     : earnerLinks;
 
-  // Bottom nav — max 4 items + profile
-  var bottomLinks = links.slice(0, 4);
+  var currentTitle = pageTitles[view] || "Taskivo";
 
   var initials = user && user.full_name
     ? user.full_name.split(" ").map(function (w) { return w[0]; }).join("").toUpperCase().slice(0, 2)
     : "U";
 
-  var roleBadgeColor = role === "admin"
-    ? "#EF4444"
-    : role === "creator"
-    ? "#3B82F6"
-    : "#A8FF3E";
-
-  var roleBadgeText = role === "admin"
-    ? "#fff"
-    : role === "creator"
-    ? "#fff"
-    : "#0D0D14";
-
-  // ── STYLES ──
+  // ── HEADER ──
   var headerStyle = {
     position: "sticky",
     top: 0,
@@ -60,27 +63,19 @@ export default function Sidebar({ user, view, navigate, logout }) {
     alignItems: "center",
     justifyContent: "space-between",
     padding: "0 20px",
-    height: 56,
-    background: "rgba(255,255,255,0.92)",
+    height: 52,
+    background: "rgba(255,255,255,0.95)",
     backdropFilter: "blur(12px)",
     borderBottom: "1px solid #EAECF0",
-    boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
+    boxShadow: "0 1px 6px rgba(0,0,0,0.05)",
   };
 
-  var logoStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    cursor: "pointer",
-    textDecoration: "none",
-  };
-
-  var logoTextStyle = {
-    fontFamily: "var(--font-display)",
-    fontSize: 18,
-    fontWeight: 800,
+  var pageTitleStyle = {
+    fontSize: 17,
+    fontWeight: 700,
     color: "#0D0D14",
     letterSpacing: "-0.3px",
+    fontFamily: "var(--font-body)",
   };
 
   var avatarStyle = {
@@ -95,15 +90,17 @@ export default function Sidebar({ user, view, navigate, logout }) {
     fontSize: 13,
     fontWeight: 800,
     fontFamily: "var(--font-body)",
-    cursor: "pointer",
     border: "2px solid #A8FF3E",
+    cursor: "pointer",
     flexShrink: 0,
+    userSelect: "none",
   };
 
-  var drawerOverlayStyle = {
+  // ── DRAWER ──
+  var overlayStyle = {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.45)",
+    background: "rgba(0,0,0,0.5)",
     zIndex: 200,
     opacity: drawerOpen ? 1 : 0,
     pointerEvents: drawerOpen ? "auto" : "none",
@@ -115,44 +112,35 @@ export default function Sidebar({ user, view, navigate, logout }) {
     top: 0,
     right: 0,
     bottom: 0,
-    width: 280,
+    width: 288,
     background: "#0D0D14",
     zIndex: 201,
     transform: drawerOpen ? "translateX(0)" : "translateX(100%)",
     transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
     display: "flex",
     flexDirection: "column",
-    padding: "0 0 32px 0",
-    boxShadow: "-8px 0 40px rgba(0,0,0,0.4)",
+    boxShadow: "-8px 0 48px rgba(0,0,0,0.5)",
   };
 
-  var drawerHeaderStyle = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "20px 24px",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-    marginBottom: 8,
-  };
-
-  var drawerLinkStyle = function (active) {
+  function drawerLinkStyle(active) {
     return {
       display: "flex",
       alignItems: "center",
       gap: 14,
       padding: "13px 24px",
       cursor: "pointer",
-      background: active ? "rgba(168,255,62,0.1)" : "transparent",
+      background: active ? "rgba(168,255,62,0.08)" : "transparent",
       borderLeft: active ? "3px solid #A8FF3E" : "3px solid transparent",
-      transition: "all 0.15s",
-      color: active ? "#A8FF3E" : "rgba(255,255,255,0.65)",
+      color: active ? "#A8FF3E" : "rgba(255,255,255,0.6)",
       fontSize: 15,
       fontWeight: active ? 700 : 500,
       fontFamily: "var(--font-body)",
+      transition: "all 0.15s",
+      userSelect: "none",
     };
-  };
+  }
 
-  // ── Bottom floating nav ──
+  // ── BOTTOM NAV ──
   var bottomNavStyle = {
     position: "fixed",
     bottom: 16,
@@ -161,200 +149,163 @@ export default function Sidebar({ user, view, navigate, logout }) {
     zIndex: 150,
     display: "flex",
     alignItems: "center",
-    gap: 4,
+    gap: 2,
     background: "#0D0D14",
-    border: "1px solid rgba(255,255,255,0.12)",
+    border: "1px solid rgba(255,255,255,0.1)",
     borderRadius: 40,
-    padding: "8px 12px",
+    padding: "8px 10px",
     boxShadow: "0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2)",
   };
 
-  var bottomNavItemStyle = function (active) {
+  function bottomItemStyle(active) {
     return {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      justifyContent: "center",
       gap: 3,
-      padding: "6px 14px",
+      padding: "6px 12px",
       borderRadius: 28,
       cursor: "pointer",
-      background: active ? "rgba(168,255,62,0.15)" : "transparent",
+      background: active ? "rgba(168,255,62,0.13)" : "transparent",
       transition: "all 0.18s",
-      minWidth: 52,
+      minWidth: 50,
+      userSelect: "none",
     };
-  };
+  }
 
-  var bottomNavIconStyle = function (active) {
-    return {
-      fontSize: 18,
-      lineHeight: 1,
-      filter: active ? "none" : "grayscale(0.3) opacity(0.6)",
-    };
-  };
-
-  var bottomNavLabelStyle = function (active) {
+  function bottomLabelStyle(active) {
     return {
       fontSize: 10,
       fontWeight: active ? 700 : 500,
-      color: active ? "#A8FF3E" : "rgba(255,255,255,0.45)",
+      color: active ? "#A8FF3E" : "rgba(255,255,255,0.4)",
       fontFamily: "var(--font-body)",
-      letterSpacing: "0.2px",
       whiteSpace: "nowrap",
     };
-  };
-
-  var bottomNavDotStyle = {
-    width: 4,
-    height: 4,
-    borderRadius: "50%",
-    background: "#A8FF3E",
-    margin: "0 auto",
-  };
+  }
 
   return (
     <>
-      {/* ── STICKY TOP HEADER ── */}
+      {/* ── TOP HEADER ── */}
       <header style={headerStyle}>
-
-        {/* Logo */}
-        <div style={logoStyle} onClick={function () { navigate(
-          role === "admin" ? "admin-dashboard"
-          : role === "creator" ? "creator-dashboard"
-          : "user-dashboard"
-        ); }}>
-          <span style={{ fontSize: 20 }}>⚡</span>
-          <span style={logoTextStyle}>Taskivo</span>
-          <span style={{
-            background: roleBadgeColor,
-            color: roleBadgeText,
-            fontSize: 10,
-            fontWeight: 800,
-            padding: "2px 7px",
-            borderRadius: 5,
-            letterSpacing: "0.4px",
-            textTransform: "uppercase",
-          }}>
-            {role}
-          </span>
-        </div>
-
-        {/* Right side — desktop nav + avatar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-
-          {/* Desktop nav links — hidden on mobile via inline style trick */}
-          <nav style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            marginRight: 12,
-          }}
-            className="desktop-nav"
-          >
-            {links.map(function (link) {
-              var active = view === link.view;
-              return (
-                <button
-                  key={link.view}
-                  onClick={function () { navigate(link.view); }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "6px 14px",
-                    borderRadius: 8,
-                    border: "none",
-                    background: active ? "rgba(168,255,62,0.12)" : "transparent",
-                    color: active ? "#0D0D14" : "#6B7280",
-                    fontSize: 14,
-                    fontWeight: active ? 700 : 500,
-                    fontFamily: "var(--font-body)",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  <span style={{ fontSize: 15 }}>{link.icon}</span>
-                  {link.label}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Avatar — opens drawer */}
-          <div
-            style={avatarStyle}
-            onClick={function () { setDrawerOpen(true); }}
-            title={user ? user.full_name : ""}
-          >
-            {initials}
-          </div>
+        <div style={pageTitleStyle}>{currentTitle}</div>
+        <div style={avatarStyle} onClick={function () { setDrawerOpen(true); }}>
+          {initials}
         </div>
       </header>
 
-      {/* ── SLIDE-IN DRAWER (profile + logout) ── */}
-      <div style={drawerOverlayStyle} onClick={function () { setDrawerOpen(false); }} />
+      {/* ── DRAWER OVERLAY ── */}
+      <div style={overlayStyle} onClick={function () { setDrawerOpen(false); }} />
+
+      {/* ── DRAWER ── */}
       <div style={drawerStyle}>
 
-        {/* Drawer header */}
-        <div style={drawerHeaderStyle}>
-          <div>
-            <div style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: "#fff",
-              marginBottom: 2,
-            }}>
-              {user ? (user.full_name || "User") : ""}
+        {/* Drawer top — user info */}
+        <div style={{
+          padding: "24px 24px 20px",
+          borderBottom: "1px solid rgba(255,255,255,0.07)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 42,
+                height: 42,
+                borderRadius: "50%",
+                background: "#A8FF3E",
+                color: "#0D0D14",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 15,
+                fontWeight: 800,
+                fontFamily: "var(--font-body)",
+                flexShrink: 0,
+              }}>
+                {initials}
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 2 }}>
+                  {user ? (user.full_name || "User") : ""}
+                </div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+                  {user ? user.email : ""}
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
-              {user ? user.email : ""}
-            </div>
+            <button
+              onClick={function () { setDrawerOpen(false); }}
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "none",
+                borderRadius: 8,
+                color: "rgba(255,255,255,0.6)",
+                width: 30,
+                height: 30,
+                fontSize: 16,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              ✕
+            </button>
           </div>
-          <button
-            onClick={function () { setDrawerOpen(false); }}
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              border: "none",
-              borderRadius: 8,
-              color: "#fff",
-              width: 32,
-              height: 32,
-              fontSize: 18,
-              cursor: "pointer",
+
+          {/* Role badge */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{
+              background: role === "admin" ? "rgba(239,68,68,0.15)"
+                : role === "creator" ? "rgba(59,130,246,0.15)"
+                : "rgba(168,255,62,0.12)",
+              color: role === "admin" ? "#EF4444"
+                : role === "creator" ? "#60A5FA"
+                : "#A8FF3E",
+              border: "1px solid " + (
+                role === "admin" ? "rgba(239,68,68,0.3)"
+                : role === "creator" ? "rgba(59,130,246,0.3)"
+                : "rgba(168,255,62,0.25)"
+              ),
+              fontSize: 11,
+              fontWeight: 700,
+              padding: "3px 10px",
+              borderRadius: 20,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              fontFamily: "var(--font-body)",
+            }}>
+              {role}
+            </span>
+          </div>
+        </div>
+
+        {/* Points card — earner only */}
+        {role === "earner" && (
+          <div style={{ padding: "16px 24px" }}>
+            <div style={{
+              background: "rgba(168,255,62,0.07)",
+              border: "1px solid rgba(168,255,62,0.15)",
+              borderRadius: 12,
+              padding: "14px 16px",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Points badge */}
-        <div style={{ padding: "12px 24px", marginBottom: 8 }}>
-          <div style={{
-            background: "rgba(168,255,62,0.1)",
-            border: "1px solid rgba(168,255,62,0.2)",
-            borderRadius: 12,
-            padding: "12px 16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}>
-            <div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                Your Points
+              justifyContent: "space-between",
+            }}>
+              <div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Your Points
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: "#A8FF3E", fontFamily: "var(--font-body)" }}>
+                  {user ? (user.points || 0).toLocaleString() : 0}
+                </div>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "#A8FF3E", fontFamily: "var(--font-body)" }}>
-                {user ? (user.points || 0).toLocaleString() : 0}
-              </div>
+              <span style={{ fontSize: 26 }}>💰</span>
             </div>
-            <span style={{ fontSize: 28 }}>💰</span>
           </div>
-        </div>
+        )}
 
         {/* Nav links */}
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, paddingTop: 8, overflowY: "auto" }}>
           {links.map(function (link) {
             var active = view === link.view;
             return (
@@ -363,23 +314,32 @@ export default function Sidebar({ user, view, navigate, logout }) {
                 style={drawerLinkStyle(active)}
                 onClick={function () { navigate(link.view); setDrawerOpen(false); }}
               >
-                <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{link.icon}</span>
-                {link.label}
-                {active && <span style={{ marginLeft: "auto", ...bottomNavDotStyle, width: 6, height: 6 }} />}
+                <span style={{ fontSize: 18, width: 22, textAlign: "center" }}>{link.icon}</span>
+                <span>{link.label}</span>
+                {active && (
+                  <span style={{
+                    marginLeft: "auto",
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "#A8FF3E",
+                    flexShrink: 0,
+                  }} />
+                )}
               </div>
             );
           })}
         </div>
 
         {/* Logout */}
-        <div style={{ padding: "0 24px" }}>
+        <div style={{ padding: "16px 24px 32px" }}>
           <button
             onClick={function () { logout(); setDrawerOpen(false); }}
             style={{
               width: "100%",
               padding: "13px",
-              background: "rgba(239,68,68,0.1)",
-              border: "1px solid rgba(239,68,68,0.2)",
+              background: "rgba(239,68,68,0.08)",
+              border: "1px solid rgba(239,68,68,0.18)",
               borderRadius: 12,
               color: "#EF4444",
               fontSize: 14,
@@ -397,31 +357,51 @@ export default function Sidebar({ user, view, navigate, logout }) {
         </div>
       </div>
 
-      {/* ── FLOATING BOTTOM NAV (mobile) ── */}
-      <div style={bottomNavStyle} className="mobile-bottom-nav">
-        {bottomLinks.map(function (link) {
+      {/* ── FLOATING BOTTOM NAV ── */}
+      <div style={bottomNavStyle}>
+        {links.map(function (link) {
           var active = view === link.view;
           return (
             <div
               key={link.view}
-              style={bottomNavItemStyle(active)}
+              style={bottomItemStyle(active)}
               onClick={function () { navigate(link.view); }}
             >
-              <span style={bottomNavIconStyle(active)}>{link.icon}</span>
-              <span style={bottomNavLabelStyle(active)}>{link.label}</span>
-              {active && <div style={bottomNavDotStyle} />}
+              <span style={{
+                fontSize: 18,
+                lineHeight: 1,
+                opacity: active ? 1 : 0.5,
+              }}>
+                {link.icon}
+              </span>
+              <span style={bottomLabelStyle(active)}>{link.label}</span>
+              {active && (
+                <div style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: "50%",
+                  background: "#A8FF3E",
+                }} />
+              )}
             </div>
           );
         })}
 
-        {/* Profile / menu button */}
+        {/* Divider */}
+        <div style={{
+          width: 1,
+          height: 36,
+          background: "rgba(255,255,255,0.08)",
+          margin: "0 4px",
+          flexShrink: 0,
+        }} />
+
+        {/* Menu / avatar */}
         <div
           style={{
-            ...bottomNavItemStyle(false),
-            paddingLeft: 10,
-            paddingRight: 10,
-            borderLeft: "1px solid rgba(255,255,255,0.1)",
-            marginLeft: 4,
+            ...bottomItemStyle(false),
+            minWidth: 44,
+            padding: "6px 8px",
           }}
           onClick={function () { setDrawerOpen(true); }}
         >
@@ -440,22 +420,21 @@ export default function Sidebar({ user, view, navigate, logout }) {
           }}>
             {initials}
           </div>
-          <span style={bottomNavLabelStyle(false)}>Menu</span>
+          <span style={bottomLabelStyle(false)}>Menu</span>
         </div>
       </div>
 
-      {/* ── CSS for show/hide on mobile/desktop ── */}
+      {/* ── RESPONSIVE CSS ── */}
       <style>{`
-        .desktop-nav { display: flex !important; }
-        .mobile-bottom-nav { display: flex !important; }
-
-        @media (min-width: 768px) {
-          .mobile-bottom-nav { display: none !important; }
-        }
-
         @media (max-width: 767px) {
-          .desktop-nav { display: none !important; }
-          .main-content { padding-bottom: 90px; }
+          .main-content {
+            padding-bottom: 90px !important;
+          }
+        }
+        @media (min-width: 768px) {
+          [data-bottom-nav] {
+            display: none !important;
+          }
         }
       `}</style>
     </>
