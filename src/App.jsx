@@ -106,11 +106,15 @@ export default function App() {
     setLoading(false);
   }
 
-  function routeByRole(role) {
+function routeByRole(role) {
+  try {
     if (role === "admin") setView("admin-dashboard");
     else if (role === "creator") setView("creator-dashboard");
     else setView("user-dashboard");
+  } catch (e) {
+    setView("user-dashboard");
   }
+}
 
   function navigate(v) {
     setView(v);
