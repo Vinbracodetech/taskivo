@@ -395,16 +395,4 @@ function AdminWithdrawals({ showToast }) {
   );
 }
 
-// ── EXPORT BASED ON VIEW ────────────────────────────────
-export function AdminDashboard({ navigate, showToast }) {
-  return <AdminOverview navigate={navigate} showToast={showToast} />;
-}
-export function AdminUsers({ showToast }) {
-  return <AdminUsers showToast={showToast} />;
-}
-export function AdminTasksPage({ showToast }) {
-  return <AdminTasks showToast={showToast} />;
-}
-export function AdminWithdrawalsPage({ showToast }) {
-  return <AdminWithdrawals showToast={showToast} />;
-}
+export { AdminOverview, AdminUsers, AdminTasks, AdminWithdrawals };
