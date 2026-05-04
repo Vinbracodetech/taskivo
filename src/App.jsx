@@ -12,6 +12,11 @@ import Dashboard from "./pages/Dashboard.jsx";
 import TaskPlayer from "./pages/TaskPlayer.jsx";
 import Wallet from "./pages/Wallet.jsx";
 import Withdraw from "./pages/Withdraw.jsx";
+import CreatorDashboard from "./pages/CreatorDashboard.jsx";
+import CreateTask from "./pages/CreateTask.jsx";
+import CreatorTasks from "./pages/CreatorTasks.jsx";
+import { AdminDashboard, AdminTasksPage, AdminWithdrawalsPage } from "./pages/AdminPanel.jsx";
+import AdminUsersPage from "./pages/AdminPanel.jsx";
 
 // ── Placeholder shown for pages not built yet ──
 function ComingSoon({ title }) {
