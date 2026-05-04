@@ -236,17 +236,17 @@ export default function App() {
 
             {/* ── CREATOR PAGES ── */}
             {view === "creator-dashboard" && user && (
-              <ComingSoon title="Creator Dashboard — File 12" />
-            )}
-            {view === "create-task" && user && (
-              <ComingSoon title="Create Task — File 12" />
-            )}
-            {view === "creator-tasks" && user && (
-              <ComingSoon title="Creator Tasks — File 12" />
-            )}
-            {view === "creator-analytics" && user && (
-              <ComingSoon title="Analytics — File 12" />
-            )}
+  <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />
+)}
+{view === "create-task" && user && (
+  <CreateTask user={user} navigate={navigate} showToast={showToast} />
+)}
+{view === "creator-tasks" && user && (
+  <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
+)}
+{view === "creator-analytics" && user && (
+  <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
+)}
 
             {/* ── ADMIN PAGES ── */}
             {view === "admin-dashboard" && user && (
