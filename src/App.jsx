@@ -172,13 +172,11 @@ export default function App() {
 
             {/* ── PUBLIC PAGES ── */}
             {view === "landing" && (
-  {view === "landing" && (
   <Landing
     navigate={navigate}
     setAuthMode={setAuthMode}
   />
 )}
-            )}
             {view === "auth" && (
               <ComingSoon title="Auth Page — File 7" />
             )}
