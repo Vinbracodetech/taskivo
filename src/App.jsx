@@ -17,6 +17,7 @@ import CreateTask from "./pages/CreateTask.jsx";
 import CreatorTasks from "./pages/CreatorTasks.jsx";
 import { AdminDashboard, AdminTasksPage, AdminWithdrawalsPage } from "./pages/AdminPanel.jsx";
 import AdminUsersPage from "./pages/AdminPanel.jsx";
+import { AdminOverview, AdminUsers as AdminUsersComp, AdminTasks as AdminTasksComp, AdminWithdrawals as AdminWithdrawalsComp } from "./pages/AdminPanel.jsx";
 
 // ── Placeholder shown for pages not built yet ──
 function ComingSoon({ title }) {
@@ -249,18 +250,18 @@ export default function App() {
 )}
 
             {/* ── ADMIN PAGES ── */}
-            {view === "admin-dashboard" && user && (
-              <ComingSoon title="Admin Dashboard — File 12" />
-            )}
-            {view === "admin-users" && user && (
-              <ComingSoon title="Admin Users — File 12" />
-            )}
-            {view === "admin-tasks" && user && (
-              <ComingSoon title="Admin Tasks — File 12" />
-            )}
-            {view === "admin-withdrawals" && user && (
-              <ComingSoon title="Admin Withdrawals — File 12" />
-            )}
+{view === "admin-dashboard" && user && (
+  <AdminDashboard navigate={navigate} showToast={showToast} />
+)}
+{view === "admin-users" && user && (
+  <AdminUsersComp showToast={showToast} />
+)}
+{view === "admin-tasks" && user && (
+  <AdminTasksComp showToast={showToast} />
+)}
+{view === "admin-withdrawals" && user && (
+  <AdminWithdrawalsComp showToast={showToast} />
+)}
 
           </div>
         </div>
