@@ -8,6 +8,7 @@ import useToast from "./components/useToast.js";
 // ── Pages (we add more imports as we build each file) ──
 import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
 
 // ── Placeholder shown for pages not built yet ──
 function ComingSoon({ title }) {
@@ -191,8 +192,12 @@ export default function App() {
 
             {/* ── EARNER PAGES ── */}
             {view === "user-dashboard" && user && (
-              <ComingSoon title="Dashboard — File 8" />
-            )}
+  <Dashboard
+    user={user}
+    navigate={navigate}
+    showToast={showToast}
+  />
+)}
             {view === "tasks" && user && (
               <ComingSoon title="Tasks — File 9" />
             )}
