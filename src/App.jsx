@@ -5,7 +5,6 @@ import Sidebar from "./components/Sidebar.jsx";
 import Toast from "./components/Toast.jsx";
 import useToast from "./components/useToast.js";
 
-// ── Pages (we add more imports as we build each file) ──
 import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -15,16 +14,17 @@ import Withdraw from "./pages/Withdraw.jsx";
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
 import CreatorTasks from "./pages/CreatorTasks.jsx";
-import { AdminOverview, AdminUsers as AdminUsersComp, AdminTasks as AdminTasksComp, AdminWithdrawals as AdminWithdrawalsComp } from "./pages/AdminPanel.jsx";
+import {
+  AdminOverview,
+  AdminUsers as AdminUsersComp,
+  AdminTasks as AdminTasksComp,
+  AdminWithdrawals as AdminWithdrawalsComp,
+} from "./pages/AdminPanel.jsx";
 
-// ── Placeholder shown for pages not built yet ──
 function ComingSoon({ title }) {
   return (
     <div className="page animate-slideUp">
-      <div style={{
-        textAlign: "center",
-        padding: "80px 20px"
-      }}>
+      <div style={{ textAlign: "center", padding: "80px 20px" }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🔧</div>
         <div style={{
           fontFamily: "var(--font-display)",
@@ -50,7 +50,6 @@ export default function App() {
   var [activeTask, setActiveTask] = useState(null);
   var { toasts, show: showToast } = useToast();
 
-  // ── On app load: check if user is already logged in ──
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
       var session = result.data.session;
@@ -74,7 +73,6 @@ export default function App() {
     };
   }, []);
 
-  // ── Load user profile from Supabase ──
   async function loadProfile(authUser) {
     setLoading(true);
 
@@ -88,7 +86,6 @@ export default function App() {
       setUser(result.data);
       routeByRole(result.data.role);
     } else {
-      // First time login — create profile automatically
       var newProfile = {
         id: authUser.id,
         email: authUser.email,
@@ -106,15 +103,11 @@ export default function App() {
     setLoading(false);
   }
 
-function routeByRole(role) {
-  try {
+  function routeByRole(role) {
     if (role === "admin") setView("admin-dashboard");
     else if (role === "creator") setView("creator-dashboard");
     else setView("user-dashboard");
-  } catch (e) {
-    setView("user-dashboard");
   }
-}
 
   function navigate(v) {
     setView(v);
@@ -128,7 +121,6 @@ function routeByRole(role) {
     showToast("Logged out successfully.", "info");
   }
 
-  // ── Loading screen ──
   if (loading) {
     return (
       <>
@@ -164,13 +156,11 @@ function routeByRole(role) {
     );
   }
 
-  // ── Main app ──
   return (
     <>
       <style>{CSS}</style>
       <div className="app-shell">
 
-        {/* Sidebar — only shown when logged in */}
         {user && (
           <Sidebar
             user={user}
@@ -183,93 +173,80 @@ function routeByRole(role) {
         <div className="main-content">
           <div className="animate-fadeIn" key={view}>
 
-            {/* ── PUBLIC PAGES ── */}
+            {/* PUBLIC */}
             {view === "landing" && (
-  <Landing
-    navigate={navigate}
-    setAuthMode={setAuthMode}
-  />
-)}
+              <Landing navigate={navigate} setAuthMode={setAuthMode} />
+            )}
             {view === "auth" && (
-  <Auth
-    authMode={authMode}
-    setAuthMode={setAuthMode}
-    navigate={navigate}
-  />
+              <Auth
+                authMode={authMode}
+                setAuthMode={setAuthMode}
+                navigate={navigate}
+                loadProfile={loadProfile}
+              />
             )}
-            {view === "blog" && (
-              <ComingSoon title="Blog — coming soon" />
-            )}
+            {view === "blog" && <ComingSoon title="Blog — coming soon" />}
 
-            {/* ── EARNER PAGES ── */}
+            {/* EARNER */}
             {view === "user-dashboard" && user && (
-  <Dashboard
-    user={user}
-    navigate={navigate}
-    showToast={showToast}
-  />
-)}
+              <Dashboard user={user} navigate={navigate} showToast={showToast} />
+            )}
             {view === "tasks" && user && (
-              <ComingSoon title="Tasks — File 9" />
+              <ComingSoon title="Tasks — coming soon" />
             )}
             {view === "task-player" && user && activeTask && (
-  <TaskPlayer
-    task={activeTask}
-    navigate={navigate}
-    user={user}
-    setUser={setUser}
-    showToast={showToast}
-  />
-)}
+              <TaskPlayer
+                task={activeTask}
+                navigate={navigate}
+                user={user}
+                setUser={setUser}
+                showToast={showToast}
+              />
+            )}
             {view === "wallet" && user && (
-  <Wallet
-    user={user}
-    navigate={navigate}
-    showToast={showToast}
-  />
-)}
-{view === "withdraw" && user && (
-  <Withdraw
-    user={user}
-    setUser={setUser}
-    navigate={navigate}
-    showToast={showToast}
-  />
-)}
+              <Wallet user={user} navigate={navigate} showToast={showToast} />
+            )}
+            {view === "withdraw" && user && (
+              <Withdraw
+                user={user}
+                setUser={setUser}
+                navigate={navigate}
+                showToast={showToast}
+              />
+            )}
 
-            {/* ── CREATOR PAGES ── */}
+            {/* CREATOR */}
             {view === "creator-dashboard" && user && (
-  <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />
-)}
-{view === "create-task" && user && (
-  <CreateTask user={user} navigate={navigate} showToast={showToast} />
-)}
-{view === "creator-tasks" && user && (
-  <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
-)}
-{view === "creator-analytics" && user && (
-  <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
-)}
+              <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />
+            )}
+            {view === "create-task" && user && (
+              <CreateTask user={user} navigate={navigate} showToast={showToast} />
+            )}
+            {view === "creator-tasks" && user && (
+              <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
+            )}
+            {view === "creator-analytics" && user && (
+              <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
+            )}
 
-            {/* ── ADMIN PAGES ── */}
-{view === "admin-dashboard" && user && (
-  <AdminDashboard navigate={navigate} showToast={showToast} />
-)}
-{view === "admin-users" && user && (
-  <AdminUsersComp showToast={showToast} />
-)}
-{view === "admin-tasks" && user && (
-  <AdminTasksComp showToast={showToast} />
-)}
-{view === "admin-withdrawals" && user && (
-  <AdminWithdrawalsComp showToast={showToast} />
-)}
+            {/* ADMIN */}
+            {view === "admin-dashboard" && user && (
+              <AdminOverview navigate={navigate} showToast={showToast} />
+            )}
+            {view === "admin-users" && user && (
+              <AdminUsersComp showToast={showToast} />
+            )}
+            {view === "admin-tasks" && user && (
+              <AdminTasksComp showToast={showToast} />
+            )}
+            {view === "admin-withdrawals" && user && (
+              <AdminWithdrawalsComp showToast={showToast} />
+            )}
 
           </div>
         </div>
       </div>
 
-      {/* Toast notifications */}
       <Toast toasts={toasts} />
     </>
   );
