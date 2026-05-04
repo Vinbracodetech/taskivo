@@ -9,6 +9,7 @@ import useToast from "./components/useToast.js";
 import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import TaskPlayer from "./pages/TaskPlayer.jsx";
 
 // ── Placeholder shown for pages not built yet ──
 function ComingSoon({ title }) {
@@ -202,8 +203,14 @@ export default function App() {
               <ComingSoon title="Tasks — File 9" />
             )}
             {view === "task-player" && user && activeTask && (
-              <ComingSoon title="Task Player — File 10" />
-            )}
+  <TaskPlayer
+    task={activeTask}
+    navigate={navigate}
+    user={user}
+    setUser={setUser}
+    showToast={showToast}
+  />
+)}
             {view === "wallet" && user && (
               <ComingSoon title="Wallet — File 11" />
             )}
