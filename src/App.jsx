@@ -15,8 +15,6 @@ import Withdraw from "./pages/Withdraw.jsx";
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
 import CreatorTasks from "./pages/CreatorTasks.jsx";
-import { AdminDashboard, AdminTasksPage, AdminWithdrawalsPage } from "./pages/AdminPanel.jsx";
-import AdminUsersPage from "./pages/AdminPanel.jsx";
 import { AdminOverview, AdminUsers as AdminUsersComp, AdminTasks as AdminTasksComp, AdminWithdrawals as AdminWithdrawalsComp } from "./pages/AdminPanel.jsx";
 
 // ── Placeholder shown for pages not built yet ──
