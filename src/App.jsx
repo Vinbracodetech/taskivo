@@ -50,6 +50,18 @@ export default function App() {
   var [activeTask, setActiveTask] = useState(null);
   var { toasts, show: showToast } = useToast();
 
+  // ── Sync view with browser URL hash ──
+  useEffect(function () {
+    function onPopState() {
+      var hash = window.location.hash.replace("#", "");
+      if (hash) setView(hash);
+    }
+    window.addEventListener("popstate", onPopState);
+    return function () {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
+
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
       var session = result.data.session;
@@ -63,7 +75,7 @@ export default function App() {
     var listener = supabase.auth.onAuthStateChange(function (event, session) {
       if (event === "SIGNED_OUT") {
         setUser(null);
-        setView("landing");
+        navigate("landing");
         setLoading(false);
       }
     });
@@ -75,7 +87,6 @@ export default function App() {
 
   async function loadProfile(authUser) {
     setLoading(true);
-
     var result = await supabase
       .from("profiles")
       .select("*")
@@ -97,26 +108,30 @@ export default function App() {
       };
       await supabase.from("profiles").insert(newProfile);
       setUser(newProfile);
-      setView("user-dashboard");
+      navigate("user-dashboard");
     }
-
     setLoading(false);
   }
 
   function routeByRole(role) {
-    if (role === "admin") setView("admin-dashboard");
-    else if (role === "creator") setView("creator-dashboard");
-    else setView("user-dashboard");
+    if (role === "admin") navigate("admin-dashboard");
+    else if (role === "creator") navigate("creator-dashboard");
+    else navigate("user-dashboard");
   }
 
+  // ── navigate updates view AND browser history ──
   function navigate(v) {
     setView(v);
     window.scrollTo(0, 0);
+    // Push to browser history so back button works
+    window.history.pushState({ view: v }, "", "#" + v);
   }
 
   async function logout() {
     await supabase.auth.signOut();
     setUser(null);
+    // Clear history stack on logout
+    window.history.replaceState({ view: "landing" }, "", "#landing");
     setView("landing");
     showToast("Logged out successfully.", "info");
   }
