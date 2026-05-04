@@ -1,6 +1,25 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase.js";
 
+// ── Region detection ──────────────────────────────────────────
+async function detectCountry() {
+  try {
+    var res = await fetch("https://ipapi.co/json/");
+    var data = await res.json();
+    return {
+      code: data.country_code || "OTHER",
+      name: data.country_name || "Global",
+    };
+  } catch (e) {
+    return { code: "OTHER", name: "Global" };
+  }
+}
+
+const COUNTRY_FLAGS = {
+  NG: "🇳🇬", US: "🇺🇸", GB: "🇬🇧", CA: "🇨🇦",
+  AU: "🇦🇺", GH: "🇬🇭", KE: "🇰🇪", ZA: "🇿🇦",
+};
+
 export default function Dashboard({ user, navigate, showToast }) {
 
   var [profile, setProfile] = useState(user);
@@ -15,13 +34,32 @@ export default function Dashboard({ user, navigate, showToast }) {
   async function loadData() {
     setLoading(true);
 
+    // Load profile
     var profileResult = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
-    if (profileResult.data) setProfile(profileResult.data);
 
+    var currentProfile = profileResult.data || user;
+
+    // Auto-detect region if not set
+    if (!currentProfile.country) {
+      var location = await detectCountry();
+      await supabase
+        .from("profiles")
+        .update({
+          country: location.code,
+          country_name: location.name,
+        })
+        .eq("id", user.id);
+      currentProfile.country = location.code;
+      currentProfile.country_name = location.name;
+    }
+
+    setProfile(currentProfile);
+
+    // Load completions
     var completionsResult = await supabase
       .from("completions")
       .select("*, tasks(title, reward)")
@@ -30,6 +68,7 @@ export default function Dashboard({ user, navigate, showToast }) {
       .limit(5);
     if (completionsResult.data) setCompletions(completionsResult.data);
 
+    // Load active tasks
     var tasksResult = await supabase
       .from("tasks")
       .select("*")
@@ -41,10 +80,24 @@ export default function Dashboard({ user, navigate, showToast }) {
   }
 
   var points = profile ? (profile.points || 0) : 0;
-  var cashValue = (points / 1000 * 1.2).toFixed(2);
   var name = profile
     ? (profile.full_name || profile.email || "Earner")
     : "Earner";
+  var countryCode = profile ? (profile.country || "OTHER") : "OTHER";
+  var countryName = profile ? (profile.country_name || "Global") : "Global";
+  var flag = COUNTRY_FLAGS[countryCode] || "🌍";
+
+  // Gold card hover handler
+  function onCardEnter(e) {
+    e.currentTarget.style.boxShadow = "0 8px 32px rgba(245,158,11,0.18), 0 0 0 1.5px rgba(245,158,11,0.25)";
+    e.currentTarget.style.transform = "translateY(-3px)";
+    e.currentTarget.style.borderColor = "rgba(245,158,11,0.3)";
+  }
+  function onCardLeave(e) {
+    e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
+    e.currentTarget.style.transform = "translateY(0)";
+    e.currentTarget.style.borderColor = "#E5E7EB";
+  }
 
   if (loading) {
     return (
@@ -53,7 +106,6 @@ export default function Dashboard({ user, navigate, showToast }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#FAFAFA",
       }}>
         <div style={{ textAlign: "center" }}>
           <div style={{
@@ -72,7 +124,11 @@ export default function Dashboard({ user, navigate, showToast }) {
   }
 
   return (
-    <div style={{ padding: "36px 32px", maxWidth: 1100, fontFamily: "var(--font-body)" }}>
+    <div style={{
+      padding: "36px 32px",
+      maxWidth: 1100,
+      fontFamily: "var(--font-body)",
+    }}>
 
       {/* ── GREETING ── */}
       <div style={{ marginBottom: 32 }}>
@@ -87,7 +143,7 @@ export default function Dashboard({ user, navigate, showToast }) {
           Welcome back, {name.split(" ")[0]} 👋
         </div>
         <div style={{ fontSize: 15, color: "#6B7280" }}>
-          Here's what's happening with your account today.
+          Here's your earnings overview for today.
         </div>
       </div>
 
@@ -100,33 +156,30 @@ export default function Dashboard({ user, navigate, showToast }) {
         position: "relative",
         overflow: "hidden",
       }}>
-        {/* Glow */}
         <div style={{
-          position: "absolute",
-          top: -80,
-          right: -80,
-          width: 280,
-          height: 280,
+          position: "absolute", top: -80, right: -80,
+          width: 280, height: 280,
           background: "radial-gradient(circle, rgba(168,255,62,0.15), transparent 70%)",
-          borderRadius: "50%",
-          pointerEvents: "none",
+          borderRadius: "50%", pointerEvents: "none",
         }} />
         <div style={{
-          position: "absolute",
-          bottom: -60,
-          left: 60,
-          width: 200,
-          height: 200,
-          background: "radial-gradient(circle, rgba(99,102,241,0.1), transparent 70%)",
-          borderRadius: "50%",
-          pointerEvents: "none",
+          position: "absolute", bottom: -60, left: 60,
+          width: 200, height: 200,
+          background: "radial-gradient(circle, rgba(245,158,11,0.08), transparent 70%)",
+          borderRadius: "50%", pointerEvents: "none",
         }} />
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 24, position: "relative" }}>
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: 24,
+          position: "relative",
+        }}>
           <div>
             <div style={{
-              fontSize: 11,
-              fontWeight: 700,
+              fontSize: 11, fontWeight: 700,
               letterSpacing: "1.8px",
               textTransform: "uppercase",
               color: "rgba(255,255,255,0.4)",
@@ -136,19 +189,17 @@ export default function Dashboard({ user, navigate, showToast }) {
             </div>
             <div style={{
               fontFamily: "var(--font-display)",
-              fontSize: 64,
-              fontWeight: 700,
-              color: "#A8FF3E",
-              lineHeight: 1,
-              letterSpacing: "-2px",
-              marginBottom: 8,
+              fontSize: 64, fontWeight: 700,
+              color: "#A8FF3E", lineHeight: 1,
+              letterSpacing: "-2px", marginBottom: 8,
             }}>
               {points.toLocaleString()}
             </div>
-            <div style={{ fontSize: 15, color: "rgba(255,255,255,0.45)" }}>
-              ≈ <strong style={{ color: "rgba(255,255,255,0.7)" }}>${cashValue} USD</strong> at current rate
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
+              Withdraw from <strong style={{ color: "rgba(255,255,255,0.6)" }}>2,000 pts</strong> minimum
             </div>
           </div>
+
           <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
             <button
               className="btn btn-primary"
@@ -185,110 +236,166 @@ export default function Dashboard({ user, navigate, showToast }) {
         gap: 16,
         marginBottom: 36,
       }}>
-        {[
-          {
-            label: "Tasks Completed",
-            value: completions.length,
-            sub: "All time",
-            icon: "✓",
-            iconBg: "rgba(34,197,94,0.1)",
-            iconColor: "#16A34A",
-          },
-          {
-            label: "Available Tasks",
-            value: tasks.length,
-            sub: "Ready to start",
-            icon: "▶",
-            iconBg: "rgba(168,255,62,0.12)",
-            iconColor: "#5A8A00",
-          },
-          {
-            label: "Your Region",
-            value: profile ? (profile.country || "Global") : "Global",
-            sub: "Point rate applied",
-            icon: "🌍",
-            iconBg: "rgba(99,102,241,0.1)",
-            iconColor: "#4F46E5",
-          },
-        ].map(function (s) {
-          return (
-            <div key={s.label} style={{
-              background: "#fff",
-              border: "1px solid #E5E7EB",
-              borderRadius: 16,
-              padding: "22px 20px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+
+        {/* Tasks Completed */}
+        <div
+          onMouseEnter={onCardEnter}
+          onMouseLeave={onCardLeave}
+          style={{
+            background: "#fff",
+            border: "1px solid #E5E7EB",
+            borderRadius: 18,
+            padding: "24px 22px",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            transition: "all 0.22s ease",
+            cursor: "default",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+            <div style={{
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "#9CA3AF",
             }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-                <div style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "#6B7280",
-                }}>
-                  {s.label}
-                </div>
-                <div style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 8,
-                  background: s.iconBg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 16,
-                  color: s.iconColor,
-                  flexShrink: 0,
-                }}>
-                  {s.icon}
-                </div>
-              </div>
-              <div style={{
-                fontFamily: "var(--font-heading)",
-                fontSize: 30,
-                fontWeight: 800,
-                color: "#0A0A0F",
-                lineHeight: 1,
-                marginBottom: 6,
-              }}>
-                {s.value}
-              </div>
-              <div style={{ fontSize: 12, color: "#9CA3AF" }}>{s.sub}</div>
+              Tasks Completed
             </div>
-          );
-        })}
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: "rgba(34,197,94,0.1)",
+              display: "flex", alignItems: "center",
+              justifyContent: "center", fontSize: 17,
+            }}>
+              ✅
+            </div>
+          </div>
+          <div style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: 36, fontWeight: 800,
+            color: "#0A0A0F", lineHeight: 1,
+            marginBottom: 6,
+          }}>
+            {completions.length}
+          </div>
+          <div style={{ fontSize: 12, color: "#9CA3AF" }}>All time</div>
+        </div>
+
+        {/* Available Tasks */}
+        <div
+          onMouseEnter={onCardEnter}
+          onMouseLeave={onCardLeave}
+          style={{
+            background: "#fff",
+            border: "1px solid #E5E7EB",
+            borderRadius: 18,
+            padding: "24px 22px",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            transition: "all 0.22s ease",
+            cursor: "default",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+            <div style={{
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "#9CA3AF",
+            }}>
+              Available Tasks
+            </div>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: "rgba(168,255,62,0.12)",
+              display: "flex", alignItems: "center",
+              justifyContent: "center", fontSize: 17,
+            }}>
+              🎯
+            </div>
+          </div>
+          <div style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: 36, fontWeight: 800,
+            color: "#0A0A0F", lineHeight: 1,
+            marginBottom: 6,
+          }}>
+            {tasks.length}
+          </div>
+          <div style={{ fontSize: 12, color: "#9CA3AF" }}>Ready to start</div>
+        </div>
+
+        {/* Region */}
+        <div
+          onMouseEnter={onCardEnter}
+          onMouseLeave={onCardLeave}
+          style={{
+            background: "#fff",
+            border: "1px solid #E5E7EB",
+            borderRadius: 18,
+            padding: "24px 22px",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            transition: "all 0.22s ease",
+            cursor: "default",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+            <div style={{
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "#9CA3AF",
+            }}>
+              Your Region
+            </div>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: "rgba(99,102,241,0.1)",
+              display: "flex", alignItems: "center",
+              justifyContent: "center", fontSize: 20,
+            }}>
+              {flag}
+            </div>
+          </div>
+          <div style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: 28, fontWeight: 800,
+            color: "#0A0A0F", lineHeight: 1,
+            marginBottom: 6,
+          }}>
+            {countryCode}
+          </div>
+          <div style={{ fontSize: 12, color: "#9CA3AF" }}>{countryName}</div>
+        </div>
+
       </div>
 
       {/* ── AVAILABLE TASKS ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 18,
+      }}>
         <div style={{
           fontFamily: "var(--font-heading)",
-          fontSize: 18,
-          fontWeight: 700,
-          color: "#0A0A0F",
+          fontSize: 18, fontWeight: 700, color: "#0A0A0F",
         }}>
           Available Tasks
         </div>
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={function () { navigate("tasks"); }}
-        >
+        <button className="btn btn-ghost btn-sm" onClick={function () { navigate("tasks"); }}>
           See All →
         </button>
       </div>
 
       {tasks.length === 0 ? (
         <div style={{
-          background: "#fff",
-          border: "1px solid #E5E7EB",
-          borderRadius: 16,
-          padding: "48px 24px",
-          textAlign: "center",
-          marginBottom: 32,
+          background: "#fff", border: "1px solid #E5E7EB",
+          borderRadius: 16, padding: "48px 24px",
+          textAlign: "center", marginBottom: 32,
         }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No tasks yet</div>
+          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
+            No tasks yet
+          </div>
           <div style={{ fontSize: 13, color: "#6B7280" }}>
             Creators are posting tasks. Check back soon.
           </div>
@@ -297,43 +404,36 @@ export default function Dashboard({ user, navigate, showToast }) {
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: 16,
-          marginBottom: 36,
+          gap: 16, marginBottom: 36,
         }}>
           {tasks.map(function (task) {
             var filled = task.completed_slots || 0;
             var total = task.total_slots || 1;
             var pct = Math.round((filled / total) * 100);
             return (
-              <div key={task.id} style={{
-                background: "#fff",
-                border: "1px solid #E5E7EB",
-                borderRadius: 16,
-                padding: 20,
-                transition: "all 0.2s",
-                cursor: "pointer",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-              }}
+              <div key={task.id}
                 onMouseEnter={function (e) {
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.10)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.borderColor = "rgba(168,255,62,0.4)";
+                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(245,158,11,0.15), 0 0 0 1.5px rgba(168,255,62,0.3)";
+                  e.currentTarget.style.transform = "translateY(-3px)";
                 }}
                 onMouseLeave={function (e) {
-                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)";
+                  e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.borderColor = "#E5E7EB";
+                }}
+                style={{
+                  background: "#fff",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: 16, padding: 20,
+                  transition: "all 0.2s",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                   <div style={{
                     fontFamily: "var(--font-heading)",
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: "#0A0A0F",
-                    flex: 1,
-                    paddingRight: 10,
-                    lineHeight: 1.4,
+                    fontSize: 14, fontWeight: 700,
+                    color: "#0A0A0F", flex: 1,
+                    paddingRight: 10, lineHeight: 1.4,
                   }}>
                     {task.title}
                   </div>
@@ -351,26 +451,19 @@ export default function Dashboard({ user, navigate, showToast }) {
                   <span>👥 {total - filled} slots</span>
                 </div>
                 <div style={{
-                  height: 4,
-                  background: "#F3F4F6",
-                  borderRadius: 99,
-                  overflow: "hidden",
-                  marginBottom: 14,
+                  height: 4, background: "#F3F4F6",
+                  borderRadius: 99, overflow: "hidden", marginBottom: 14,
                 }}>
                   <div style={{
-                    height: "100%",
-                    width: pct + "%",
-                    background: "var(--lime)",
-                    borderRadius: 99,
+                    height: "100%", width: pct + "%",
+                    background: "var(--lime)", borderRadius: 99,
                   }} />
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <span style={{
                       fontFamily: "var(--font-heading)",
-                      fontSize: 22,
-                      fontWeight: 800,
-                      color: "#7ACC20",
+                      fontSize: 22, fontWeight: 800, color: "#7ACC20",
                     }}>
                       {task.reward || 0}
                     </span>
@@ -390,40 +483,32 @@ export default function Dashboard({ user, navigate, showToast }) {
       )}
 
       {/* ── RECENT ACTIVITY ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+      <div style={{
+        display: "flex", justifyContent: "space-between",
+        alignItems: "center", marginBottom: 18,
+      }}>
         <div style={{
           fontFamily: "var(--font-heading)",
-          fontSize: 18,
-          fontWeight: 700,
-          color: "#0A0A0F",
+          fontSize: 18, fontWeight: 700, color: "#0A0A0F",
         }}>
           Recent Activity
         </div>
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={function () { navigate("wallet"); }}
-        >
+        <button className="btn btn-ghost btn-sm" onClick={function () { navigate("wallet"); }}>
           View All →
         </button>
       </div>
 
       {completions.length === 0 ? (
         <div style={{
-          background: "#fff",
-          border: "1px solid #E5E7EB",
-          borderRadius: 16,
-          padding: "48px 24px",
-          textAlign: "center",
+          background: "#fff", border: "1px solid #E5E7EB",
+          borderRadius: 16, padding: "48px 24px", textAlign: "center",
         }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
           <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No activity yet</div>
           <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 20 }}>
             Complete your first task to start earning.
           </div>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={function () { navigate("tasks"); }}
-          >
+          <button className="btn btn-primary btn-sm" onClick={function () { navigate("tasks"); }}>
             Browse Tasks →
           </button>
         </div>
@@ -437,36 +522,23 @@ export default function Dashboard({ user, navigate, showToast }) {
             });
             return (
               <div key={c.id} style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                padding: "14px 18px",
-                background: "#fff",
-                border: "1px solid #E5E7EB",
-                borderRadius: 12,
+                display: "flex", alignItems: "center", gap: 14,
+                padding: "14px 18px", background: "#fff",
+                border: "1px solid #E5E7EB", borderRadius: 12,
               }}>
                 <div style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "50%",
+                  width: 38, height: 38, borderRadius: "50%",
                   background: "rgba(34,197,94,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 16,
-                  flexShrink: 0,
-                }}>
-                  ✓
-                </div>
+                  display: "flex", alignItems: "center",
+                  justifyContent: "center", fontSize: 16, flexShrink: 0,
+                }}>✓</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "#0A0A0F" }}>{title}</div>
                   <div style={{ fontSize: 12, color: "#9CA3AF" }}>{date}</div>
                 </div>
                 <div style={{
                   fontFamily: "var(--font-heading)",
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: "#16A34A",
+                  fontSize: 15, fontWeight: 700, color: "#16A34A",
                 }}>
                   +{reward} pts
                 </div>
@@ -479,4 +551,4 @@ export default function Dashboard({ user, navigate, showToast }) {
       <div style={{ height: 48 }} />
     </div>
   );
-}
+              }
