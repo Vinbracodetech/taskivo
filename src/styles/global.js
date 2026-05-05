@@ -287,93 +287,85 @@ const CSS = `
     .admin-overview { grid-template-columns: 1fr 1fr; }
     .section-title { font-size: 28px; }
     .cta-title { font-size: 28px; }
-  }
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap');
-
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-.lp-hero-title { font-size: 56px; letter-spacing: -2px; line-height: 1.06; }
-.lp-hero-pad { padding: 88px 5% 72px; }
-.lp-hero-sub { font-size: 16px; margin: 0 auto 36px; }
-.lp-hero-actions-mb { margin-bottom: 56px; }
-.lp-btn-hero { padding: 13px 26px; font-size: 14px; }
-.lp-stat-num { font-size: 26px; letter-spacing: -1px; }
-.lp-stat-label { font-size: 11px; }
-.lp-stat-pad { padding: 0 16px; }
-.lp-section-pad { padding: 80px 5%; }
-.lp-section-title { font-size: 36px; letter-spacing: -1px; }
-.lp-section-sub { font-size: 15px; margin-bottom: 36px; }
-.lp-audience-grid { grid-template-columns: repeat(2, 1fr); }
-.lp-audience-card-pad { padding: 40px 36px; }
-.lp-audience-title { font-size: 22px; letter-spacing: -0.5px; }
-.lp-audience-desc { font-size: 14px; margin-bottom: 20px; }
-.lp-step-text { font-size: 13px; }
-.lp-audience-btn { font-size: 13px; padding: 10px 18px; }
-.lp-features-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.lp-feature-card-pad { padding: 28px 24px; }
-.lp-feature-name { font-size: 15px; }
-.lp-feature-desc { font-size: 13px; }
-.lp-proof-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.lp-proof-card-pad { padding: 24px; }
-.lp-proof-text { font-size: 13px; }
-.lp-cta-pad { padding: 100px 5%; }
-.lp-cta-title { font-size: 48px; letter-spacing: -1.5px; }
-.lp-cta-sub { font-size: 15px; }
-.lp-trust-row { margin-top: 20px; gap: 20px; }
-.lp-footer-pad { padding: 52px 5% 28px; }
-.lp-footer-grid { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; }
-.lp-footer-brand-span { grid-column: auto; }
-.lp-nav-height { height: 64px; }
-.lp-nav-pad { padding: 0 5%; }
-.lp-nav-brand { font-size: 19px; }
-.lp-nav-btn-ghost { font-size: 13px; padding: 7px 14px; }
-.lp-nav-btn-primary { font-size: 13px; padding: 8px 16px; }
-
-@media (max-width: 600px) {
-  .lp-nav-height { height: 52px !important; }
-  .lp-nav-pad { padding: 0 4% !important; }
-  .lp-nav-brand { font-size: 16px !important; }
-  .lp-nav-btn-ghost { font-size: 11px !important; padding: 5px 9px !important; }
-  .lp-nav-btn-primary { font-size: 11px !important; padding: 6px 11px !important; }
-
-  .lp-hero-pad { padding: 44px 4% 40px !important; }
-  .lp-hero-title { font-size: 28px !important; letter-spacing: -0.8px !important; line-height: 1.12 !important; }
-  .lp-hero-sub { font-size: 13px !important; margin: 0 auto 22px !important; }
-  .lp-hero-actions-mb { margin-bottom: 32px !important; }
-  .lp-btn-hero { padding: 10px 16px !important; font-size: 12px !important; }
-  .lp-stat-num { font-size: 15px !important; letter-spacing: -0.3px !important; }
-  .lp-stat-label { font-size: 8px !important; }
-  .lp-stat-pad { padding: 0 4px !important; }
-
-  .lp-section-pad { padding: 44px 4% !important; }
-  .lp-section-title { font-size: 20px !important; letter-spacing: -0.3px !important; }
-  .lp-section-sub { font-size: 12px !important; margin-bottom: 20px !important; }
-
-  .lp-audience-grid { grid-template-columns: 1fr !important; }
-  .lp-audience-card-pad { padding: 20px 16px !important; }
-  .lp-audience-title { font-size: 15px !important; letter-spacing: -0.2px !important; }
-  .lp-audience-desc { font-size: 12px !important; margin-bottom: 14px !important; }
-  .lp-step-text { font-size: 12px !important; }
-  .lp-audience-btn { font-size: 12px !important; padding: 9px 14px !important; }
-
-  .lp-features-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
-  .lp-feature-card-pad { padding: 14px 12px !important; }
-  .lp-feature-name { font-size: 12px !important; }
-  .lp-feature-desc { font-size: 11px !important; }
-
-  .lp-proof-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
-  .lp-proof-card-pad { padding: 16px !important; }
-  .lp-proof-text { font-size: 12px !important; }
-
-  .lp-cta-pad { padding: 52px 4% !important; }
-  .lp-cta-title { font-size: 24px !important; letter-spacing: -0.5px !important; }
-  .lp-cta-sub { font-size: 13px !important; }
-  .lp-trust-row { margin-top: 14px !important; gap: 12px !important; }
-
-  .lp-footer-pad { padding: 36px 4% 18px !important; }
-  .lp-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 20px !important; }
-  .lp-footer-brand-span { grid-column: 1 / -1 !important; }
 }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .lp-hero-title { font-size: 56px; letter-spacing: -2px; line-height: 1.06; }
+  .lp-hero-pad { padding: 88px 5% 72px; }
+  .lp-hero-sub { font-size: 16px; margin: 0 auto 36px; }
+  .lp-hero-actions-mb { margin-bottom: 56px; }
+  .lp-btn-hero { padding: 13px 26px; font-size: 14px; }
+  .lp-stat-num { font-size: 26px; letter-spacing: -1px; }
+  .lp-stat-label { font-size: 11px; }
+  .lp-stat-pad { padding: 0 16px; }
+  .lp-section-pad { padding: 80px 5%; }
+  .lp-section-title { font-size: 36px; letter-spacing: -1px; }
+  .lp-section-sub { font-size: 15px; margin-bottom: 36px; }
+  .lp-audience-grid { grid-template-columns: repeat(2, 1fr); }
+  .lp-audience-card-pad { padding: 40px 36px; }
+  .lp-audience-title { font-size: 22px; letter-spacing: -0.5px; }
+  .lp-audience-desc { font-size: 14px; margin-bottom: 20px; }
+  .lp-step-text { font-size: 13px; }
+  .lp-audience-btn { font-size: 13px; padding: 10px 18px; }
+  .lp-features-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .lp-feature-card-pad { padding: 28px 24px; }
+  .lp-feature-name { font-size: 15px; }
+  .lp-feature-desc { font-size: 13px; }
+  .lp-proof-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .lp-proof-card-pad { padding: 24px; }
+  .lp-proof-text { font-size: 13px; }
+  .lp-cta-pad { padding: 100px 5%; }
+  .lp-cta-title { font-size: 48px; letter-spacing: -1.5px; }
+  .lp-cta-sub { font-size: 15px; }
+  .lp-trust-row { margin-top: 20px; gap: 20px; }
+  .lp-footer-pad { padding: 52px 5% 28px; }
+  .lp-footer-grid { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; }
+  .lp-footer-brand-span { grid-column: auto; }
+  .lp-nav-height { height: 64px; }
+  .lp-nav-pad { padding: 0 5%; }
+  .lp-nav-brand { font-size: 19px; }
+  .lp-nav-btn-ghost { font-size: 13px; padding: 7px 14px; }
+  .lp-nav-btn-primary { font-size: 13px; padding: 8px 16px; }
+
+  @media (max-width: 600px) {
+    .lp-nav-height { height: 52px !important; }
+    .lp-nav-pad { padding: 0 4% !important; }
+    .lp-nav-brand { font-size: 16px !important; }
+    .lp-nav-btn-ghost { font-size: 11px !important; padding: 5px 9px !important; }
+    .lp-nav-btn-primary { font-size: 11px !important; padding: 6px 11px !important; }
+    .lp-hero-pad { padding: 44px 4% 40px !important; }
+    .lp-hero-title { font-size: 28px !important; letter-spacing: -0.8px !important; line-height: 1.12 !important; }
+    .lp-hero-sub { font-size: 13px !important; margin: 0 auto 22px !important; }
+    .lp-hero-actions-mb { margin-bottom: 32px !important; }
+    .lp-btn-hero { padding: 10px 16px !important; font-size: 12px !important; }
+    .lp-stat-num { font-size: 15px !important; letter-spacing: -0.3px !important; }
+    .lp-stat-label { font-size: 8px !important; }
+    .lp-stat-pad { padding: 0 4px !important; }
+    .lp-section-pad { padding: 44px 4% !important; }
+    .lp-section-title { font-size: 20px !important; letter-spacing: -0.3px !important; }
+    .lp-section-sub { font-size: 12px !important; margin-bottom: 20px !important; }
+    .lp-audience-grid { grid-template-columns: 1fr !important; }
+    .lp-audience-card-pad { padding: 20px 16px !important; }
+    .lp-audience-title { font-size: 15px !important; letter-spacing: -0.2px !important; }
+    .lp-audience-desc { font-size: 12px !important; margin-bottom: 14px !important; }
+    .lp-step-text { font-size: 12px !important; }
+    .lp-audience-btn { font-size: 12px !important; padding: 9px 14px !important; }
+    .lp-features-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+    .lp-feature-card-pad { padding: 14px 12px !important; }
+    .lp-feature-name { font-size: 12px !important; }
+    .lp-feature-desc { font-size: 11px !important; }
+    .lp-proof-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+    .lp-proof-card-pad { padding: 16px !important; }
+    .lp-proof-text { font-size: 12px !important; }
+    .lp-cta-pad { padding: 52px 4% !important; }
+    .lp-cta-title { font-size: 24px !important; letter-spacing: -0.5px !important; }
+    .lp-cta-sub { font-size: 13px !important; }
+    .lp-trust-row { margin-top: 14px !important; gap: 12px !important; }
+    .lp-footer-pad { padding: 36px 4% 18px !important; }
+    .lp-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 20px !important; }
+    .lp-footer-brand-span { grid-column: 1 / -1 !important; }
+  }
 `;
 
 export default CSS;
