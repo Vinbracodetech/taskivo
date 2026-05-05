@@ -4,6 +4,7 @@ import CSS from "./styles/global.js";
 import Sidebar from "./components/Sidebar.jsx";
 import Toast from "./components/Toast.jsx";
 import useToast from "./components/useToast.js";
+import { About, Terms, Privacy } from "./pages/StaticPages.jsx";
 
 import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
@@ -200,6 +201,9 @@ export default function App() {
               />
             )}
             {view === "blog" && <ComingSoon title="Blog — coming soon" />}
+            {view === "about" && <About/>}
+   {view === "terms" && <Terms/>}
+   {view === "privacy" && <Privacy/>}
 
             {/* EARNER */}
             {view === "user-dashboard" && user && (
