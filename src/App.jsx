@@ -126,82 +126,86 @@ export default function App() {
     <>
       <style>{CSS}</style>
 
-      <div className="app-shell">
-        {user && (
-          <Sidebar user={user} view={view} navigate={navigate} logout={logout} />
-        )}
+      {view === "landing" && (
+        <Landing navigate={navigate} setAuthMode={setAuthMode} />
+      )}
 
-        <div className="main-content">
-          {view === "landing" && (
-            <Landing navigate={navigate} setAuthMode={setAuthMode} />
+      {view === "auth" && (
+        <Auth
+          authMode={authMode}
+          setAuthMode={setAuthMode}
+          navigate={navigate}
+          loadProfile={loadProfile}
+        />
+      )}
+
+      {view !== "landing" && view !== "auth" && (
+        <div className="app-shell">
+          {user && (
+            <Sidebar user={user} view={view} navigate={navigate} logout={logout} />
           )}
 
-          {view === "auth" && (
-            <Auth
-              authMode={authMode}
-              setAuthMode={setAuthMode}
-              navigate={navigate}
-              loadProfile={loadProfile}
-            />
-          )}
+          <div className="main-content">
 
-          {view === "blog" && <ComingSoon title="Blog coming soon" />}
+            {view === "blog" && <ComingSoon title="Blog coming soon" />}
 
-          {view === "user-dashboard" && user && (
-            <Dashboard user={user} navigate={navigate} showToast={showToast} />
-          )}
+            {view === "user-dashboard" && user && (
+              <Dashboard user={user} navigate={navigate} showToast={showToast} />
+            )}
 
-          {view === "tasks" && user && (
-            <Tasks user={user} navigate={navigate} showToast={showToast} />
-          )}
+            {view === "tasks" && user && (
+              <Tasks user={user} navigate={navigate} showToast={showToast} />
+            )}
 
-          {view === "task-player" && user && activeTask && (
-            <TaskPlayer
-              task={activeTask}
-              user={user}
-              navigate={navigate}
-              setUser={setUser}
-              showToast={showToast}
-            />
-          )}
+            {view === "task-player" && user && activeTask && (
+              <TaskPlayer
+                task={activeTask}
+                user={user}
+                navigate={navigate}
+                setUser={setUser}
+                showToast={showToast}
+              />
+            )}
 
-          {view === "wallet" && user && (
-            <Wallet user={user} navigate={navigate} showToast={showToast} />
-          )}
+            {view === "wallet" && user && (
+              <Wallet user={user} navigate={navigate} showToast={showToast} />
+            )}
 
-          {view === "withdraw" && user && (
-            <Withdraw user={user} setUser={setUser} navigate={navigate} showToast={showToast} />
-          )}
+            {view === "withdraw" && user && (
+              <Withdraw user={user} setUser={setUser} navigate={navigate} showToast={showToast} />
+            )}
 
-          {view === "creator-dashboard" && user && (
-            <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />
-          )}
+            {view === "creator-dashboard" && user && (
+              <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />
+            )}
 
-          {view === "create-task" && user && (
-            <CreateTask user={user} navigate={navigate} showToast={showToast} />
-          )}
+            {view === "create-task" && user && (
+              <CreateTask user={user} navigate={navigate} showToast={showToast} />
+            )}
 
-          {view === "creator-tasks" && user && (
-            <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
-          )}
+            {view === "creator-tasks" && user && (
+              <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
+            )}
 
-          {view === "admin-dashboard" && user && (
-            <AdminOverview navigate={navigate} showToast={showToast} />
-          )}
+            {view === "admin-dashboard" && user && (
+              <AdminOverview navigate={navigate} showToast={showToast} />
+            )}
 
-          {view === "admin-users" && user && (
-            <AdminUsersComp showToast={showToast} />
-          )}
+            {view === "admin-users" && user && (
+              <AdminUsersComp showToast={showToast} />
+            )}
 
-          {view === "admin-tasks" && user && (
-            <AdminTasksComp showToast={showToast} />
-          )}
+            {view === "admin-tasks" && user && (
+              <AdminTasksComp showToast={showToast} />
+            )}
 
-          {view === "admin-withdrawals" && user && (
-            <AdminWithdrawalsComp showToast={showToast} />
-          )}
+            {view === "admin-withdrawals" && user && (
+              <AdminWithdrawalsComp showToast={showToast} />
+            )}
+
+          </div>
         </div>
-      </div>
+      )}
 
       <Toast toasts={toasts} />
     </>
