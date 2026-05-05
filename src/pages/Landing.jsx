@@ -402,3 +402,6 @@ export default function Landing({ navigate, setAuthMode }) {
           <div>taskivo.online</div>
         </div>
       </footer>
+    </div>
+  );
+}
