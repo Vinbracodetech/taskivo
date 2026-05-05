@@ -126,10 +126,21 @@ export default function App() {
     <>
       <style>{CSS}</style>
 
+      {/* ✅ LANDING — HARD ISOLATION FIX */}
       {view === "landing" && (
-        <Landing navigate={navigate} setAuthMode={setAuthMode} />
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "100vw",
+            overflowX: "hidden",
+            display: "block",
+          }}
+        >
+          <Landing navigate={navigate} setAuthMode={setAuthMode} />
+        </div>
       )}
 
+      {/* AUTH */}
       {view === "auth" && (
         <Auth
           authMode={authMode}
@@ -139,10 +150,23 @@ export default function App() {
         />
       )}
 
+      {/* MAIN APP */}
       {view !== "landing" && view !== "auth" && (
-        <div className="app-shell">
+        <div
+          className="app-shell"
+          style={{
+            width: "100%",
+            maxWidth: "100vw",
+            overflowX: "hidden",
+          }}
+        >
           {user && (
-            <Sidebar user={user} view={view} navigate={navigate} logout={logout} />
+            <Sidebar
+              user={user}
+              view={view}
+              navigate={navigate}
+              logout={logout}
+            />
           )}
 
           <div className="main-content">
