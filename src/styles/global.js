@@ -43,38 +43,40 @@ const CSS = `
   }
 
   /* =========================
-     TYPOGRAPHY
+     TYPOGRAPHY — APP ONLY
+     (Landing uses divs, not h1/h2/h3)
   ========================== */
-  h1 {
+  .app-shell h1 {
     font-size: 28px;
     line-height: 1.2;
     font-family: 'Syne', sans-serif;
     font-weight: 800;
   }
 
-  h2 {
+  .app-shell h2 {
     font-size: 22px;
     line-height: 1.25;
     font-family: 'Syne', sans-serif;
     font-weight: 800;
   }
 
-  h3 {
+  .app-shell h3 {
     font-size: 18px;
     line-height: 1.3;
     font-family: 'Syne', sans-serif;
     font-weight: 700;
   }
 
-  p, li {
+  .app-shell p,
+  .app-shell li {
     font-size: 14px;
     line-height: 1.5;
   }
 
   /* =========================
-     BUTTONS / INPUTS
+     BUTTONS — APP ONLY
   ========================== */
-  button {
+  .app-shell button {
     min-height: 44px;
     min-width: 44px;
     cursor: pointer;
@@ -235,9 +237,9 @@ const CSS = `
       padding: 24px 32px;
     }
 
-    h1 { font-size: 36px; }
-    h2 { font-size: 28px; }
-    h3 { font-size: 20px; }
+    .app-shell h1 { font-size: 36px; }
+    .app-shell h2 { font-size: 28px; }
+    .app-shell h3 { font-size: 20px; }
 
     .hero {
       flex-direction: row;
@@ -322,8 +324,8 @@ const CSS = `
       padding: 32px 48px;
     }
 
-    h1 { font-size: 48px; }
-    h2 { font-size: 36px; }
+    .app-shell h1 { font-size: 48px; }
+    .app-shell h2 { font-size: 36px; }
 
     .features-grid,
     .tasks-grid {
@@ -345,7 +347,7 @@ const CSS = `
       padding: 40px 60px;
     }
 
-    h1 {
+    .app-shell h1 {
       font-size: 56px;
     }
 
