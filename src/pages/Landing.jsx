@@ -1,465 +1,274 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+
+const LANDING_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+  .landing { background: #fff; }
+  .landing-nav { padding: 0 5%; height: 72px; display: flex; align-items: center; gap: 16px; max-width: 1200px; margin: 0 auto; position: sticky; top: 0; background: rgba(255,255,255,.92); backdrop-filter: blur(12px); z-index: 50; border-bottom: 1px solid #E5E7EB; }
+  .landing-nav-brand { font-family: 'Clash Display', sans-serif; font-size: 22px; font-weight: 700; color: #0A0A0F; flex: 1; text-decoration: none; }
+  .landing-nav-links { display: flex; gap: 4px; }
+  .landing-nav-links a { font-size: 14px; font-weight: 500; color: #6B7280; text-decoration: none; padding: 7px 14px; border-radius: 8px; transition: all .18s; cursor: pointer; }
+  .landing-nav-links a:hover { color: #0A0A0F; background: #F3F4F6; }
+
+  .lp-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all .2s; text-decoration: none; white-space: nowrap; }
+  .lp-btn-primary { background: #A8FF3E; color: #0A0A0F; }
+  .lp-btn-primary:hover { background: #C8FF6E; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(168,255,62,.35); }
+  .lp-btn-dark { background: #0A0A0F; color: #fff; }
+  .lp-btn-dark:hover { background: #1A1A2E; transform: translateY(-1px); }
+  .lp-btn-outline { background: transparent; color: #0A0A0F; border: 1.5px solid #E5E7EB; }
+  .lp-btn-outline:hover { border-color: #0A0A0F; background: #F3F4F6; }
+  .lp-btn-sm { padding: 6px 14px; font-size: 13px; }
+  .lp-btn-xl { padding: 18px 36px; font-size: 16px; }
+
+  .lp-hero { padding: 80px 5% 100px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; max-width: 1200px; margin: 0 auto; }
+  .lp-hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; background: rgba(168,255,62,.15); color: #5A8A00; padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 24px; border: 1px solid rgba(168,255,62,.3); }
+  .lp-hero-title { font-family: 'Clash Display', sans-serif; font-size: clamp(36px, 5vw, 64px); font-weight: 700; color: #0A0A0F; line-height: 1.08; margin-bottom: 24px; }
+  .lp-hero-title span { color: #7ACC20; }
+  .lp-hero-sub { font-size: 18px; color: #6B7280; line-height: 1.7; margin-bottom: 36px; max-width: 480px; }
+  .lp-hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+  .lp-hero-card { background: #1A1A2E; border-radius: 28px; padding: 28px; color: #fff; }
+  .lp-hero-card-title { font-family: 'Clash Display', sans-serif; font-size: 16px; margin-bottom: 20px; color: rgba(255,255,255,.6); }
+  .lp-task-preview { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .lp-task-preview-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+  .lp-task-preview-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; color: rgba(255,255,255,.5); }
+  .lp-task-preview-reward { color: #A8FF3E; font-weight: 700; }
+  .lp-progress { height: 6px; background: rgba(255,255,255,.1); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+  .lp-progress-bar { height: 100%; background: #A8FF3E; border-radius: 99px; }
+
+  .lp-features-section { padding: 80px 5%; background: #FAFAFA; }
+  .lp-section-label { text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: #7ACC20; margin-bottom: 14px; }
+  .lp-section-title { text-align: center; font-family: 'Clash Display', sans-serif; font-size: clamp(28px, 4vw, 44px); font-weight: 700; color: #0A0A0F; margin-bottom: 16px; }
+  .lp-section-sub { text-align: center; font-size: 16px; color: #6B7280; max-width: 540px; margin: 0 auto 56px; line-height: 1.7; }
+  .lp-features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1100px; margin: 0 auto; }
+  .lp-feature-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 20px; padding: 28px; transition: all .22s; }
+  .lp-feature-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,.10); transform: translateY(-3px); border-color: rgba(168,255,62,.4); }
+  .lp-feature-icon { width: 48px; height: 48px; background: rgba(168,255,62,.12); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 18px; }
+  .lp-feature-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: #0A0A0F; margin-bottom: 8px; }
+  .lp-feature-desc { font-size: 14px; color: #6B7280; line-height: 1.65; }
+
+  .lp-how-section { padding: 80px 5%; background: #1A1A2E; color: #fff; }
+  .lp-how-section .lp-section-title { color: #fff; }
+  .lp-how-section .lp-section-sub { color: rgba(255,255,255,.55); }
+  .lp-steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; max-width: 1100px; margin: 0 auto; }
+  .lp-step-card { text-align: center; }
+  .lp-step-num { width: 52px; height: 52px; background: #A8FF3E; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Clash Display', sans-serif; font-size: 22px; font-weight: 700; color: #0A0A0F; margin: 0 auto 16px; }
+  .lp-step-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  .lp-step-desc { font-size: 13px; color: rgba(255,255,255,.55); line-height: 1.6; }
+
+  .lp-cta-section { padding: 80px 5%; background: linear-gradient(135deg, #A8FF3E 0%, #C8FF6E 100%); }
+  .lp-cta-inner { max-width: 640px; margin: 0 auto; text-align: center; }
+  .lp-cta-title { font-family: 'Clash Display', sans-serif; font-size: clamp(28px, 4vw, 48px); font-weight: 700; color: #0A0A0F; margin-bottom: 16px; }
+  .lp-cta-sub { font-size: 17px; color: rgba(10,10,15,.65); margin-bottom: 36px; }
+
+  .lp-footer { background: #0A0A0F; color: rgba(255,255,255,.5); padding: 48px 5% 32px; }
+  .lp-footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; max-width: 1200px; margin: 0 auto 40px; }
+  .lp-footer-brand { font-family: 'Clash Display', sans-serif; font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 12px; }
+  .lp-footer-desc { font-size: 13px; line-height: 1.7; }
+  .lp-footer-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.8); margin-bottom: 14px; }
+  .lp-footer-col-links { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 0; }
+  .lp-footer-col-links li a { font-size: 13px; color: rgba(255,255,255,.45); text-decoration: none; transition: color .18s; cursor: pointer; }
+  .lp-footer-col-links li a:hover { color: #A8FF3E; }
+  .lp-footer-bottom { border-top: 1px solid rgba(255,255,255,.08); padding-top: 24px; font-size: 13px; text-align: center; max-width: 1200px; margin: 0 auto; }
+
+  @media (max-width: 768px) {
+    .lp-hero { grid-template-columns: 1fr; padding: 48px 5% 60px; }
+    .lp-hero-visual { display: none; }
+    .lp-features-grid { grid-template-columns: 1fr; }
+    .lp-steps-grid { grid-template-columns: 1fr 1fr; }
+    .lp-footer-grid { grid-template-columns: 1fr 1fr; }
+    .lp-hero-title { font-size: 36px; }
+    .lp-hero-sub { font-size: 15px; }
+    .lp-btn-xl { padding: 14px 24px; font-size: 15px; }
+    .lp-section-title { font-size: 26px; }
+    .lp-cta-title { font-size: 26px; }
+    .lp-steps-grid { gap: 16px; }
+    .landing-nav-links { display: none; }
+  }
+`;
+
+const MOCK_TASKS = [
+  { id: 1, title: "Review Our New AI Productivity App", requiredTime: 120, reward: 450, totalSlots: 100, completedSlots: 67 },
+  { id: 2, title: "Watch: Street Food Tour of Lagos", requiredTime: 90, reward: 280, totalSlots: 50, completedSlots: 12 },
+  { id: 3, title: "TechVision Studio Channel Intro", requiredTime: 60, reward: 180, totalSlots: 200, completedSlots: 88 },
+];
 
 export default function Landing({ navigate, setAuthMode }) {
-  const [scrollY, setScrollY] = useState(0);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [activeTab, setActiveTab] = useState('earner');
-  const statsRef = useRef(null);
-  const [counted, setCounted] = useState(false);
-
   useEffect(function () {
-    function handleScroll() { setScrollY(window.scrollY); }
-    function handleResize() { setWindowWidth(window.innerWidth); }
-    window.addEventListener('scroll', handleScroll);
-    window.addEventListener('resize', handleResize);
+    var style = document.createElement('style');
+    style.id = 'lp-styles';
+    style.textContent = LANDING_CSS;
+    if (!document.getElementById('lp-styles')) {
+      document.head.appendChild(style);
+    }
     return function () {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleResize);
+      var el = document.getElementById('lp-styles');
+      if (el) el.remove();
     };
   }, []);
 
-  useEffect(function () {
-    if (!statsRef.current) return;
-    var observer = new IntersectionObserver(function (entries) {
-      if (entries[0].isIntersecting && !counted) setCounted(true);
-    }, { threshold: 0.3 });
-    observer.observe(statsRef.current);
-    return function () { observer.disconnect(); };
-  }, [counted]);
+  function goRegister() {
+    setAuthMode('register');
+    navigate('auth');
+  }
 
-  var isMobile = windowWidth < 768;
-  var isSmall = windowWidth < 480;
-
-  var pill = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    background: 'rgba(168,255,62,0.1)',
-    border: '1px solid rgba(168,255,62,0.25)',
-    color: '#A8FF3E',
-    borderRadius: '100px',
-    padding: '6px 14px',
-    fontSize: '12px',
-    fontWeight: 600,
-    letterSpacing: '0.5px',
-    textTransform: 'uppercase',
-    marginBottom: '20px',
-  };
-
-  var sectionLabel = {
-    fontFamily: "'Syne', sans-serif",
-    fontSize: isSmall ? '28px' : isMobile ? '34px' : '48px',
-    fontWeight: 800,
-    lineHeight: 1.1,
-    letterSpacing: '-1px',
-    marginBottom: '16px',
-  };
-
-  var subText = {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: isMobile ? '15px' : '17px',
-    lineHeight: 1.7,
-    maxWidth: '520px',
-  };
-
-  var btnPrimary = {
-    background: '#A8FF3E',
-    color: '#0D0D14',
-    border: 'none',
-    borderRadius: '10px',
-    padding: isMobile ? '14px 28px' : '16px 36px',
-    fontSize: isMobile ? '15px' : '16px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    fontFamily: "'DM Sans', sans-serif",
-    transition: 'transform 0.15s, box-shadow 0.15s',
-    boxShadow: '0 0 32px rgba(168,255,62,0.25)',
-  };
-
-  var btnSecondary = {
-    background: 'transparent',
-    color: '#fff',
-    border: '1px solid rgba(255,255,255,0.18)',
-    borderRadius: '10px',
-    padding: isMobile ? '14px 28px' : '16px 36px',
-    fontSize: isMobile ? '15px' : '16px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    fontFamily: "'DM Sans', sans-serif",
-    transition: 'border-color 0.2s',
-  };
+  function goLogin() {
+    setAuthMode('login');
+    navigate('auth');
+  }
 
   return (
-    <div style={{ 
-  fontFamily: "'DM Sans', sans-serif", 
-  background: '#0D0D14', 
-  color: '#fff', 
-  overflowX: 'hidden', 
-  minHeight: '100vh',
-  maxWidth: '480px',
-  margin: '0 auto',
-  width: '100%',
-}}>
+    <div className="landing">
 
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
-
-      {/* ── NAV ── */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: isMobile ? '16px 20px' : '20px 48px',
-        background: scrollY > 40 ? 'rgba(13,13,20,0.92)' : 'transparent',
-        backdropFilter: scrollY > 40 ? 'blur(16px)' : 'none',
-        borderBottom: scrollY > 40 ? '1px solid rgba(168,255,62,0.08)' : '1px solid transparent',
-        transition: 'all 0.3s ease',
-      }}>
-        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: isMobile ? '20px' : '24px', letterSpacing: '-0.5px' }}>
-          Taski<span style={{ color: '#A8FF3E' }}>vo</span>
+      {/* NAV */}
+      <nav className="landing-nav">
+        <span className="landing-nav-brand">⚡ Taskivo</span>
+        <div className="landing-nav-links">
+          <a onClick={function () { navigate('blog'); }}>Blog</a>
+          <a href="#features">How it Works</a>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={function () { setAuthMode('login'); navigate('auth'); }}
-            style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: isMobile ? '8px 16px' : '10px 22px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
-          >
-            Log in
-          </button>
-          <button
-            onClick={function () { setAuthMode('register'); navigate('auth'); }}
-            style={{ background: '#A8FF3E', color: '#0D0D14', border: 'none', padding: isMobile ? '8px 16px' : '10px 22px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
-          >
-            Sign up
-          </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="lp-btn lp-btn-outline lp-btn-sm" onClick={goLogin}>Log in</button>
+          <button className="lp-btn lp-btn-primary lp-btn-sm" onClick={goRegister}>Get Started</button>
         </div>
       </nav>
 
-      {/* ── HERO ── */}
-      <section style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: isMobile ? '120px 24px 80px' : '160px 48px 100px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
-          width: isMobile ? '300px' : '600px',
-          height: isMobile ? '300px' : '600px',
-          background: 'radial-gradient(circle, rgba(168,255,62,0.12) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-
-        <div style={pill}>⚡ Earn real cash online</div>
-
-        {/* WAS h1, NOW div */}
-        <div style={{
-          fontFamily: "'Syne', sans-serif",
-          fontSize: isSmall ? '36px' : isMobile ? '44px' : '80px',
-          fontWeight: 800,
-          lineHeight: 1.05,
-          letterSpacing: '-2px',
-          marginBottom: '20px',
-          maxWidth: '900px',
-        }}>
-          Complete tasks.<br />
-          <span style={{ color: '#A8FF3E' }}>Get paid.</span>
-        </div>
-
-        <p style={{ ...subText, textAlign: 'center', margin: '0 auto 40px', fontSize: isSmall ? '15px' : isMobile ? '16px' : '19px' }}>
-          Taskivo connects earners who complete short online tasks with creators who want real engagement — YouTube views, article reads, and more.
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px', width: isMobile ? '100%' : 'auto', maxWidth: isMobile ? '320px' : 'none' }}>
-          <button
-            onClick={function () { setAuthMode('register'); navigate('auth'); }}
-            style={{ ...btnPrimary, width: isMobile ? '100%' : 'auto' }}
-            onMouseOver={function (e) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(168,255,62,0.35)'; }}
-            onMouseOut={function (e) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 32px rgba(168,255,62,0.25)'; }}
-          >
-            Start Earning Free →
-          </button>
-          <button
-            onClick={function () { setAuthMode('register'); navigate('auth'); }}
-            style={{ ...btnSecondary, width: isMobile ? '100%' : 'auto' }}
-            onMouseOver={function (e) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; }}
-            onMouseOut={function (e) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; }}
-          >
-            Post a Task
-          </button>
-        </div>
-
-        <div style={{ marginTop: '48px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <div style={{ display: 'flex' }}>
-            {['🇳🇬','🇬🇭','🇰🇪','🇿🇦','🇺🇬'].map(function (flag, i) {
-              return (
-                <div key={i} style={{
-                  width: '32px', height: '32px', borderRadius: '50%',
-                  background: '#1a1a24', border: '2px solid #0D0D14',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '16px', marginLeft: i === 0 ? 0 : '-8px',
-                }}>
-                  {flag}
-                </div>
-              );
-            })}
+      {/* HERO */}
+      <section style={{ background: 'linear-gradient(180deg, #fff 0%, #F9FFF5 100%)', borderBottom: '1px solid #E5E7EB' }}>
+        <div className="lp-hero">
+          <div>
+            <div className="lp-hero-eyebrow">⚡ Earn While You Watch</div>
+            <div className="lp-hero-title">
+              Real Tasks.<br />Real <span>Rewards</span>.<br />Real Insights.
+            </div>
+            <div className="lp-hero-sub">
+              Taskivo connects curious viewers with creators who want genuine feedback. Watch videos, answer questions, earn points — and get paid.
+            </div>
+            <div className="lp-hero-actions">
+              <button className="lp-btn lp-btn-primary lp-btn-xl" onClick={goRegister}>Start Earning Free →</button>
+              <button className="lp-btn lp-btn-outline lp-btn-xl" onClick={goRegister}>I'm a Creator</button>
+            </div>
+            <div style={{ display: 'flex', gap: 32, marginTop: 36, flexWrap: 'wrap' }}>
+              {[['50K+', 'Active Workers'], ['2.1M', 'Points Earned'], ['12K+', 'Tasks Completed']].map(function (item) {
+                return (
+                  <div key={item[1]}>
+                    <div style={{ fontFamily: "'Clash Display', sans-serif", fontSize: 26, fontWeight: 700, color: '#0A0A0F' }}>{item[0]}</div>
+                    <div style={{ fontSize: 12, color: '#6B7280' }}>{item[1]}</div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
-            Earners from <strong style={{ color: '#fff' }}>50+ countries</strong>
-          </span>
-        </div>
-      </section>
-
-      {/* ── STATS ── */}
-      <section ref={statsRef} style={{
-        padding: isMobile ? '60px 24px' : '80px 48px',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-      }}>
-        <div style={{
-          maxWidth: '960px', margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
-          gap: isMobile ? '32px 16px' : '0',
-        }}>
-          {[
-            { num: '50K+', label: 'Tasks Completed' },
-            { num: '12K+', label: 'Active Earners' },
-            { num: '$18K+', label: 'Paid Out' },
-            { num: '50+', label: 'Countries' },
-          ].map(function (stat, i) {
-            return (
-              <div key={i} style={{ textAlign: 'center', borderRight: (!isMobile && i < 3) ? '1px solid rgba(255,255,255,0.07)' : 'none', padding: '0 24px' }}>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: isSmall ? '30px' : isMobile ? '36px' : '44px', fontWeight: 800, color: '#A8FF3E', letterSpacing: '-1px' }}>
-                  {stat.num}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px', marginTop: '4px', fontWeight: 500 }}>
-                  {stat.label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section style={{ padding: isMobile ? '72px 24px' : '100px 48px', maxWidth: '960px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <div style={pill}>How it works</div>
-          {/* WAS h2, NOW div */}
-          <div style={sectionLabel}>Two sides. One platform.</div>
-          <p style={{ ...subText, margin: '0 auto' }}>Whether you want to earn or grow your brand, Taskivo is built for you.</p>
-        </div>
-
-        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', maxWidth: '320px', margin: '0 auto 48px', border: '1px solid rgba(255,255,255,0.07)' }}>
-          {['earner', 'creator'].map(function (tab) {
-            return (
-              <button
-                key={tab}
-                onClick={function () { setActiveTab(tab); }}
-                style={{
-                  flex: 1, padding: '10px 0', borderRadius: '9px', border: 'none', cursor: 'pointer',
-                  fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: '14px',
-                  background: activeTab === tab ? '#A8FF3E' : 'transparent',
-                  color: activeTab === tab ? '#0D0D14' : 'rgba(255,255,255,0.5)',
-                  transition: 'all 0.2s',
-                }}
-              >
-                {tab === 'earner' ? '💰 Earner' : '🎯 Creator'}
+          <div className="lp-hero-visual">
+            <div className="lp-hero-card">
+              <div className="lp-hero-card-title">📋 Available Tasks</div>
+              {MOCK_TASKS.map(function (t) {
+                return (
+                  <div className="lp-task-preview" key={t.id}>
+                    <div className="lp-task-preview-title">{t.title}</div>
+                    <div className="lp-task-preview-meta">
+                      <span>⏱ {t.requiredTime}s watch</span>
+                      <span className="lp-task-preview-reward">+{t.reward} pts</span>
+                      <span>{t.totalSlots - t.completedSlots} slots left</span>
+                    </div>
+                    <div className="lp-progress">
+                      <div className="lp-progress-bar" style={{ width: ((t.completedSlots / t.totalSlots) * 100) + '%' }} />
+                    </div>
+                  </div>
+                );
+              })}
+              <button className="lp-btn lp-btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 4 }} onClick={goRegister}>
+                View All Tasks →
               </button>
-            );
-          })}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px' }}>
-          {(activeTab === 'earner'
-            ? [
-                { icon: '📋', title: 'Pick a task', desc: 'Browse YouTube videos, articles, or blog tasks that match your interests.' },
-                { icon: '✅', title: 'Complete it', desc: 'Watch, read, or engage — then answer a quick quiz to confirm.' },
-                { icon: '💸', title: 'Withdraw cash', desc: "Cash out via mobile money, bank transfer, or PayPal when you're ready." },
-              ]
-            : [
-                { icon: '🚀', title: 'Post your task', desc: 'Set a reward, number of slots, and what you need earners to do.' },
-                { icon: '👥', title: 'Earners engage', desc: 'Real people from around the world complete your task.' },
-                { icon: '📈', title: 'See results', desc: 'Track completions and grow your channel or platform organically.' },
-              ]
-          ).map(function (step, i) {
-            return (
-              <div key={i} style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: '16px',
-                padding: isMobile ? '24px' : '28px',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-                onMouseOver={function (e) { e.currentTarget.style.borderColor = 'rgba(168,255,62,0.25)'; }}
-                onMouseOut={function (e) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
-              >
-                <div style={{ fontSize: '28px', marginBottom: '16px' }}>{step.icon}</div>
-                <div style={{ position: 'absolute', top: '20px', right: '20px', fontFamily: "'Syne', sans-serif", fontSize: '48px', fontWeight: 800, color: 'rgba(255,255,255,0.04)' }}>
-                  {i + 1}
-                </div>
-                {/* WAS h3, NOW div */}
-                <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '18px', marginBottom: '10px' }}>{step.title}</div>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>{step.desc}</p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── TASK TYPES ── */}
-      <section style={{ padding: isMobile ? '72px 24px' : '100px 48px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <div style={pill}>Task types</div>
-            {/* WAS h2, NOW div */}
-            <div style={sectionLabel}>Tasks that pay</div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px' }}>
-            {[
-              { icon: '▶️', color: '#FF4444', title: 'YouTube Tasks', desc: 'Watch videos, subscribe to channels, and earn bonus points for engaging.', badge: 'Most popular' },
-              { icon: '📰', color: '#A8FF3E', title: 'Article Tasks', desc: 'Read blog posts and articles, then answer simple comprehension questions.', badge: 'Coming soon' },
-              { icon: '✍️', color: '#4A9EFF', title: 'Writing Tasks', desc: 'Write short articles or reviews and earn higher rewards per task.', badge: 'Coming soon' },
-            ].map(function (type, i) {
-              return (
-                <div key={i} style={{
-                  borderRadius: '16px',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  padding: isMobile ? '24px' : '28px',
-                  background: 'rgba(13,13,20,0.8)',
-                  transition: 'transform 0.2s, border-color 0.2s',
-                }}
-                  onMouseOver={function (e) { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(168,255,62,0.2)'; }}
-                  onMouseOut={function (e) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: type.color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>
-                      {type.icon}
-                    </div>
-                    <span style={{ background: i === 0 ? 'rgba(168,255,62,0.12)' : 'rgba(255,255,255,0.06)', color: i === 0 ? '#A8FF3E' : 'rgba(255,255,255,0.4)', border: '1px solid ' + (i === 0 ? 'rgba(168,255,62,0.2)' : 'rgba(255,255,255,0.1)'), borderRadius: '100px', padding: '3px 10px', fontSize: '11px', fontWeight: 600 }}>
-                      {type.badge}
-                    </span>
-                  </div>
-                  {/* WAS h3, NOW div */}
-                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '18px', marginBottom: '10px' }}>{type.title}</div>
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>{type.desc}</p>
-                </div>
-              );
-            })}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── WHY TASKIVO ── */}
-      <section style={{ padding: isMobile ? '72px 24px' : '100px 48px', maxWidth: '960px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <div style={pill}>Why Taskivo</div>
-          {/* WAS h2, NOW div */}
-          <div style={sectionLabel}>Built different</div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: '16px' }}>
+      {/* FEATURES */}
+      <section className="lp-features-section" id="features">
+        <div className="lp-section-label">Platform Features</div>
+        <div className="lp-section-title">Everything You Need to Earn & Grow</div>
+        <div className="lp-section-sub">A complete ecosystem where meaningful engagement is rewarded and creators get real data.</div>
+        <div className="lp-features-grid">
           {[
-            { icon: '🌍', title: 'Global', desc: '50+ countries supported' },
-            { icon: '⚡', title: 'Instant', desc: 'Points credited immediately' },
-            { icon: '🔒', title: 'Secure', desc: 'Verified tasks only' },
-            { icon: '📱', title: 'Mobile first', desc: 'Works great on any phone' },
-          ].map(function (feat, i) {
+            { icon: '▶', title: 'Watch & Earn', desc: 'Complete video tasks with enforced watch timers. Points are awarded only after verified engagement — no shortcuts.' },
+            { icon: '🧠', title: 'Smart Questions', desc: 'Answer comprehension questions, rate content, or provide written feedback. Every task validates real watching.' },
+            { icon: '💰', title: 'Points → Cash', desc: 'Accumulate points and withdraw via your preferred method. Transparent conversion rates, admin-approved.' },
+            { icon: '🛡️', title: 'Anti-Cheat Built In', desc: 'Tab-switch detection, IP tracking, randomized questions, and daily limits keep the platform fair for everyone.' },
+            { icon: '📊', title: 'Creator Analytics', desc: 'Creators get real completion stats, audience feedback scores, and engagement breakdowns — not vanity metrics.' },
+            { icon: '✍️', title: 'SEO Blog', desc: 'A rich blog covering YouTube growth, content strategy, and monetization — driving organic traffic and trust.' },
+          ].map(function (f) {
             return (
-              <div key={i} style={{ textAlign: 'center', padding: isMobile ? '20px 12px' : '28px 16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div style={{ fontSize: isMobile ? '28px' : '32px', marginBottom: '12px' }}>{feat.icon}</div>
-                {/* WAS h3, NOW div */}
-                <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: isMobile ? '14px' : '16px', marginBottom: '6px' }}>{feat.title}</div>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', lineHeight: 1.5 }}>{feat.desc}</div>
+              <div className="lp-feature-card" key={f.title}>
+                <div className="lp-feature-icon">{f.icon}</div>
+                <div className="lp-feature-title">{f.title}</div>
+                <div className="lp-feature-desc">{f.desc}</div>
               </div>
             );
           })}
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ── */}
-      <section style={{ padding: isMobile ? '72px 24px' : '100px 48px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <div style={pill}>Reviews</div>
-            {/* WAS h2, NOW div */}
-            <div style={sectionLabel}>Earners love it</div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px' }}>
-            {[
-              { name: 'Amara O.', country: '🇳🇬 Nigeria', quote: 'I withdrew my first ₦5,000 within a week. Tasks are easy and payouts are real.', avatar: 'AO' },
-              { name: 'Kofi M.', country: '🇬🇭 Ghana', quote: 'Finally a platform that actually pays. I use it every day during my lunch break.', avatar: 'KM' },
-              { name: 'Fatima B.', country: '🇰🇪 Kenya', quote: 'The YouTube tasks are fun and I earn while learning. Highly recommend Taskivo.', avatar: 'FB' },
-            ].map(function (t, i) {
-              return (
-                <div key={i} style={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', padding: isMobile ? '24px' : '28px', background: 'rgba(13,13,20,0.6)' }}>
-                  <div style={{ color: '#A8FF3E', fontSize: '20px', marginBottom: '16px' }}>★★★★★</div>
-                  <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '15px', lineHeight: 1.65, margin: '0 0 20px', fontStyle: 'italic' }}>
-                    "{t.quote}"
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(168,255,62,0.15)', border: '1px solid rgba(168,255,62,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A8FF3E', fontWeight: 700, fontSize: '12px' }}>
-                      {t.avatar}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '14px' }}>{t.name}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{t.country}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FINAL CTA ── */}
-      <section style={{ padding: isMobile ? '80px 24px' : '120px 48px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: isMobile ? '300px' : '500px', height: isMobile ? '300px' : '500px', background: 'radial-gradient(circle, rgba(168,255,62,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
-          <div style={pill}>Get started today</div>
-          {/* WAS h2, NOW div */}
-          <div style={{ ...sectionLabel, fontSize: isSmall ? '32px' : isMobile ? '40px' : '56px' }}>
-            Ready to start earning?
-          </div>
-          <p style={{ ...subText, margin: '0 auto 40px', textAlign: 'center' }}>
-            Join thousands of earners making real money completing simple tasks from their phone.
-          </p>
-          <button
-            onClick={function () { setAuthMode('register'); navigate('auth'); }}
-            style={{ ...btnPrimary, fontSize: isMobile ? '16px' : '18px', padding: isMobile ? '16px 36px' : '18px 48px' }}
-            onMouseOver={function (e) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 48px rgba(168,255,62,0.4)'; }}
-            onMouseOut={function (e) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 32px rgba(168,255,62,0.25)'; }}
-          >
-            Create Free Account →
-          </button>
-          <p style={{ marginTop: '16px', color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>No credit card. No hidden fees. Free forever.</p>
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.07)', padding: isMobile ? '32px 24px' : '40px 48px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-        <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: '18px' }}>
-          Taski<span style={{ color: '#A8FF3E' }}>vo</span>
-        </div>
-        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', textAlign: 'center' }}>
-          © 2025 Taskivo. All rights reserved.
-        </div>
-        <div style={{ display: 'flex', gap: '24px' }}>
-          {['Terms', 'Privacy', 'Support'].map(function (link) {
+      {/* HOW IT WORKS */}
+      <section className="lp-how-section">
+        <div className="lp-section-label" style={{ color: 'rgba(168,255,62,.7)' }}>How It Works</div>
+        <div className="lp-section-title">From Zero to Earning in Minutes</div>
+        <div className="lp-section-sub">A simple flow designed for real engagement — not gaming the system.</div>
+        <div className="lp-steps-grid">
+          {[
+            { n: '1', title: 'Register Free', desc: 'Create your account with email. No payment needed to start.' },
+            { n: '2', title: 'Pick a Task', desc: 'Browse available video tasks filtered by topic, reward, and duration.' },
+            { n: '3', title: 'Watch & Answer', desc: 'Watch the full video (timer enforced), then answer questions or give feedback.' },
+            { n: '4', title: 'Earn & Withdraw', desc: 'Points land in your wallet instantly. Request withdrawal when you hit the threshold.' },
+          ].map(function (s) {
             return (
-              <span key={link} style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', cursor: 'pointer' }}
-                onMouseOver={function (e) { e.currentTarget.style.color = '#A8FF3E'; }}
-                onMouseOut={function (e) { e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}
-              >
-                {link}
-              </span>
+              <div className="lp-step-card" key={s.n}>
+                <div className="lp-step-num">{s.n}</div>
+                <div className="lp-step-title">{s.title}</div>
+                <div className="lp-step-desc">{s.desc}</div>
+              </div>
             );
           })}
         </div>
+      </section>
+
+      {/* CTA */}
+      <section className="lp-cta-section">
+        <div className="lp-cta-inner">
+          <div className="lp-cta-title">Ready to Start Earning?</div>
+          <div className="lp-cta-sub">Join 50,000+ workers already earning on Taskivo. Free to join, real rewards, no spam.</div>
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button className="lp-btn lp-btn-dark lp-btn-xl" onClick={goRegister}>Create Free Account</button>
+            <button className="lp-btn lp-btn-outline lp-btn-xl" style={{ background: 'rgba(255,255,255,.5)' }} onClick={goLogin}>I Have an Account</button>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="lp-footer">
+        <div className="lp-footer-grid">
+          <div>
+            <div className="lp-footer-brand">⚡ Taskivo</div>
+            <div className="lp-footer-desc">A global task-based engagement platform connecting workers with creators for meaningful video feedback and insights.</div>
+          </div>
+          {[
+            { title: 'Platform', links: ['How it Works', 'Browse Tasks', 'Creator Hub', 'Pricing'] },
+            { title: 'Company', links: ['About Us', 'Blog', 'Careers', 'Contact'] },
+            { title: 'Legal', links: ['Privacy Policy', 'Terms of Service', 'Cookie Policy'] },
+          ].map(function (col) {
+            return (
+              <div key={col.title}>
+                <div className="lp-footer-col-title">{col.title}</div>
+                <ul className="lp-footer-col-links">
+                  {col.links.map(function (l) {
+                    return <li key={l}><a href="#">{l}</a></li>;
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+        <div className="lp-footer-bottom">© 2025 Taskivo.online — All rights reserved.</div>
       </footer>
 
     </div>
