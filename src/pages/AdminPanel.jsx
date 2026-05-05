@@ -556,13 +556,13 @@ function TasksPanel({ showToast }) {
 function WithdrawalsPanel({ showToast }) {
   var [withdrawals, setWithdrawals] = useState([]);
   var [loading, setLoading] = useState(true);
-  var [filter, setFilter] = useState("all");
+  var [filter, setFilter] = useState("pending");
 
   useEffect(function () {
     async function load() {
       var result = await supabase
         .from("withdrawals")
-        .select("*, profiles(full_name, email)")
+        .select("*, profiles(full_name, email, country)")
         .order("created_at", { ascending: false });
       if (result.data) setWithdrawals(result.data);
       setLoading(false);
@@ -582,6 +582,8 @@ function WithdrawalsPanel({ showToast }) {
     ? withdrawals
     : withdrawals.filter(function (w) { return w.status === filter; });
 
+  var pendingCount = withdrawals.filter(function (w) { return w.status === "pending"; }).length;
+
   if (loading) return <Spinner />;
 
   return (
@@ -589,6 +591,24 @@ function WithdrawalsPanel({ showToast }) {
       <div style={S.pageTitle}>Withdrawals</div>
       <div style={S.pageSub}>Review and process earner withdrawal requests.</div>
 
+      {/* Pending alert */}
+      {pendingCount > 0 && (
+        <div style={{
+          background: "rgba(245,158,11,0.08)",
+          border: "1px solid rgba(245,158,11,0.25)",
+          borderLeft: "4px solid #F59E0B",
+          borderRadius: 10,
+          padding: "12px 16px",
+          marginBottom: 20,
+          fontSize: 13,
+          fontWeight: 600,
+          color: "#D97706",
+        }}>
+          ⚠️ {pendingCount} pending withdrawal{pendingCount > 1 ? "s" : ""} need your attention.
+        </div>
+      )}
+
+      {/* Filters */}
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         {["all", "pending", "approved", "rejected"].map(function (f) {
           return (
@@ -602,19 +622,35 @@ function WithdrawalsPanel({ showToast }) {
         })}
       </div>
 
-      <Table headers={["User", "Points", "Method", "Account", "Country", "Status", "Actions"]}>
+      <Table headers={["User", "Points", "Pay Out", "Method", "Account Details", "Status", "Actions"]}>
         {filtered.map(function (w) {
           var userName = w.profiles
             ? (w.profiles.full_name || w.profiles.email)
             : "Unknown";
+          var userEmail = w.profiles ? w.profiles.email : "";
           var date = new Date(w.created_at).toLocaleDateString("en-GB", {
             day: "numeric", month: "short", year: "numeric",
           });
+
+          // Calculate payout amount
+          var TOP_TIER = ["US", "GB", "CA", "AU"];
+          var country = w.country || (w.profiles ? w.profiles.country : "OTHER") || "OTHER";
+          var ratePerPoint = TOP_TIER.includes(country) ? (0.10 / 60) : (0.03 / 60);
+          var symbol = country === "GB" ? "£" : "$";
+          var payout = w.estimated_value
+            ? (parseFloat(w.estimated_value)).toFixed(2)
+            : ((w.points || 0) * ratePerPoint).toFixed(2);
+
           return (
             <TR key={w.id}>
               <TD>
-                <div style={{ fontWeight: 600, fontSize: 14, color: "#0D0D14" }}>{userName}</div>
-                <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 1 }}>{date}</div>
+                <div style={{ fontWeight: 600, fontSize: 14, color: "#0D0D14" }}>
+                  {userName}
+                </div>
+                <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 1 }}>
+                  {userEmail}
+                </div>
+                <div style={{ fontSize: 11, color: "#9CA3AF" }}>{date}</div>
               </TD>
               <TD>
                 <span style={{
@@ -629,18 +665,47 @@ function WithdrawalsPanel({ showToast }) {
                   {(w.points || 0).toLocaleString()} pts
                 </span>
               </TD>
-              <TD>{w.method || "—"}</TD>
-              <TD muted small>{w.account_details || "—"}</TD>
-              <TD muted>{w.country || "—"}</TD>
+              <TD>
+                <span style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: "#16A34A",
+                  fontFamily: "var(--font-body)",
+                }}>
+                  {symbol}{payout}
+                </span>
+              </TD>
+              <TD bold>{w.method || "—"}</TD>
+              <TD>
+                <div style={{
+                  fontSize: 12,
+                  color: "#374151",
+                  maxWidth: 160,
+                  wordBreak: "break-all",
+                  lineHeight: 1.5,
+                }}>
+                  {w.account_details || "—"}
+                </div>
+              </TD>
               <TD><Badge type={w.status || "pending"} /></TD>
               <TD>
                 {w.status === "pending" ? (
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <ActionBtn label="Approve" variant="approve" onClick={function () { updateStatus(w.id, "approved"); }} />
-                    <ActionBtn label="Reject" variant="reject" onClick={function () { updateStatus(w.id, "rejected"); }} />
+                  <div style={{ display: "flex", gap: 6, flexDirection: "column" }}>
+                    <ActionBtn
+                      label="✓ Approve"
+                      variant="approve"
+                      onClick={function () { updateStatus(w.id, "approved"); }}
+                    />
+                    <ActionBtn
+                      label="✕ Reject"
+                      variant="reject"
+                      onClick={function () { updateStatus(w.id, "rejected"); }}
+                    />
                   </div>
                 ) : (
-                  <span style={{ fontSize: 12, color: "#9CA3AF" }}>Processed</span>
+                  <span style={{ fontSize: 12, color: "#9CA3AF" }}>
+                    {w.status === "approved" ? "✓ Paid" : "✕ Rejected"}
+                  </span>
                 )}
               </TD>
             </TR>
@@ -648,8 +713,13 @@ function WithdrawalsPanel({ showToast }) {
         })}
         {filtered.length === 0 && (
           <tr>
-            <td colSpan={7} style={{ padding: "40px 16px", textAlign: "center", color: "#9CA3AF", fontSize: 14 }}>
-              No withdrawals found.
+            <td colSpan={7} style={{
+              padding: "40px 16px",
+              textAlign: "center",
+              color: "#9CA3AF",
+              fontSize: 14,
+            }}>
+              No {filter === "all" ? "" : filter} withdrawals found.
             </td>
           </tr>
         )}
