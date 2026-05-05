@@ -272,6 +272,33 @@ const CSS = `
     .page { padding: 20px 16px; }
     .admin-overview { grid-template-columns: 1fr 1fr; }
   }
+  @media (max-width: 600px) {
+    .page { padding: 16px; }
+    .hero { grid-template-columns: 1fr; gap: 32px; padding: 40px 4% 60px; }
+    .auth-page { grid-template-columns: 1fr; }
+    .auth-left { display: none; }
+    .auth-right { padding: 40px 20px; }
+    .features-grid { grid-template-columns: 1fr; gap: 14px; }
+    .steps-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
+    .stat-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-row { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+    .landing-nav { height: 56px; padding: 0 4%; }
+    .landing-nav-brand { font-size: 18px; }
+    .landing-nav-links { display: none; }
+    .hero-title { font-size: 32px; }
+    .stat-value { font-size: 24px; }
+    .wallet-balance { font-size: 36px; }
+    .modal { padding: 20px; }
+    .tabs { overflow-x: auto; }
+    .table-wrap { font-size: 13px; }
+    th, td { padding: 10px 10px; }
+    .toast-container { bottom: 80px; right: 12px; left: 12px; }
+    .toast { max-width: 100%; }
+  }
+`;
+
+export default CSS;
 `;
 
 export default CSS;
