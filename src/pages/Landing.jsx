@@ -4,11 +4,18 @@ const C = {
   ink: '#0D0D14',
   lime: '#A8FF3E',
   limeDim: 'rgba(168,255,62,0.12)',
-  limeBorder: 'rgba(168,255,62,0.2)',
   white: '#ffffff',
   off: '#F7F8FA',
   slate: '#6B7280',
   line: '#EBEBEB',
+};
+
+// ✅ MOBILE CONTAINER (KEY FIX)
+const container = {
+  width: '100%',
+  maxWidth: 480,
+  margin: '0 auto',
+  padding: '0 16px'
 };
 
 export default function Landing({ navigate }) {
@@ -18,11 +25,11 @@ export default function Landing({ navigate }) {
   }, []);
 
   const features = [
-    { icon: '⏱️', name: 'Timed Watch Sessions', desc: 'Earners must watch before actions unlock.' },
-    { icon: '🧠', name: 'Anti-Cheat Quiz', desc: 'Proves real engagement.' },
-    { icon: '💸', name: 'Real Withdrawals', desc: 'Withdraw via PayPal or bank.' },
-    { icon: '🌍', name: 'Global Pool', desc: 'Earners worldwide.' },
-    { icon: '📊', name: 'Reports', desc: 'Track real performance.' },
+    { icon: '⏱️', name: 'Timed Watch', desc: 'Watch before actions unlock.' },
+    { icon: '🧠', name: 'Quiz Proof', desc: 'Real engagement only.' },
+    { icon: '💸', name: 'Withdraw', desc: 'Get paid easily.' },
+    { icon: '🌍', name: 'Global', desc: 'Users worldwide.' },
+    { icon: '📊', name: 'Reports', desc: 'Track performance.' },
     { icon: '🛡️', name: 'Verified', desc: 'Manual review system.' },
   ];
 
@@ -72,41 +79,39 @@ export default function Landing({ navigate }) {
       </nav>
 
       {/* HERO */}
-      <div style={{
-        padding: '40px 16px',
-        textAlign: 'center',
-        background: C.ink
-      }}>
-        <h1 style={{
-          color: 'white',
-          fontSize: 28,
-          marginBottom: 10
-        }}>
-          Complete Tasks.<br />
-          <span style={{ color: C.lime }}>Get Paid.</span>
-        </h1>
+      <div style={{ background: C.ink }}>
+        <div style={{ ...container, paddingTop: 40, paddingBottom: 40, textAlign: 'center' }}>
+          <h1 style={{
+            color: 'white',
+            fontSize: 28,
+            marginBottom: 10
+          }}>
+            Complete Tasks.<br />
+            <span style={{ color: C.lime }}>Get Paid.</span>
+          </h1>
 
-        <p style={{
-          color: '#aaa',
-          fontSize: 14,
-          marginBottom: 20
-        }}>
-          Earn money by completing simple tasks.
-        </p>
+          <p style={{
+            color: '#aaa',
+            fontSize: 14,
+            marginBottom: 20
+          }}>
+            Earn money by completing simple tasks.
+          </p>
 
-        <button onClick={function () { navigate('auth'); }} style={{
-          background: C.lime,
-          border: 'none',
-          padding: '10px 16px',
-          borderRadius: 8,
-          fontWeight: 600
-        }}>
-          Start Earning
-        </button>
+          <button onClick={function () { navigate('auth'); }} style={{
+            background: C.lime,
+            border: 'none',
+            padding: '10px 16px',
+            borderRadius: 8,
+            fontWeight: 600
+          }}>
+            Start Earning
+          </button>
+        </div>
       </div>
 
       {/* FEATURES */}
-      <div style={{ padding: 16 }}>
+      <div style={{ ...container, paddingTop: 20 }}>
         <h2 style={{ marginBottom: 12 }}>Features</h2>
 
         <div style={{
@@ -132,10 +137,7 @@ export default function Landing({ navigate }) {
       </div>
 
       {/* CTA */}
-      <div style={{
-        padding: 20,
-        textAlign: 'center'
-      }}>
+      <div style={{ ...container, textAlign: 'center', paddingTop: 30 }}>
         <button onClick={function () { navigate('auth'); }} style={{
           background: C.ink,
           color: C.lime,
