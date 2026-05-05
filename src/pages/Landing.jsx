@@ -22,7 +22,7 @@ export default function Landing({ navigate, setAuthMode }) {
     const style = document.createElement('style');
     style.id = 'taskivo-styles';
     style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
       @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
       .lp-hero-title { font-size: 56px; letter-spacing: -2px; line-height: 1.06; }
@@ -163,7 +163,7 @@ export default function Landing({ navigate, setAuthMode }) {
         borderBottom: `1px solid ${C.line}`,
       }}>
         <div className="lp-nav-brand" style={{
-          fontFamily: "'Syne', sans-serif",
+          fontFamily: "'DM Sans', sans-serif",
           fontWeight: 800, color: C.ink, flex: 1, letterSpacing: '-0.5px',
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
@@ -206,7 +206,7 @@ export default function Landing({ navigate, setAuthMode }) {
             Live — Tasks available now
           </div>
           <h1 className="lp-hero-title" style={{
-            fontFamily: "'Syne', sans-serif",
+            fontFamily: "'DM Sans', sans-serif",
             fontWeight: 800,
             color: C.white, marginBottom: 14,
           }}>
@@ -243,7 +243,7 @@ export default function Landing({ navigate, setAuthMode }) {
                   flex: 1, textAlign: 'center',
                   borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
                 }}>
-                  <div className="lp-stat-num" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.white }}>{stat.num}</div>
+                  <div className="lp-stat-num" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.white }}>{stat.num}</div>
                   <div className="lp-stat-label" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 3, fontWeight: 400 }}>{stat.label}</div>
                 </div>
               );
@@ -256,7 +256,7 @@ export default function Landing({ navigate, setAuthMode }) {
       <section className="lp-section-pad" style={{ background: C.white }}>
         <div style={{ maxWidth: 480, marginBottom: 28 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: C.lime, marginBottom: 8 }}>Who Is Taskivo For?</div>
-          <h2 className="lp-section-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 10 }}>Two sides.<br />One platform.</h2>
+          <h2 className="lp-section-title" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 10 }}>Two sides.<br />One platform.</h2>
           <p className="lp-section-sub" style={{ color: C.slate, lineHeight: 1.7 }}>
             Whether you want to earn money completing tasks or grow your YouTube channel with verified engagement — Taskivo was built for you.
           </p>
@@ -274,7 +274,7 @@ export default function Landing({ navigate, setAuthMode }) {
               <div key={ci} className="lp-audience-card-pad" style={{ background: C.white, position: 'relative' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: C.lime }}></div>
                 <span style={{ display: 'inline-block', background: C.limeDim, color: '#4a7a00', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 6, marginBottom: 14 }}>{card.tag}</span>
-                <div className="lp-audience-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, marginBottom: 8, whiteSpace: 'pre-line' }}>{card.title}</div>
+                <div className="lp-audience-title" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.ink, marginBottom: 8, whiteSpace: 'pre-line' }}>{card.title}</div>
                 <p className="lp-audience-desc" style={{ color: C.slate, lineHeight: 1.7 }}>{card.desc}</p>
                 <ul style={{ listStyle: 'none', padding: 0, marginBottom: 18 }}>
                   {card.steps.map(function (step, i) {
@@ -296,14 +296,14 @@ export default function Landing({ navigate, setAuthMode }) {
       {/* FEATURES */}
       <section className="lp-section-pad" style={{ background: C.off }}>
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: C.lime, marginBottom: 8 }}>Platform Features</div>
-        <h2 className="lp-section-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 10 }}>Built for trust.<br />Designed for scale.</h2>
+        <h2 className="lp-section-title" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 10 }}>Built for trust.<br />Designed for scale.</h2>
         <p className="lp-section-sub" style={{ color: C.slate, lineHeight: 1.7, maxWidth: 440 }}>Every feature exists to guarantee genuine engagement — not gaming the system.</p>
         <div className="lp-features-grid" style={{ display: 'grid' }}>
           {features.map(function (f, i) {
             return (
               <div key={i} className="lp-feature-card-pad" style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.line}` }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: C.limeDim, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, marginBottom: 10 }}>{f.icon}</div>
-                <div className="lp-feature-name" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, color: C.ink, marginBottom: 5 }}>{f.name}</div>
+                <div className="lp-feature-name" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: C.ink, marginBottom: 5 }}>{f.name}</div>
                 <p className="lp-feature-desc" style={{ color: C.slate, lineHeight: 1.6 }}>{f.desc}</p>
               </div>
             );
@@ -314,7 +314,7 @@ export default function Landing({ navigate, setAuthMode }) {
       {/* TESTIMONIALS */}
       <section className="lp-section-pad" style={{ background: C.ink }}>
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(168,255,62,0.5)', marginBottom: 8 }}>What People Say</div>
-        <h2 className="lp-section-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.white, lineHeight: 1.1, marginBottom: 10 }}>Trusted worldwide.</h2>
+        <h2 className="lp-section-title" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.white, lineHeight: 1.1, marginBottom: 10 }}>Trusted worldwide.</h2>
         <p className="lp-section-sub" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, maxWidth: 440 }}>Real people. Real results. Real money.</p>
         <div className="lp-proof-grid" style={{ display: 'grid' }}>
           {testimonials.map(function (t, i) {
@@ -338,7 +338,7 @@ export default function Landing({ navigate, setAuthMode }) {
       {/* CTA */}
       <section className="lp-cta-pad" style={{ background: C.white, borderTop: `1px solid ${C.line}`, textAlign: 'center' }}>
         <div style={{ display: 'inline-block', background: C.limeDim, color: '#3d6600', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 6, marginBottom: 14 }}>FREE TO JOIN</div>
-        <h2 className="lp-cta-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 14 }}>
+        <h2 className="lp-cta-title" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 14 }}>
           Your next payout is<br />
           <span style={{ color: C.lime }}>one task away.</span>
         </h2>
@@ -360,7 +360,7 @@ export default function Landing({ navigate, setAuthMode }) {
       <footer className="lp-footer-pad" style={{ background: C.ink, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="lp-footer-grid" style={{ display: 'grid', marginBottom: 40 }}>
           <div className="lp-footer-brand-span">
-            <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.white, fontSize: 20, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.white, fontSize: 20, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.lime, display: 'inline-block' }}></span>
               Taskivo
             </div>
