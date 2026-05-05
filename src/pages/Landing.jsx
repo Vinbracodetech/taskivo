@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 
-export default function Landing() {
-  const navigate = useNavigate();
+export default function Landing({ navigate, setAuthMode }) {
   const [scrollY, setScrollY] = useState(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [activeTab, setActiveTab] = useState('earner');
@@ -31,8 +29,6 @@ export default function Landing() {
 
   var isMobile = windowWidth < 768;
   var isSmall = windowWidth < 480;
-
-  // ─── SHARED STYLES ───────────────────────────────────────────────────────
 
   var pill = {
     display: 'inline-flex',
@@ -93,12 +89,9 @@ export default function Landing() {
     transition: 'border-color 0.2s',
   };
 
-  // ─── RENDER ──────────────────────────────────────────────────────────────
-
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: '#0D0D14', color: '#fff', overflowX: 'hidden', minHeight: '100vh' }}>
 
-      {/* Google Fonts */}
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
 
       {/* ── NAV ── */}
@@ -116,13 +109,13 @@ export default function Landing() {
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
-            onClick={function () { navigate('/auth'); }}
+            onClick={function () { setAuthMode('login'); navigate('auth'); }}
             style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: isMobile ? '8px 16px' : '10px 22px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
           >
             Log in
           </button>
           <button
-            onClick={function () { navigate('/auth'); }}
+            onClick={function () { setAuthMode('register'); navigate('auth'); }}
             style={{ background: '#A8FF3E', color: '#0D0D14', border: 'none', padding: isMobile ? '8px 16px' : '10px 22px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
           >
             Sign up
@@ -142,7 +135,6 @@ export default function Landing() {
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Background glow */}
         <div style={{
           position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
           width: isMobile ? '300px' : '600px',
@@ -150,20 +142,11 @@ export default function Landing() {
           background: 'radial-gradient(circle, rgba(168,255,62,0.12) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
+
+        <div style={pill}>⚡ Earn real cash online</div>
+
+        {/* WAS h1, NOW div */}
         <div style={{
-          position: 'absolute', bottom: '10%', right: isMobile ? '-50px' : '5%',
-          width: '200px', height: '200px',
-          background: 'radial-gradient(circle, rgba(168,255,62,0.07) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-
-        {/* Pill badge */}
-        <div style={pill}>
-          <span>⚡</span> Earn real cash online
-        </div>
-
-        {/* Headline */}
-        <h1 style={{
           fontFamily: "'Syne', sans-serif",
           fontSize: isSmall ? '36px' : isMobile ? '44px' : '80px',
           fontWeight: 800,
@@ -174,17 +157,15 @@ export default function Landing() {
         }}>
           Complete tasks.<br />
           <span style={{ color: '#A8FF3E' }}>Get paid.</span>
-        </h1>
+        </div>
 
-        {/* Sub */}
         <p style={{ ...subText, textAlign: 'center', margin: '0 auto 40px', fontSize: isSmall ? '15px' : isMobile ? '16px' : '19px' }}>
           Taskivo connects earners who complete short online tasks with creators who want real engagement — YouTube views, article reads, and more.
         </p>
 
-        {/* CTAs */}
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px', width: isMobile ? '100%' : 'auto', maxWidth: isMobile ? '320px' : 'none' }}>
           <button
-            onClick={function () { navigate('/auth'); }}
+            onClick={function () { setAuthMode('register'); navigate('auth'); }}
             style={{ ...btnPrimary, width: isMobile ? '100%' : 'auto' }}
             onMouseOver={function (e) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(168,255,62,0.35)'; }}
             onMouseOut={function (e) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 32px rgba(168,255,62,0.25)'; }}
@@ -192,7 +173,7 @@ export default function Landing() {
             Start Earning Free →
           </button>
           <button
-            onClick={function () { navigate('/auth'); }}
+            onClick={function () { setAuthMode('register'); navigate('auth'); }}
             style={{ ...btnSecondary, width: isMobile ? '100%' : 'auto' }}
             onMouseOver={function (e) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; }}
             onMouseOut={function (e) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; }}
@@ -201,7 +182,6 @@ export default function Landing() {
           </button>
         </div>
 
-        {/* Social proof strip */}
         <div style={{ marginTop: '48px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div style={{ display: 'flex' }}>
             {['🇳🇬','🇬🇭','🇰🇪','🇿🇦','🇺🇬'].map(function (flag, i) {
@@ -255,15 +235,15 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS (TABS) ── */}
+      {/* ── HOW IT WORKS ── */}
       <section style={{ padding: isMobile ? '72px 24px' : '100px 48px', maxWidth: '960px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
           <div style={pill}>How it works</div>
-          <h2 style={sectionLabel}>Two sides. One platform.</h2>
+          {/* WAS h2, NOW div */}
+          <div style={sectionLabel}>Two sides. One platform.</div>
           <p style={{ ...subText, margin: '0 auto' }}>Whether you want to earn or grow your brand, Taskivo is built for you.</p>
         </div>
 
-        {/* Tab switcher */}
         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', maxWidth: '320px', margin: '0 auto 48px', border: '1px solid rgba(255,255,255,0.07)' }}>
           {['earner', 'creator'].map(function (tab) {
             return (
@@ -284,13 +264,12 @@ export default function Landing() {
           })}
         </div>
 
-        {/* Steps */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px' }}>
           {(activeTab === 'earner'
             ? [
                 { icon: '📋', title: 'Pick a task', desc: 'Browse YouTube videos, articles, or blog tasks that match your interests.' },
                 { icon: '✅', title: 'Complete it', desc: 'Watch, read, or engage — then answer a quick quiz to confirm.' },
-                { icon: '💸', title: 'Withdraw cash', desc: 'Cash out via mobile money, bank transfer, or PayPal when you\'re ready.' },
+                { icon: '💸', title: 'Withdraw cash', desc: "Cash out via mobile money, bank transfer, or PayPal when you're ready." },
               ]
             : [
                 { icon: '🚀', title: 'Post your task', desc: 'Set a reward, number of slots, and what you need earners to do.' },
@@ -304,7 +283,6 @@ export default function Landing() {
                 border: '1px solid rgba(255,255,255,0.07)',
                 borderRadius: '16px',
                 padding: isMobile ? '24px' : '28px',
-                transition: 'border-color 0.2s',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -315,7 +293,8 @@ export default function Landing() {
                 <div style={{ position: 'absolute', top: '20px', right: '20px', fontFamily: "'Syne', sans-serif", fontSize: '48px', fontWeight: 800, color: 'rgba(255,255,255,0.04)' }}>
                   {i + 1}
                 </div>
-                <h3 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '18px', marginBottom: '10px' }}>{step.title}</h3>
+                {/* WAS h3, NOW div */}
+                <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '18px', marginBottom: '10px' }}>{step.title}</div>
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>{step.desc}</p>
               </div>
             );
@@ -328,7 +307,8 @@ export default function Landing() {
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <div style={pill}>Task types</div>
-            <h2 style={sectionLabel}>Tasks that pay</h2>
+            {/* WAS h2, NOW div */}
+            <div style={sectionLabel}>Tasks that pay</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px' }}>
             {[
@@ -355,7 +335,8 @@ export default function Landing() {
                       {type.badge}
                     </span>
                   </div>
-                  <h3 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '18px', marginBottom: '10px' }}>{type.title}</h3>
+                  {/* WAS h3, NOW div */}
+                  <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: '18px', marginBottom: '10px' }}>{type.title}</div>
                   <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>{type.desc}</p>
                 </div>
               );
@@ -368,7 +349,8 @@ export default function Landing() {
       <section style={{ padding: isMobile ? '72px 24px' : '100px 48px', maxWidth: '960px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
           <div style={pill}>Why Taskivo</div>
-          <h2 style={sectionLabel}>Built different</h2>
+          {/* WAS h2, NOW div */}
+          <div style={sectionLabel}>Built different</div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: '16px' }}>
           {[
@@ -380,6 +362,7 @@ export default function Landing() {
             return (
               <div key={i} style={{ textAlign: 'center', padding: isMobile ? '20px 12px' : '28px 16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <div style={{ fontSize: isMobile ? '28px' : '32px', marginBottom: '12px' }}>{feat.icon}</div>
+                {/* WAS h3, NOW div */}
                 <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: isMobile ? '14px' : '16px', marginBottom: '6px' }}>{feat.title}</div>
                 <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', lineHeight: 1.5 }}>{feat.desc}</div>
               </div>
@@ -393,7 +376,8 @@ export default function Landing() {
         <div style={{ maxWidth: '960px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <div style={pill}>Reviews</div>
-            <h2 style={sectionLabel}>Earners love it</h2>
+            {/* WAS h2, NOW div */}
+            <div style={sectionLabel}>Earners love it</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: '16px' }}>
             {[
@@ -428,14 +412,15 @@ export default function Landing() {
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: isMobile ? '300px' : '500px', height: isMobile ? '300px' : '500px', background: 'radial-gradient(circle, rgba(168,255,62,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
           <div style={pill}>Get started today</div>
-          <h2 style={{ ...sectionLabel, fontSize: isSmall ? '32px' : isMobile ? '40px' : '56px' }}>
+          {/* WAS h2, NOW div */}
+          <div style={{ ...sectionLabel, fontSize: isSmall ? '32px' : isMobile ? '40px' : '56px' }}>
             Ready to start earning?
-          </h2>
+          </div>
           <p style={{ ...subText, margin: '0 auto 40px', textAlign: 'center' }}>
             Join thousands of earners making real money completing simple tasks from their phone.
           </p>
           <button
-            onClick={function () { navigate('/auth'); }}
+            onClick={function () { setAuthMode('register'); navigate('auth'); }}
             style={{ ...btnPrimary, fontSize: isMobile ? '16px' : '18px', padding: isMobile ? '16px 36px' : '18px 48px' }}
             onMouseOver={function (e) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 48px rgba(168,255,62,0.4)'; }}
             onMouseOut={function (e) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 0 32px rgba(168,255,62,0.25)'; }}
@@ -457,7 +442,7 @@ export default function Landing() {
         <div style={{ display: 'flex', gap: '24px' }}>
           {['Terms', 'Privacy', 'Support'].map(function (link) {
             return (
-              <span key={link} style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', cursor: 'pointer', transition: 'color 0.2s' }}
+              <span key={link} style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', cursor: 'pointer' }}
                 onMouseOver={function (e) { e.currentTarget.style.color = '#A8FF3E'; }}
                 onMouseOut={function (e) { e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}
               >
