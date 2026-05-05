@@ -4,8 +4,6 @@ import CSS from "./styles/global.js";
 import Sidebar from "./components/Sidebar.jsx";
 import Toast from "./components/Toast.jsx";
 import useToast from "./components/useToast.js";
-import { About, Terms, Privacy } from "./pages/StaticPages.jsx";
-import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
 
 import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
@@ -16,12 +14,49 @@ import Withdraw from "./pages/Withdraw.jsx";
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
 import CreatorTasks from "./pages/CreatorTasks.jsx";
+import { About, Terms, Privacy } from "./pages/StaticPages.jsx";
+import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
 import {
   AdminOverview,
   AdminUsers as AdminUsersComp,
   AdminTasks as AdminTasksComp,
   AdminWithdrawals as AdminWithdrawalsComp,
 } from "./pages/AdminPanel.jsx";
+
+// ── GLOBAL STICKY HEADER ──
+function TopNav({ navigate, user, setAuthMode }) {
+  return (
+    <nav style={{
+      position: "sticky", top: 0, zIndex: 99,
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      height: 72, padding: "0 5%",
+      background: "var(--surface)",
+      borderBottom: "1px solid var(--line)",
+      transition: "background-color 0.3s ease"
+    }}>
+      <div style={{
+        fontFamily: "'DM Sans', sans-serif",
+        fontWeight: 800, color: "var(--ink)", fontSize: 20, letterSpacing: "-0.5px",
+        display: "flex", alignItems: "center", gap: 6, cursor: "pointer"
+      }} onClick={function() { navigate("landing"); }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--lime)", display: "inline-block" }}></span>
+        Taskivo
+      </div>
+      
+      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+        <span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 14, fontWeight: 600 }} onClick={function() { navigate("blog"); }}>Blog</span>
+        {!user ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn btn-outline btn-sm" onClick={function() { if(setAuthMode) setAuthMode("login"); navigate("auth"); }}>Log in</button>
+            <button className="btn btn-primary btn-sm" onClick={function() { if(setAuthMode) setAuthMode("register"); navigate("auth"); }}>Get Started</button>
+          </div>
+        ) : (
+          <button className="btn btn-outline btn-sm" onClick={function() { navigate(user.role === 'admin' ? 'admin-dashboard' : user.role === 'creator' ? 'creator-dashboard' : 'user-dashboard'); }}>Dashboard</button>
+        )}
+      </div>
+    </nav>
+  );
+}
 
 function ComingSoon({ title }) {
   return (
@@ -56,9 +91,7 @@ export default function App() {
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
 
   useEffect(function () {
-    // Apply the theme class to the body element
     document.body.className = "theme-" + theme;
-    // Save to local storage so it remembers next time
     localStorage.setItem("taskivo-theme", theme);
   }, [theme]);
 
@@ -91,12 +124,7 @@ export default function App() {
 
   async function loadProfile(authUser) {
     setLoading(true);
-
-    var result = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", authUser.id)
-      .single();
+    var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
 
     if (result.data) {
       setUser(result.data);
@@ -105,9 +133,7 @@ export default function App() {
       var newProfile = {
         id: authUser.id,
         email: authUser.email,
-        full_name: authUser.user_metadata
-          ? authUser.user_metadata.full_name || ""
-          : "",
+        full_name: authUser.user_metadata ? authUser.user_metadata.full_name || "" : "",
         role: "earner",
         points: 0,
       };
@@ -115,7 +141,6 @@ export default function App() {
       setUser(newProfile);
       setView("user-dashboard");
     }
-
     setLoading(false);
   }
 
@@ -141,31 +166,10 @@ export default function App() {
     return (
       <>
         <style>{CSS}</style>
-        <div style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--surface)"
-        }}>
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface)" }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 32,
-              fontWeight: 700,
-              marginBottom: 16
-            }}>
-              ⚡ Taskivo
-            </div>
-            <div style={{
-              width: 32,
-              height: 32,
-              border: "3px solid var(--line)",
-              borderTopColor: "var(--lime)",
-              borderRadius: "50%",
-              margin: "0 auto",
-              animation: "spin 1s linear infinite"
-            }} />
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, marginBottom: 16 }}>⚡ Taskivo</div>
+            <div style={{ width: 32, height: 32, border: "3px solid var(--line)", borderTopColor: "var(--lime)", borderRadius: "50%", margin: "0 auto", animation: "spin 1s linear infinite" }} />
           </div>
         </div>
       </>
@@ -178,91 +182,43 @@ export default function App() {
       <div className="app-shell">
 
         {user && (
-          <Sidebar
-            user={user}
-            view={view}
-            navigate={navigate}
-            logout={logout}
-          />
+          <Sidebar user={user} view={view} navigate={navigate} logout={logout} />
         )}
 
-        <div className="main-content">
-          <div className="animate-fadeIn" key={view}>
+        {/* Dynamically adjust margin so the header spreads full width when logged out */}
+        <div className="main-content" style={{ marginLeft: user ? "" : 0 }}>
+          
+          {/* THE GLOBAL NAV IS HERE */}
+          <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} />
 
+          <div className="animate-fadeIn" key={view}>
             {/* PUBLIC */}
-            {view === "landing" && (
-              <Landing navigate={navigate} setAuthMode={setAuthMode} />
-            )}
-            {view === "auth" && (
-              <Auth
-                authMode={authMode}
-                setAuthMode={setAuthMode}
-                navigate={navigate}
-                loadProfile={loadProfile}
-              />
-            )}
-            {view === "blog" && <BlogIndex navigate="{navigate}"/>}
-   {view.startsWith("article-") && <ArticleView navigate="{navigate}" id="{view}"/>}
-            {view === "about" && <About/>}
-   {view === "terms" && <Terms/>}
-   {view === "privacy" && <Privacy/>}
+            {view === "landing" && <Landing navigate={navigate} setAuthMode={setAuthMode} />}
+            {view === "auth" && <Auth authMode={authMode} setAuthMode={setAuthMode} navigate={navigate} loadProfile={loadProfile} />}
+            {view === "about" && <About />}
+            {view === "terms" && <Terms />}
+            {view === "privacy" && <Privacy />}
+            {view === "blog" && <BlogIndex navigate={navigate} />}
+            {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} />}
 
             {/* EARNER */}
-            {view === "user-dashboard" && user && (
-              <Dashboard user={user} navigate={navigate} showToast={showToast} />
-            )}
-            {view === "tasks" && user && (
-              <ComingSoon title="Tasks — coming soon" />
-            )}
-            {view === "task-player" && user && activeTask && (
-              <TaskPlayer
-                task={activeTask}
-                navigate={navigate}
-                user={user}
-                setUser={setUser}
-                showToast={showToast}
-              />
-            )}
-            {view === "wallet" && user && (
-              <Wallet user={user} navigate={navigate} showToast={showToast} />
-            )}
-            {view === "withdraw" && user && (
-              <Withdraw
-                user={user}
-                setUser={setUser}
-                navigate={navigate}
-                showToast={showToast}
-              />
-            )}
+            {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
+            {view === "tasks" && user && <ComingSoon title="Tasks — coming soon" />}
+            {view === "task-player" && user && activeTask && <TaskPlayer task={activeTask} navigate={navigate} user={user} setUser={setUser} showToast={showToast} />}
+            {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
+            {view === "withdraw" && user && <Withdraw user={user} setUser={setUser} navigate={navigate} showToast={showToast} />}
 
             {/* CREATOR */}
-            {view === "creator-dashboard" && user && (
-              <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />
-            )}
-            {view === "create-task" && user && (
-              <CreateTask user={user} navigate={navigate} showToast={showToast} />
-            )}
-            {view === "creator-tasks" && user && (
-              <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
-            )}
-            {view === "creator-analytics" && user && (
-              <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
-            )}
+            {view === "creator-dashboard" && user && <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />}
+            {view === "create-task" && user && <CreateTask user={user} navigate={navigate} showToast={showToast} />}
+            {view === "creator-tasks" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />}
+            {view === "creator-analytics" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />}
 
             {/* ADMIN */}
-            {view === "admin-dashboard" && user && (
-              <AdminOverview navigate={navigate} showToast={showToast} />
-            )}
-            {view === "admin-users" && user && (
-              <AdminUsersComp showToast={showToast} />
-            )}
-            {view === "admin-tasks" && user && (
-              <AdminTasksComp showToast={showToast} />
-            )}
-            {view === "admin-withdrawals" && user && (
-              <AdminWithdrawalsComp showToast={showToast} />
-            )}
-
+            {view === "admin-dashboard" && user && <AdminOverview navigate={navigate} showToast={showToast} />}
+            {view === "admin-users" && user && <AdminUsersComp showToast={showToast} />}
+            {view === "admin-tasks" && user && <AdminTasksComp showToast={showToast} />}
+            {view === "admin-withdrawals" && user && <AdminWithdrawalsComp showToast={showToast} />}
           </div>
         </div>
       </div>
