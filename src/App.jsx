@@ -5,6 +5,7 @@ import Sidebar from "./components/Sidebar.jsx";
 import Toast from "./components/Toast.jsx";
 import useToast from "./components/useToast.js";
 import { About, Terms, Privacy } from "./pages/StaticPages.jsx";
+import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
 
 import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
@@ -200,7 +201,8 @@ export default function App() {
                 loadProfile={loadProfile}
               />
             )}
-            {view === "blog" && <ComingSoon title="Blog — coming soon" />}
+            {view === "blog" && <BlogIndex navigate="{navigate}"/>}
+   {view.startsWith("article-") && <ArticleView navigate="{navigate}" id="{view}"/>}
             {view === "about" && <About/>}
    {view === "terms" && <Terms/>}
    {view === "privacy" && <Privacy/>}
