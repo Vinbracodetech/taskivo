@@ -4,8 +4,11 @@ import CSS from "./styles/global.js";
 import Sidebar from "./components/Sidebar.jsx";
 import Toast from "./components/Toast.jsx";
 import useToast from "./components/useToast.js";
+import Landing from "./Landing";
 
-import Landing from "./pages/Landing.jsx";
+export default function App() {
+  return <Landing navigate={() => alert("Connect auth later")} />;
+}
 import Auth from "./pages/Auth.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Tasks from "./pages/Tasks.jsx";
