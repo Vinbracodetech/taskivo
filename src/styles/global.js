@@ -2,16 +2,16 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Softened dark background - not pitch black */
-  --surface: #1C1B1A; 
-  --surface-card: #262422; 
+  /* Premium Navy Blue Backgrounds */
+  --surface: #070B19; /* Deep Navy */
+  --surface-card: #0F172A; /* Slightly lighter Navy for cards */
   
-  --ink: #F9F9F9; /* Off-white text for less eye strain */
-  --gold: #D4AF37; /* Premium metallic gold */
-  --gold-dim: rgba(212, 175, 55, 0.12);
+  --ink: #FFFFFF; 
+  --gold: #FFD700; /* Sharp, bright Gold */
+  --lime: #A8FF3E; /* Lemon / Lime */
   
-  --line: rgba(255, 255, 255, 0.08); 
-  --slate: #9E9C99; 
+  --line: rgba(255, 215, 0, 0.25); /* Faint gold for secondary borders */
+  --slate: #94A3B8; 
   --font-body: 'DM Sans', sans-serif;
   --font-display: 'DM Sans', sans-serif;
 }
@@ -35,48 +35,66 @@ body {
   align-items: center;
   justify-content: center;
   padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 4px; /* Sharper edges */
+  font-weight: 700;
   cursor: pointer;
-  border: none;
+  border: 1px solid transparent;
   transition: all 0.2s;
   text-decoration: none;
   font-family: var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .btn-sm { padding: 6px 12px; font-size: 13px; }
-.btn-xl { padding: 16px 32px; font-size: 16px; border-radius: 12px; }
-.btn-primary { background: var(--gold); color: #000; }
-.btn-dark { background: #0A0A0A; color: var(--gold); border: 1px solid var(--gold-dim); }
+.btn-xl { padding: 16px 32px; font-size: 16px; }
+.btn-primary { background: var(--lime); color: #000; border-color: var(--lime); }
+.btn-primary:hover { background: transparent; color: var(--lime); }
+.btn-dark { background: transparent; color: var(--gold); border-color: var(--gold); }
+.btn-dark:hover { background: var(--gold); color: #000; }
 .btn-outline { background: transparent; border: 1px solid var(--line); color: var(--ink); }
 
 /* App Layout Shell */
 .app-shell { display: flex; min-height: 100vh; background: var(--surface); }
-.sidebar { width: 260px; background: #141312; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; border-right: 1px solid var(--line); }
+.sidebar { width: 260px; background: #050812; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; border-right: 1px solid var(--line); }
 .main-content { flex: 1; margin-left: 260px; min-height: 100vh; }
 .page { padding: 40px; max-width: 1000px; margin: 0 auto; }
 
 /* ── PREMIUM DASHBOARD STYLES ── */
-.dashboard-header { margin-bottom: 32px; }
-.dashboard-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+.dashboard-header { 
+  margin-bottom: 32px; 
+  border-left: 4px solid var(--gold); /* Sharp gold accent line */
+  padding-left: 16px; 
+}
+.dashboard-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; color: #fff; }
 .dashboard-sub { color: var(--slate); font-size: 15px; }
 
 /* Stat Cards */
 .stat-card {
   background: var(--surface-card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  border: 1px solid var(--gold); /* Sharp gold border on all edges */
+  border-radius: 4px; /* Sharp corners instead of rounded */
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   transition: all 0.25s ease;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
 }
 
-/* 🌟 The "Hold Hover" Border Effect */
+/* Mix of Lemon and Gold on top edge */
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--gold), var(--lime));
+}
+
+/* Hover Effect: Switch to Lemon Glow */
 .stat-card:hover { 
-  border-color: var(--gold); 
-  box-shadow: 0 0 0 1px var(--gold), 0 12px 24px rgba(0,0,0,0.2);
+  border-color: var(--lime); 
+  box-shadow: 0 0 0 1px var(--lime), 0 12px 24px rgba(168,255,62,0.15);
   transform: translateY(-4px); 
 }
 
@@ -90,10 +108,11 @@ body {
   justify-content: space-between;
   align-items: center;
 }
+
 .stat-value {
   font-size: 40px;
   font-weight: 800;
-  color: var(--gold);
+  color: var(--lime); /* Lemon color for the big numbers */
   line-height: 1;
   letter-spacing: -1px;
 }
@@ -107,31 +126,51 @@ body {
 .action-card {
   background: var(--surface-card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 4px; /* Sharp */
   padding: 20px;
   display: flex;
   align-items: flex-start;
   gap: 16px;
   cursor: pointer;
   transition: all 0.25s ease;
+  position: relative;
 }
 
-/* 🌟 The Action Card Hover Effect */
+/* Sharp gold side accent */
+.action-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--gold);
+  transition: all 0.2s;
+}
+
+/* Action Card Hover */
 .action-card:hover { 
-  background: #2A2825; 
-  border-color: var(--gold); 
-  box-shadow: 0 0 0 1px var(--gold);
+  background: #151E32; 
+  border-color: var(--lime); 
+}
+.action-card:hover::before {
+  background: var(--lime);
+  width: 4px;
 }
 
 .action-icon {
   width: 44px; height: 44px;
-  border-radius: 10px;
-  background: var(--gold-dim);
+  border-radius: 4px; /* Sharp */
+  background: rgba(255, 215, 0, 0.1);
   color: var(--gold);
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; flex-shrink: 0;
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.3);
 }
+
+.action-card:hover .action-icon {
+  background: rgba(168, 255, 62, 0.1);
+  color: var(--lime);
+  border-color: rgba(168, 255, 62, 0.3);
+}
+
 .action-text h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
 .action-text p { font-size: 13px; color: var(--slate); line-height: 1.5; }
 
