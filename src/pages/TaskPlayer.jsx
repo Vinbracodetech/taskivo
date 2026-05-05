@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useToast } from '../components/useToast';
+import useToast from '../components/useToast';
 import Toast from '../components/Toast';
 
 export default function TaskPlayer({ task, user, navigate }) {
