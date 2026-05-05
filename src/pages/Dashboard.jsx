@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase.js";
 
-// ── Region detection ──────────────────────────────────────────
 async function detectCountry() {
   try {
     var res = await fetch("https://ipapi.co/json/");
@@ -34,7 +33,6 @@ export default function Dashboard({ user, navigate, showToast }) {
   async function loadData() {
     setLoading(true);
 
-    // Load profile
     var profileResult = await supabase
       .from("profiles")
       .select("*")
@@ -43,15 +41,11 @@ export default function Dashboard({ user, navigate, showToast }) {
 
     var currentProfile = profileResult.data || user;
 
-    // Auto-detect region if not set
     if (!currentProfile.country) {
       var location = await detectCountry();
       await supabase
         .from("profiles")
-        .update({
-          country: location.code,
-          country_name: location.name,
-        })
+        .update({ country: location.code, country_name: location.name })
         .eq("id", user.id);
       currentProfile.country = location.code;
       currentProfile.country_name = location.name;
@@ -59,7 +53,6 @@ export default function Dashboard({ user, navigate, showToast }) {
 
     setProfile(currentProfile);
 
-    // Load completions
     var completionsResult = await supabase
       .from("completions")
       .select("*, tasks(title, reward)")
@@ -68,7 +61,6 @@ export default function Dashboard({ user, navigate, showToast }) {
       .limit(5);
     if (completionsResult.data) setCompletions(completionsResult.data);
 
-    // Load active tasks
     var tasksResult = await supabase
       .from("tasks")
       .select("*")
@@ -80,24 +72,10 @@ export default function Dashboard({ user, navigate, showToast }) {
   }
 
   var points = profile ? (profile.points || 0) : 0;
-  var name = profile
-    ? (profile.full_name || profile.email || "Earner")
-    : "Earner";
+  var name = profile ? (profile.full_name || profile.email || "Earner") : "Earner";
   var countryCode = profile ? (profile.country || "OTHER") : "OTHER";
   var countryName = profile ? (profile.country_name || "Global") : "Global";
   var flag = COUNTRY_FLAGS[countryCode] || "🌍";
-
-  // Gold card hover handler
-  function onCardEnter(e) {
-    e.currentTarget.style.boxShadow = "0 8px 32px rgba(245,158,11,0.18), 0 0 0 1.5px rgba(245,158,11,0.25)";
-    e.currentTarget.style.transform = "translateY(-3px)";
-    e.currentTarget.style.borderColor = "rgba(245,158,11,0.3)";
-  }
-  function onCardLeave(e) {
-    e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
-    e.currentTarget.style.transform = "translateY(0)";
-    e.currentTarget.style.borderColor = "#E5E7EB";
-  }
 
   if (loading) {
     return (
@@ -109,8 +87,7 @@ export default function Dashboard({ user, navigate, showToast }) {
       }}>
         <div style={{ textAlign: "center" }}>
           <div style={{
-            width: 36,
-            height: 36,
+            width: 36, height: 36,
             border: "3px solid #E5E7EB",
             borderTopColor: "#A8FF3E",
             borderRadius: "50%",
@@ -123,109 +100,116 @@ export default function Dashboard({ user, navigate, showToast }) {
     );
   }
 
+  // ── shared card style ──
+  function statCard(borderColor) {
+    return {
+      background: "#fff",
+      border: "1px solid #E5E7EB",
+      borderLeft: "4px solid " + borderColor,
+      borderRadius: 12,
+      padding: "20px 18px",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+    };
+  }
+
   return (
     <div style={{
-      padding: "36px 32px",
-      maxWidth: 1100,
+      padding: "28px 20px",
+      maxWidth: 720,
+      margin: "0 auto",
       fontFamily: "var(--font-body)",
     }}>
 
       {/* ── GREETING ── */}
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 24 }}>
         <div style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 30,
+          fontSize: 22,
           fontWeight: 700,
           color: "#0A0A0F",
-          marginBottom: 6,
-          letterSpacing: "-0.5px",
+          marginBottom: 4,
+          letterSpacing: "-0.3px",
         }}>
           Welcome back, {name.split(" ")[0]} 👋
         </div>
-        <div style={{ fontSize: 15, color: "#6B7280" }}>
+        <div style={{ fontSize: 14, color: "#6B7280" }}>
           Here's your earnings overview for today.
         </div>
       </div>
 
-      {/* ── HERO BALANCE CARD ── */}
+      {/* ── BALANCE CARD ── */}
       <div style={{
         background: "linear-gradient(135deg, #1A1A2E 0%, #2D2D44 100%)",
-        borderRadius: 24,
-        padding: "36px 40px",
-        marginBottom: 24,
+        borderRadius: 16,
+        padding: "28px 24px",
+        marginBottom: 20,
         position: "relative",
         overflow: "hidden",
       }}>
         <div style={{
-          position: "absolute", top: -80, right: -80,
-          width: 280, height: 280,
-          background: "radial-gradient(circle, rgba(168,255,62,0.15), transparent 70%)",
-          borderRadius: "50%", pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute", bottom: -60, left: 60,
+          position: "absolute", top: -60, right: -60,
           width: 200, height: 200,
-          background: "radial-gradient(circle, rgba(245,158,11,0.08), transparent 70%)",
+          background: "radial-gradient(circle, rgba(168,255,62,0.12), transparent 70%)",
           borderRadius: "50%", pointerEvents: "none",
         }} />
 
         <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-          gap: 24,
-          position: "relative",
+          fontSize: 11, fontWeight: 700,
+          letterSpacing: "1.5px",
+          textTransform: "uppercase",
+          color: "rgba(255,255,255,0.4)",
+          marginBottom: 10,
         }}>
-          <div>
-            <div style={{
-              fontSize: 11, fontWeight: 700,
-              letterSpacing: "1.8px",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.4)",
-              marginBottom: 12,
-            }}>
-              Total Points Balance
-            </div>
-            <div style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 64, fontWeight: 700,
-              color: "#A8FF3E", lineHeight: 1,
-              letterSpacing: "-2px", marginBottom: 8,
-            }}>
-              {points.toLocaleString()}
-            </div>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
-              Withdraw from <strong style={{ color: "rgba(255,255,255,0.6)" }}>2,000 pts</strong> minimum
-            </div>
-          </div>
+          Total Points Balance
+        </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
-            <button
-              className="btn btn-primary"
-              style={{ justifyContent: "center", minWidth: 160 }}
-              onClick={function () { navigate("tasks"); }}
-            >
-              Browse Tasks →
-            </button>
-            <button
-              onClick={function () { navigate("withdraw"); }}
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                color: "#fff",
-                borderRadius: 8,
-                padding: "10px 20px",
-                fontFamily: "var(--font-body)",
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: "pointer",
-                textAlign: "center",
-              }}
-            >
-              ↑ Withdraw
-            </button>
-          </div>
+        <div style={{
+          fontSize: 52, fontWeight: 700,
+          color: "#A8FF3E", lineHeight: 1,
+          letterSpacing: "-1.5px", marginBottom: 6,
+          fontFamily: "var(--font-body)",
+        }}>
+          {points.toLocaleString()}
+        </div>
+
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>
+          Withdraw from <strong style={{ color: "rgba(255,255,255,0.6)" }}>2,000 pts</strong> minimum
+        </div>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={function () { navigate("tasks"); }}
+            style={{
+              flex: 1,
+              padding: "11px 0",
+              background: "#A8FF3E",
+              border: "none",
+              borderRadius: 8,
+              color: "#0D0D14",
+              fontSize: 14,
+              fontWeight: 700,
+              fontFamily: "var(--font-body)",
+              cursor: "pointer",
+            }}
+          >
+            Browse Tasks →
+          </button>
+          <button
+            onClick={function () { navigate("withdraw"); }}
+            style={{
+              flex: 1,
+              padding: "11px 0",
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: 8,
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: "var(--font-body)",
+              cursor: "pointer",
+            }}
+          >
+            ↑ Withdraw
+          </button>
         </div>
       </div>
 
@@ -233,137 +217,74 @@ export default function Dashboard({ user, navigate, showToast }) {
       <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(3, 1fr)",
-        gap: 16,
-        marginBottom: 36,
+        gap: 12,
+        marginBottom: 28,
       }}>
 
         {/* Tasks Completed */}
-        <div
-          onMouseEnter={onCardEnter}
-          onMouseLeave={onCardLeave}
-          style={{
-            background: "#fff",
-            border: "1px solid #E5E7EB",
-            borderRadius: 18,
-            padding: "24px 22px",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-            transition: "all 0.22s ease",
-            cursor: "default",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-            <div style={{
-              fontSize: 11, fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#9CA3AF",
-            }}>
-              Tasks Completed
-            </div>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "rgba(34,197,94,0.1)",
-              display: "flex", alignItems: "center",
-              justifyContent: "center", fontSize: 17,
-            }}>
-              ✅
-            </div>
+        <div style={statCard("#A8FF3E")}>
+          <div style={{
+            fontSize: 10, fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#9CA3AF",
+            marginBottom: 10,
+          }}>
+            Tasks Completed
           </div>
           <div style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: 36, fontWeight: 800,
+            fontSize: 32, fontWeight: 800,
             color: "#0A0A0F", lineHeight: 1,
-            marginBottom: 6,
+            marginBottom: 4,
+            fontFamily: "var(--font-body)",
           }}>
-            {completions.length}
+            {completions.length.toLocaleString()}
           </div>
-          <div style={{ fontSize: 12, color: "#9CA3AF" }}>All time</div>
+          <div style={{ fontSize: 11, color: "#9CA3AF" }}>All time</div>
         </div>
 
         {/* Available Tasks */}
-        <div
-          onMouseEnter={onCardEnter}
-          onMouseLeave={onCardLeave}
-          style={{
-            background: "#fff",
-            border: "1px solid #E5E7EB",
-            borderRadius: 18,
-            padding: "24px 22px",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-            transition: "all 0.22s ease",
-            cursor: "default",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-            <div style={{
-              fontSize: 11, fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#9CA3AF",
-            }}>
-              Available Tasks
-            </div>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "rgba(168,255,62,0.12)",
-              display: "flex", alignItems: "center",
-              justifyContent: "center", fontSize: 17,
-            }}>
-              🎯
-            </div>
+        <div style={statCard("#3B82F6")}>
+          <div style={{
+            fontSize: 10, fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#9CA3AF",
+            marginBottom: 10,
+          }}>
+            Available Tasks
           </div>
           <div style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: 36, fontWeight: 800,
+            fontSize: 32, fontWeight: 800,
             color: "#0A0A0F", lineHeight: 1,
-            marginBottom: 6,
+            marginBottom: 4,
+            fontFamily: "var(--font-body)",
           }}>
-            {tasks.length}
+            {tasks.length.toLocaleString()}
           </div>
-          <div style={{ fontSize: 12, color: "#9CA3AF" }}>Ready to start</div>
+          <div style={{ fontSize: 11, color: "#9CA3AF" }}>Ready to start</div>
         </div>
 
         {/* Region */}
-        <div
-          onMouseEnter={onCardEnter}
-          onMouseLeave={onCardLeave}
-          style={{
-            background: "#fff",
-            border: "1px solid #E5E7EB",
-            borderRadius: 18,
-            padding: "24px 22px",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-            transition: "all 0.22s ease",
-            cursor: "default",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-            <div style={{
-              fontSize: 11, fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#9CA3AF",
-            }}>
-              Your Region
-            </div>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "rgba(99,102,241,0.1)",
-              display: "flex", alignItems: "center",
-              justifyContent: "center", fontSize: 20,
-            }}>
-              {flag}
-            </div>
+        <div style={statCard("#F59E0B")}>
+          <div style={{
+            fontSize: 10, fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#9CA3AF",
+            marginBottom: 10,
+          }}>
+            Your Region
           </div>
           <div style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: 28, fontWeight: 800,
+            fontSize: 22, fontWeight: 800,
             color: "#0A0A0F", lineHeight: 1,
-            marginBottom: 6,
+            marginBottom: 4,
+            fontFamily: "var(--font-body)",
           }}>
-            {countryCode}
+            {flag} {countryCode}
           </div>
-          <div style={{ fontSize: 12, color: "#9CA3AF" }}>{countryName}</div>
+          <div style={{ fontSize: 11, color: "#9CA3AF" }}>{countryName}</div>
         </div>
 
       </div>
@@ -373,105 +294,102 @@ export default function Dashboard({ user, navigate, showToast }) {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 18,
+        marginBottom: 14,
       }}>
-        <div style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: 18, fontWeight: 700, color: "#0A0A0F",
-        }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#0A0A0F" }}>
           Available Tasks
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={function () { navigate("tasks"); }}>
+        <button
+          onClick={function () { navigate("tasks"); }}
+          style={{
+            background: "none", border: "none",
+            color: "#6B7280", fontSize: 13,
+            fontFamily: "var(--font-body)",
+            cursor: "pointer", fontWeight: 600,
+          }}
+        >
           See All →
         </button>
       </div>
 
       {tasks.length === 0 ? (
         <div style={{
-          background: "#fff", border: "1px solid #E5E7EB",
-          borderRadius: 16, padding: "48px 24px",
-          textAlign: "center", marginBottom: 32,
+          background: "#fff",
+          border: "1px solid #E5E7EB",
+          borderRadius: 12,
+          padding: "40px 24px",
+          textAlign: "center",
+          marginBottom: 28,
         }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
-            No tasks yet
-          </div>
+          <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>No tasks yet</div>
           <div style={{ fontSize: 13, color: "#6B7280" }}>
             Creators are posting tasks. Check back soon.
           </div>
         </div>
       ) : (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: 16, marginBottom: 36,
-        }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
           {tasks.map(function (task) {
             var filled = task.completed_slots || 0;
             var total = task.total_slots || 1;
             var pct = Math.round((filled / total) * 100);
             return (
-              <div key={task.id}
-                onMouseEnter={function (e) {
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(245,158,11,0.15), 0 0 0 1.5px rgba(168,255,62,0.3)";
-                  e.currentTarget.style.transform = "translateY(-3px)";
-                }}
-                onMouseLeave={function (e) {
-                  e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-                style={{
-                  background: "#fff",
-                  border: "1px solid #E5E7EB",
-                  borderRadius: 16, padding: 20,
-                  transition: "all 0.2s",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+              <div key={task.id} style={{
+                background: "#fff",
+                border: "1px solid #E5E7EB",
+                borderLeft: "4px solid #A8FF3E",
+                borderRadius: 12,
+                padding: "16px 18px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    fontFamily: "var(--font-heading)",
                     fontSize: 14, fontWeight: 700,
-                    color: "#0A0A0F", flex: 1,
-                    paddingRight: 10, lineHeight: 1.4,
+                    color: "#0A0A0F", marginBottom: 4,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}>
                     {task.title}
                   </div>
-                  <span className="badge badge-lime" style={{ flexShrink: 0 }}>
-                    {task.category || "Task"}
-                  </span>
-                </div>
-                <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 14, lineHeight: 1.5 }}>
-                  {task.description
-                    ? task.description.slice(0, 75) + "..."
-                    : "Complete this task to earn points."}
-                </div>
-                <div style={{ display: "flex", gap: 12, fontSize: 12, color: "#9CA3AF", marginBottom: 12 }}>
-                  <span>⏱ {task.required_time || 60}s</span>
-                  <span>👥 {total - filled} slots</span>
-                </div>
-                <div style={{
-                  height: 4, background: "#F3F4F6",
-                  borderRadius: 99, overflow: "hidden", marginBottom: 14,
-                }}>
+                  <div style={{ display: "flex", gap: 10, fontSize: 11, color: "#9CA3AF" }}>
+                    <span>⏱ {task.required_time || 60}s</span>
+                    <span>👥 {total - filled} slots left</span>
+                  </div>
                   <div style={{
-                    height: "100%", width: pct + "%",
-                    background: "var(--lime)", borderRadius: 99,
-                  }} />
+                    height: 3, background: "#F3F4F6",
+                    borderRadius: 99, overflow: "hidden", marginTop: 10,
+                  }}>
+                    <div style={{
+                      height: "100%", width: pct + "%",
+                      background: "#A8FF3E", borderRadius: 99,
+                    }} />
+                  </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <span style={{
-                      fontFamily: "var(--font-heading)",
-                      fontSize: 22, fontWeight: 800, color: "#7ACC20",
-                    }}>
-                      {task.reward || 0}
-                    </span>
-                    <span style={{ fontSize: 11, color: "#9CA3AF", marginLeft: 4 }}>pts</span>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{
+                    fontSize: 18, fontWeight: 800,
+                    color: "#7ACC20", marginBottom: 6,
+                    fontFamily: "var(--font-body)",
+                  }}>
+                    {(task.reward || 0).toLocaleString()} pts
                   </div>
                   <button
-                    className="btn btn-primary btn-sm"
                     onClick={function () { navigate("tasks"); }}
+                    style={{
+                      background: "#A8FF3E",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#0D0D14",
+                      fontFamily: "var(--font-body)",
+                      cursor: "pointer",
+                    }}
                   >
                     Start →
                   </button>
@@ -484,36 +402,59 @@ export default function Dashboard({ user, navigate, showToast }) {
 
       {/* ── RECENT ACTIVITY ── */}
       <div style={{
-        display: "flex", justifyContent: "space-between",
-        alignItems: "center", marginBottom: 18,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 14,
       }}>
-        <div style={{
-          fontFamily: "var(--font-heading)",
-          fontSize: 18, fontWeight: 700, color: "#0A0A0F",
-        }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: "#0A0A0F" }}>
           Recent Activity
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={function () { navigate("wallet"); }}>
+        <button
+          onClick={function () { navigate("wallet"); }}
+          style={{
+            background: "none", border: "none",
+            color: "#6B7280", fontSize: 13,
+            fontFamily: "var(--font-body)",
+            cursor: "pointer", fontWeight: 600,
+          }}
+        >
           View All →
         </button>
       </div>
 
       {completions.length === 0 ? (
         <div style={{
-          background: "#fff", border: "1px solid #E5E7EB",
-          borderRadius: 16, padding: "48px 24px", textAlign: "center",
+          background: "#fff",
+          border: "1px solid #E5E7EB",
+          borderRadius: 12,
+          padding: "40px 24px",
+          textAlign: "center",
         }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
-          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No activity yet</div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 20 }}>
+          <div style={{ fontSize: 36, marginBottom: 10 }}>🎯</div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>No activity yet</div>
+          <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 16 }}>
             Complete your first task to start earning.
           </div>
-          <button className="btn btn-primary btn-sm" onClick={function () { navigate("tasks"); }}>
+          <button
+            onClick={function () { navigate("tasks"); }}
+            style={{
+              background: "#A8FF3E",
+              border: "none",
+              borderRadius: 8,
+              padding: "10px 24px",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#0D0D14",
+              fontFamily: "var(--font-body)",
+              cursor: "pointer",
+            }}
+          >
             Browse Tasks →
           </button>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {completions.map(function (c) {
             var reward = c.tasks ? c.tasks.reward : 0;
             var title = c.tasks ? c.tasks.title : "Task Completed";
@@ -522,25 +463,39 @@ export default function Dashboard({ user, navigate, showToast }) {
             });
             return (
               <div key={c.id} style={{
-                display: "flex", alignItems: "center", gap: 14,
-                padding: "14px 18px", background: "#fff",
-                border: "1px solid #E5E7EB", borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "14px 16px",
+                background: "#fff",
+                border: "1px solid #E5E7EB",
+                borderLeft: "4px solid #22C55E",
+                borderRadius: 12,
               }}>
                 <div style={{
-                  width: 38, height: 38, borderRadius: "50%",
+                  width: 34, height: 34,
+                  borderRadius: "50%",
                   background: "rgba(34,197,94,0.1)",
-                  display: "flex", alignItems: "center",
-                  justifyContent: "center", fontSize: 16, flexShrink: 0,
-                }}>✓</div>
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 15,
+                  flexShrink: 0,
+                }}>
+                  ✓
+                </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#0A0A0F" }}>{title}</div>
-                  <div style={{ fontSize: 12, color: "#9CA3AF" }}>{date}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#0A0A0F" }}>
+                    {title}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#9CA3AF" }}>{date}</div>
                 </div>
                 <div style={{
-                  fontFamily: "var(--font-heading)",
-                  fontSize: 15, fontWeight: 700, color: "#16A34A",
+                  fontSize: 14, fontWeight: 700,
+                  color: "#16A34A",
+                  fontFamily: "var(--font-body)",
                 }}>
-                  +{reward} pts
+                  +{(reward || 0).toLocaleString()} pts
                 </div>
               </div>
             );
@@ -551,4 +506,4 @@ export default function Dashboard({ user, navigate, showToast }) {
       <div style={{ height: 48 }} />
     </div>
   );
-              }
+}
