@@ -5,22 +5,6 @@ export default function Sidebar({ user, view, navigate, logout }) {
 
   var role = user ? user.role : "earner";
 
-  var pageTitles = {
-    "user-dashboard":     "Dashboard",
-    "tasks":              "Browse Tasks",
-    "task-player":        "Task Player",
-    "wallet":             "Wallet",
-    "withdraw":           "Withdraw",
-    "creator-dashboard":  "Dashboard",
-    "create-task":        "Create Task",
-    "creator-tasks":      "My Tasks",
-    "creator-analytics":  "Analytics",
-    "admin-dashboard":    "Overview",
-    "admin-users":        "Users",
-    "admin-tasks":        "Tasks",
-    "admin-withdrawals":  "Withdrawals",
-  };
-
   var earnerLinks = [
     { icon: "⚡", label: "Dashboard", view: "user-dashboard" },
     { icon: "🎯", label: "Tasks",     view: "tasks" },
@@ -48,53 +32,9 @@ export default function Sidebar({ user, view, navigate, logout }) {
     ? creatorLinks
     : earnerLinks;
 
-  var currentTitle = pageTitles[view] || "Taskivo";
-
   var initials = user && user.full_name
     ? user.full_name.split(" ").map(function (w) { return w[0]; }).join("").toUpperCase().slice(0, 2)
     : "U";
-
-  // ── HEADER ──
-  var headerStyle = {
-    position: "sticky",
-    top: 0,
-    zIndex: 100,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "0 20px",
-    height: 52,
-    background: "rgba(255,255,255,0.95)",
-    backdropFilter: "blur(12px)",
-    borderBottom: "1px solid #EAECF0",
-    boxShadow: "0 1px 6px rgba(0,0,0,0.05)",
-  };
-
-  var pageTitleStyle = {
-    fontSize: 17,
-    fontWeight: 700,
-    color: "#0D0D14",
-    letterSpacing: "-0.3px",
-    fontFamily: "var(--font-body)",
-  };
-
-  var avatarStyle = {
-    width: 34,
-    height: 34,
-    borderRadius: "50%",
-    background: "#0D0D14",
-    color: "#A8FF3E",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 13,
-    fontWeight: 800,
-    fontFamily: "var(--font-body)",
-    border: "2px solid #A8FF3E",
-    cursor: "pointer",
-    flexShrink: 0,
-    userSelect: "none",
-  };
 
   // ── DRAWER ──
   var overlayStyle = {
@@ -185,14 +125,6 @@ export default function Sidebar({ user, view, navigate, logout }) {
 
   return (
     <>
-      {/* ── TOP HEADER ── */}
-      <header style={headerStyle}>
-        <div style={pageTitleStyle}>{currentTitle}</div>
-        <div style={avatarStyle} onClick={function () { setDrawerOpen(true); }}>
-          {initials}
-        </div>
-      </header>
-
       {/* ── DRAWER OVERLAY ── */}
       <div style={overlayStyle} onClick={function () { setDrawerOpen(false); }} />
 
