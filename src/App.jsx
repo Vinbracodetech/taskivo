@@ -8,10 +8,10 @@ import useToast from "./components/useToast.js";
 import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Tasks from "./pages/Tasks.jsx";
 import TaskPlayer from "./pages/TaskPlayer.jsx";
 import Wallet from "./pages/Wallet.jsx";
 import Withdraw from "./pages/Withdraw.jsx";
-import Tasks from "./pages/Tasks.jsx";
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
 import CreatorTasks from "./pages/CreatorTasks.jsx";
@@ -31,7 +31,7 @@ function ComingSoon({ title }) {
           fontFamily: "var(--font-display)",
           fontSize: 24,
           fontWeight: 700,
-          marginBottom: 8
+          marginBottom: 8,
         }}>
           {title}
         </div>
@@ -51,7 +51,6 @@ export default function App() {
   var [activeTask, setActiveTask] = useState(null);
   var { toasts, show: showToast } = useToast();
 
-  // ── Sync view with browser URL hash ──
   useEffect(function () {
     function onPopState() {
       var hash = window.location.hash.replace("#", "");
@@ -120,7 +119,6 @@ export default function App() {
     else navigate("user-dashboard");
   }
 
-  // ── navigate updates view AND browser history ──
   function navigate(v, params) {
     if (params && params.taskId) {
       setActiveTask({ id: params.taskId });
@@ -129,10 +127,10 @@ export default function App() {
     window.scrollTo(0, 0);
     window.history.pushState({ view: v }, "", "#" + v);
   }
+
   async function logout() {
     await supabase.auth.signOut();
     setUser(null);
-    // Clear history stack on logout
     window.history.replaceState({ view: "landing" }, "", "#landing");
     setView("landing");
     showToast("Logged out successfully.", "info");
@@ -147,14 +145,14 @@ export default function App() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "var(--surface)"
+          background: "var(--surface)",
         }}>
           <div style={{ textAlign: "center" }}>
             <div style={{
               fontFamily: "var(--font-display)",
               fontSize: 32,
               fontWeight: 700,
-              marginBottom: 16
+              marginBottom: 16,
             }}>
               ⚡ Taskivo
             </div>
@@ -165,7 +163,7 @@ export default function App() {
               borderTopColor: "var(--lime)",
               borderRadius: "50%",
               margin: "0 auto",
-              animation: "spin 1s linear infinite"
+              animation: "spin 1s linear infinite",
             }} />
           </div>
         </div>
@@ -210,8 +208,6 @@ export default function App() {
             )}
             {view === "tasks" && user && (
               <Tasks user={user} navigate={navigate} showToast={showToast} />
-            )}
-            {view === "task-player" && user && activeTask && (
             )}
             {view === "task-player" && user && activeTask && (
               <TaskPlayer
