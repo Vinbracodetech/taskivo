@@ -123,15 +123,12 @@ export default function App() {
   // ── navigate updates view AND browser history ──
   function navigate(v, params) {
     if (params && params.taskId) {
-      var task = null;
-      // find task from params
       setActiveTask({ id: params.taskId });
     }
     setView(v);
     window.scrollTo(0, 0);
     window.history.pushState({ view: v }, "", "#" + v);
   }
-
   async function logout() {
     await supabase.auth.signOut();
     setUser(null);
