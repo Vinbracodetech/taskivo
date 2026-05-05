@@ -357,43 +357,48 @@ export default function Landing({ navigate, setAuthMode }) {
       </section>
 
       {/* FOOTER */}
-      <footer className="lp-footer-pad" style={{ background: C.ink, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="lp-footer-grid" style={{ display: 'grid', marginBottom: 40 }}>
+    <footer className="lp-footer-pad" style={{ background: "var(--surface-card)", borderTop: "1px solid var(--line)" }}>
+        <div className="lp-footer-grid" style={{ display: 'grid', marginBottom: 40, padding: "40px 5% 0" }}>
           <div className="lp-footer-brand-span">
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.white, fontSize: 20, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.lime, display: 'inline-block' }}></span>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: "var(--ink)", fontSize: 20, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: "var(--lime)", display: 'inline-block' }}></span>
               Taskivo
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 1.6, maxWidth: 280 }}>
+            <p style={{ color: "var(--slate)", fontSize: 13, lineHeight: 1.6, maxWidth: 280 }}>
               The task completion platform connecting earners and creators worldwide.
             </p>
           </div>
-          {[
-            { title: 'PLATFORM', links: ['How it Works', 'For Earners', 'For Creators', 'Pricing'] },
-            { title: 'COMPANY', links: ['About', 'Blog', 'Careers', 'Contact'] },
-            { title: 'LEGAL', links: ['Terms of Service', 'Privacy Policy', 'Cookie Policy'] },
-          ].map(function (col, i) {
-            return (
-              <div key={i}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>{col.title}</div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {col.links.map(function (link, j) {
-                    return (
-                      <li key={j}>
-                        <a href="#" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: 13, transition: 'color 0.2s' }}>{link}</a>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })}
+          
+          
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--slate)", letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Platform</div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("auth"); }}>For Earners</span></li>
+              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("auth"); }}>For Creators</span></li>
+            </ul>
+          </div>
+
+          
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--slate)", letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Company</div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("about"); }}>About Us</span></li>
+              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("blog"); }}>Blog</span></li>
+            </ul>
+          </div>
+
+          
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--slate)", letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Legal</div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("terms"); }}>Terms of Service</span></li>
+              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("privacy"); }}>Privacy Policy</span></li>
+            </ul>
+          </div>
+
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 24, color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-          <div>© 2025 Taskivo. All rights reserved.</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: "1px solid var(--line)", padding: "24px 5%", color: "var(--slate)", fontSize: 12 }}>
+          <div>© 2026 Taskivo. All rights reserved.</div>
           <div>taskivo.online</div>
         </div>
       </footer>
-    </div>
-  );
-}
