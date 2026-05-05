@@ -80,16 +80,38 @@ function ComingSoon({ title }) {
 }
 
 export default function App() {
-  var [view, setView] = useState("landing");
+  // 1. Read the starting page from the URL hash (if it exists)
+  var initialHash = window.location.hash.replace("#", "") || "landing";
+  
+  var [view, setView] = useState(initialHash);
   var [authMode, setAuthMode] = useState("login");
   var [user, setUser] = useState(null);
   var [loading, setLoading] = useState(true);
   var [activeTask, setActiveTask] = useState(null);
   var { toasts, show: showToast } = useToast();
   
-  // ── THEME SWITCHER LOGIC ──
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
 
+  // 2. Listen for the user clicking the browser Back/Forward buttons
+  useEffect(function() {
+    function handleHashChange() {
+      var hash = window.location.hash.replace("#", "") || "landing";
+      setView(hash);
+    }
+    window.addEventListener("hashchange", handleHashChange);
+    return function() {
+      window.removeEventListener("hashchange", handleHashChange);
+    };
+  }, []);
+
+  // 3. Update navigate to change the URL hash
+  function navigate(v) {
+    window.location.hash = v;
+    setView(v);
+    window.scrollTo(0, 0);
+  }
+
+  // Theme Logic
   useEffect(function () {
     document.body.className = "theme-" + theme;
     localStorage.setItem("taskivo-theme", theme);
@@ -99,6 +121,7 @@ export default function App() {
     setTheme(theme === "dark" ? "light" : "dark");
   }
 
+  // Auth Logic
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
       var session = result.data.session;
@@ -112,7 +135,7 @@ export default function App() {
     var listener = supabase.auth.onAuthStateChange(function (event, session) {
       if (event === "SIGNED_OUT") {
         setUser(null);
-        setView("landing");
+        navigate("landing");
         setLoading(false);
       }
     });
@@ -125,10 +148,17 @@ export default function App() {
   async function loadProfile(authUser) {
     setLoading(true);
     var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
+    
+    var currentHash = window.location.hash.replace("#", "") || "landing";
 
     if (result.data) {
       setUser(result.data);
-      routeByRole(result.data.role);
+      // If logging in or on landing, send to dashboard. Otherwise, stay on refreshed page.
+      if (currentHash === "landing" || currentHash === "auth") {
+        routeByRole(result.data.role);
+      } else {
+        setView(currentHash);
+      }
     } else {
       var newProfile = {
         id: authUser.id,
@@ -139,26 +169,19 @@ export default function App() {
       };
       await supabase.from("profiles").insert(newProfile);
       setUser(newProfile);
-      setView("user-dashboard");
+      navigate("user-dashboard");
     }
     setLoading(false);
   }
 
   function routeByRole(role) {
-    if (role === "admin") setView("admin-dashboard");
-    else if (role === "creator") setView("creator-dashboard");
-    else setView("user-dashboard");
-  }
-
-  function navigate(v) {
-    setView(v);
-    window.scrollTo(0, 0);
+    if (role === "admin") navigate("admin-dashboard");
+    else if (role === "creator") navigate("creator-dashboard");
+    else navigate("user-dashboard");
   }
 
   async function logout() {
     await supabase.auth.signOut();
-    setUser(null);
-    setView("landing");
     showToast("Logged out successfully.", "info");
   }
 
@@ -185,10 +208,8 @@ export default function App() {
           <Sidebar user={user} view={view} navigate={navigate} logout={logout} />
         )}
 
-        {/* Dynamically adjust margin so the header spreads full width when logged out */}
         <div className="main-content" style={{ marginLeft: user ? "" : 0 }}>
           
-          {/* THE GLOBAL NAV IS HERE */}
           <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} />
 
           <div className="animate-fadeIn" key={view}>
@@ -223,7 +244,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* ── FLOATING THEME TOGGLE ── */}
       <button className="theme-toggle" onClick={toggleTheme}>
         {theme === "dark" ? "☀️" : "🌙"}
       </button>
