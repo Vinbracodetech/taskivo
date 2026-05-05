@@ -2,12 +2,16 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --surface: #0D0D14; /* Deep dark background */
-  --surface-card: #121218; /* Premium card background */
-  --ink: #FFFFFF; /* White text */
-  --lime: #A8FF3E; /* Signature neon accent */
-  --line: rgba(255, 255, 255, 0.08); /* Faint, elegant borders */
-  --slate: #888890; /* Subdued gray text */
+  /* Softened dark background - not pitch black */
+  --surface: #1C1B1A; 
+  --surface-card: #262422; 
+  
+  --ink: #F9F9F9; /* Off-white text for less eye strain */
+  --gold: #D4AF37; /* Premium metallic gold */
+  --gold-dim: rgba(212, 175, 55, 0.12);
+  
+  --line: rgba(255, 255, 255, 0.08); 
+  --slate: #9E9C99; 
   --font-body: 'DM Sans', sans-serif;
   --font-display: 'DM Sans', sans-serif;
 }
@@ -41,13 +45,13 @@ body {
 }
 .btn-sm { padding: 6px 12px; font-size: 13px; }
 .btn-xl { padding: 16px 32px; font-size: 16px; border-radius: 12px; }
-.btn-primary { background: var(--lime); color: #000; }
-.btn-dark { background: #000; color: #fff; border: 1px solid var(--line); }
+.btn-primary { background: var(--gold); color: #000; }
+.btn-dark { background: #0A0A0A; color: var(--gold); border: 1px solid var(--gold-dim); }
 .btn-outline { background: transparent; border: 1px solid var(--line); color: var(--ink); }
 
 /* App Layout Shell */
 .app-shell { display: flex; min-height: 100vh; background: var(--surface); }
-.sidebar { width: 260px; background: #0A0A0F; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; border-right: 1px solid var(--line); }
+.sidebar { width: 260px; background: #141312; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; border-right: 1px solid var(--line); }
 .main-content { flex: 1; margin-left: 260px; min-height: 100vh; }
 .page { padding: 40px; max-width: 1000px; margin: 0 auto; }
 
@@ -65,10 +69,17 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  transition: border-color 0.2s, transform 0.2s;
+  transition: all 0.25s ease;
   box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
-.stat-card:hover { border-color: rgba(168,255,62,0.3); transform: translateY(-2px); }
+
+/* 🌟 The "Hold Hover" Border Effect */
+.stat-card:hover { 
+  border-color: var(--gold); 
+  box-shadow: 0 0 0 1px var(--gold), 0 12px 24px rgba(0,0,0,0.2);
+  transform: translateY(-4px); 
+}
+
 .stat-label {
   font-size: 11px;
   font-weight: 700;
@@ -82,7 +93,7 @@ body {
 .stat-value {
   font-size: 40px;
   font-weight: 800;
-  color: var(--lime);
+  color: var(--gold);
   line-height: 1;
   letter-spacing: -1px;
 }
@@ -102,17 +113,24 @@ body {
   align-items: flex-start;
   gap: 16px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s ease;
 }
-.action-card:hover { background: #1A1A24; border-color: rgba(255,255,255,0.15); }
+
+/* 🌟 The Action Card Hover Effect */
+.action-card:hover { 
+  background: #2A2825; 
+  border-color: var(--gold); 
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
 .action-icon {
   width: 44px; height: 44px;
   border-radius: 10px;
-  background: rgba(168,255,62,0.08);
-  color: var(--lime);
+  background: var(--gold-dim);
+  color: var(--gold);
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; flex-shrink: 0;
-  border: 1px solid rgba(168,255,62,0.15);
+  border: 1px solid rgba(212, 175, 55, 0.2);
 }
 .action-text h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
 .action-text p { font-size: 13px; color: var(--slate); line-height: 1.5; }
