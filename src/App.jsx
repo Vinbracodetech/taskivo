@@ -49,6 +49,20 @@ export default function App() {
   var [loading, setLoading] = useState(true);
   var [activeTask, setActiveTask] = useState(null);
   var { toasts, show: showToast } = useToast();
+  
+  // ── THEME SWITCHER LOGIC ──
+  var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
+
+  useEffect(function () {
+    // Apply the theme class to the body element
+    document.body.className = "theme-" + theme;
+    // Save to local storage so it remembers next time
+    localStorage.setItem("taskivo-theme", theme);
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme(theme === "dark" ? "light" : "dark");
+  }
 
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
@@ -246,6 +260,11 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* ── FLOATING THEME TOGGLE ── */}
+      <button className="theme-toggle" onClick={toggleTheme}>
+        {theme === "dark" ? "☀️" : "🌙"}
+      </button>
 
       <Toast toasts={toasts} />
     </>
