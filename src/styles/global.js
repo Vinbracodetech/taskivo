@@ -1,19 +1,28 @@
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
-:root {
-  /* Premium Navy Blue Backgrounds */
-  --surface: #070B19; /* Deep Navy */
-  --surface-card: #0F172A; /* Slightly lighter Navy for cards */
-  
+/* ── DEFAULT DARK THEME (Navy/Gold) ── */
+:root, body.theme-dark {
+  --surface: #070B19; 
+  --surface-card: #0F172A; 
   --ink: #FFFFFF; 
-  --gold: #FFD700; /* Sharp, bright Gold */
-  --lime: #A8FF3E; /* Lemon / Lime */
-  
-  --line: rgba(255, 215, 0, 0.25); /* Faint gold for secondary borders */
+  --gold: #FFD700; 
+  --lime: #A8FF3E; 
+  --line: rgba(255, 215, 0, 0.25); 
   --slate: #94A3B8; 
   --font-body: 'DM Sans', sans-serif;
   --font-display: 'DM Sans', sans-serif;
+}
+
+/* ── PREMIUM LIGHT THEME ── */
+body.theme-light {
+  --surface: #F8FAFC; /* Clean off-white */
+  --surface-card: #FFFFFF; /* Pure white cards */
+  --ink: #0F172A; /* Deep navy text for readability */
+  --gold: #B48E2D; /* Slightly darker gold to show up on white */
+  --lime: #4D7C0F; /* Darker green for text readability */
+  --line: #E2E8F0; /* Soft gray borders */
+  --slate: #64748B;
 }
 
 * {
@@ -27,6 +36,33 @@ body {
   background-color: var(--surface);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  background: var(--surface-card);
+  border: 1px solid var(--line);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: all 0.2s;
+}
+.theme-toggle:hover {
+  transform: translateY(-2px);
+  border-color: var(--lime);
+  color: var(--lime);
 }
 
 /* Buttons */
@@ -35,7 +71,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 10px 20px;
-  border-radius: 4px; /* Sharper edges */
+  border-radius: 4px; 
   font-weight: 700;
   cursor: pointer;
   border: 1px solid transparent;
@@ -54,36 +90,35 @@ body {
 .btn-outline { background: transparent; border: 1px solid var(--line); color: var(--ink); }
 
 /* App Layout Shell */
-.app-shell { display: flex; min-height: 100vh; background: var(--surface); }
-.sidebar { width: 260px; background: #050812; color: #fff; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; border-right: 1px solid var(--line); }
+.app-shell { display: flex; min-height: 100vh; background: var(--surface); transition: background-color 0.3s ease; }
+.sidebar { width: 260px; background: var(--surface-card); color: var(--ink); display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; border-right: 1px solid var(--line); transition: background-color 0.3s ease; }
 .main-content { flex: 1; margin-left: 260px; min-height: 100vh; }
 .page { padding: 40px; max-width: 1000px; margin: 0 auto; }
 
 /* ── PREMIUM DASHBOARD STYLES ── */
 .dashboard-header { 
   margin-bottom: 32px; 
-  border-left: 4px solid var(--gold); /* Sharp gold accent line */
+  border-left: 4px solid var(--gold); 
   padding-left: 16px; 
 }
-.dashboard-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; color: #fff; }
+.dashboard-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; color: var(--ink); }
 .dashboard-sub { color: var(--slate); font-size: 15px; }
 
 /* Stat Cards */
 .stat-card {
   background: var(--surface-card);
-  border: 1px solid var(--gold); /* Sharp gold border on all edges */
-  border-radius: 4px; /* Sharp corners instead of rounded */
+  border: 1px solid var(--line); 
+  border-radius: 4px; 
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   transition: all 0.25s ease;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
   position: relative;
   overflow: hidden;
 }
 
-/* Mix of Lemon and Gold on top edge */
 .stat-card::before {
   content: '';
   position: absolute;
@@ -91,10 +126,8 @@ body {
   background: linear-gradient(90deg, var(--gold), var(--lime));
 }
 
-/* Hover Effect: Switch to Lemon Glow */
 .stat-card:hover { 
   border-color: var(--lime); 
-  box-shadow: 0 0 0 1px var(--lime), 0 12px 24px rgba(168,255,62,0.15);
   transform: translateY(-4px); 
 }
 
@@ -104,15 +137,12 @@ body {
   color: var(--slate);
   text-transform: uppercase;
   letter-spacing: 1px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .stat-value {
   font-size: 40px;
   font-weight: 800;
-  color: var(--lime); /* Lemon color for the big numbers */
+  color: var(--lime); 
   line-height: 1;
   letter-spacing: -1px;
 }
@@ -126,7 +156,7 @@ body {
 .action-card {
   background: var(--surface-card);
   border: 1px solid var(--line);
-  border-radius: 4px; /* Sharp */
+  border-radius: 4px; 
   padding: 20px;
   display: flex;
   align-items: flex-start;
@@ -136,7 +166,6 @@ body {
   position: relative;
 }
 
-/* Sharp gold side accent */
 .action-card::before {
   content: '';
   position: absolute;
@@ -145,9 +174,7 @@ body {
   transition: all 0.2s;
 }
 
-/* Action Card Hover */
 .action-card:hover { 
-  background: #151E32; 
   border-color: var(--lime); 
 }
 .action-card:hover::before {
@@ -157,18 +184,17 @@ body {
 
 .action-icon {
   width: 44px; height: 44px;
-  border-radius: 4px; /* Sharp */
-  background: rgba(255, 215, 0, 0.1);
+  border-radius: 4px; 
+  background: rgba(212, 175, 55, 0.1);
   color: var(--gold);
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; flex-shrink: 0;
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  border: 1px solid rgba(212, 175, 55, 0.3);
 }
 
 .action-card:hover .action-icon {
-  background: rgba(168, 255, 62, 0.1);
   color: var(--lime);
-  border-color: rgba(168, 255, 62, 0.3);
+  border-color: var(--lime);
 }
 
 .action-text h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
