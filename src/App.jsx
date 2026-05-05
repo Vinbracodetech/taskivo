@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import TaskPlayer from "./pages/TaskPlayer.jsx";
 import Wallet from "./pages/Wallet.jsx";
 import Withdraw from "./pages/Withdraw.jsx";
+import Tasks from "./pages/Tasks.jsx";
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
 import CreatorTasks from "./pages/CreatorTasks.jsx";
@@ -120,10 +121,14 @@ export default function App() {
   }
 
   // ── navigate updates view AND browser history ──
-  function navigate(v) {
+  function navigate(v, params) {
+    if (params && params.taskId) {
+      var task = null;
+      // find task from params
+      setActiveTask({ id: params.taskId });
+    }
     setView(v);
     window.scrollTo(0, 0);
-    // Push to browser history so back button works
     window.history.pushState({ view: v }, "", "#" + v);
   }
 
@@ -207,7 +212,9 @@ export default function App() {
               <Dashboard user={user} navigate={navigate} showToast={showToast} />
             )}
             {view === "tasks" && user && (
-              <ComingSoon title="Tasks — coming soon" />
+              <Tasks user={user} navigate={navigate} showToast={showToast} />
+            )}
+            {view === "task-player" && user && activeTask && (
             )}
             {view === "task-player" && user && activeTask && (
               <TaskPlayer
