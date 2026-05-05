@@ -16,14 +16,209 @@ export default function Landing({ navigate }) {
   useEffect(function () {
     document.title = 'Taskivo — Complete Tasks. Get Paid.';
     
-    // Add viewport meta tag to ensure proper scaling
+    // Add viewport meta tag for proper mobile scaling
     let viewport = document.querySelector('meta[name=viewport]');
     if (!viewport) {
       viewport = document.createElement('meta');
       viewport.name = 'viewport';
-      viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes';
+      viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0';
       document.head.appendChild(viewport);
     }
+  }, []);
+
+  // Single style injection - simplified for mobile
+  useEffect(function () {
+    if (document.getElementById('taskivo-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'taskivo-styles';
+    style.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap');
+      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+      
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        overflow-x: hidden;
+        width: 100%;
+      }
+      
+      /* MOBILE FIRST - ALL STYLES FOR SMALL SCREENS */
+      .lp-hero-title { 
+        font-size: 32px !important; 
+        letter-spacing: -1px !important; 
+        line-height: 1.1 !important; 
+      }
+      .lp-hero-pad { 
+        padding: 48px 16px 40px 16px !important; 
+      }
+      .lp-hero-sub { 
+        font-size: 14px !important; 
+        margin: 20px auto !important; 
+        max-width: 90% !important;
+      }
+      .lp-hero-actions-mb { 
+        margin-bottom: 32px !important; 
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        align-items: center !important;
+      }
+      .lp-btn-hero { 
+        padding: 10px 20px !important; 
+        font-size: 13px !important; 
+        min-width: 160px !important;
+      }
+      .lp-stat-num { 
+        font-size: 18px !important; 
+        letter-spacing: -0.5px !important; 
+      }
+      .lp-stat-label { 
+        font-size: 9px !important; 
+      }
+      .lp-stat-pad { 
+        padding: 0 8px !important; 
+      }
+      
+      .lp-section-pad { 
+        padding: 48px 16px !important; 
+      }
+      .lp-section-title { 
+        font-size: 24px !important; 
+        letter-spacing: -0.5px !important; 
+      }
+      .lp-section-sub { 
+        font-size: 13px !important; 
+        margin-bottom: 24px !important; 
+      }
+      
+      .lp-audience-grid { 
+        grid-template-columns: 1fr !important; 
+        gap: 16px !important;
+      }
+      .lp-audience-card-pad { 
+        padding: 20px 16px !important; 
+      }
+      .lp-audience-title { 
+        font-size: 18px !important; 
+        letter-spacing: -0.3px !important; 
+      }
+      .lp-audience-desc { 
+        font-size: 13px !important; 
+        margin-bottom: 16px !important; 
+      }
+      .lp-step-text { 
+        font-size: 12px !important; 
+      }
+      .lp-audience-btn { 
+        font-size: 12px !important; 
+        padding: 10px 16px !important; 
+      }
+      
+      .lp-features-grid { 
+        grid-template-columns: 1fr !important; 
+        gap: 12px !important; 
+      }
+      .lp-feature-card-pad { 
+        padding: 16px 14px !important; 
+      }
+      .lp-feature-name { 
+        font-size: 14px !important; 
+      }
+      .lp-feature-desc { 
+        font-size: 12px !important; 
+      }
+      
+      .lp-proof-grid { 
+        grid-template-columns: 1fr !important; 
+        gap: 12px !important; 
+      }
+      .lp-proof-card-pad { 
+        padding: 16px !important; 
+      }
+      .lp-proof-text { 
+        font-size: 12px !important; 
+      }
+      
+      .lp-cta-pad { 
+        padding: 48px 16px !important; 
+      }
+      .lp-cta-title { 
+        font-size: 28px !important; 
+        letter-spacing: -0.5px !important; 
+      }
+      .lp-cta-sub { 
+        font-size: 13px !important; 
+      }
+      .lp-trust-row { 
+        margin-top: 20px !important; 
+        gap: 16px !important; 
+        flex-wrap: wrap !important;
+      }
+      
+      .lp-footer-pad { 
+        padding: 40px 16px 24px 16px !important; 
+      }
+      .lp-footer-grid { 
+        grid-template-columns: 1fr 1fr !important; 
+        gap: 28px !important; 
+      }
+      .lp-footer-brand-span { 
+        grid-column: 1 / -1 !important; 
+      }
+      
+      .lp-nav-height { 
+        height: 56px !important; 
+      }
+      .lp-nav-pad { 
+        padding: 0 16px !important; 
+      }
+      .lp-nav-brand { 
+        font-size: 18px !important; 
+      }
+      .lp-nav-btn-ghost { 
+        font-size: 12px !important; 
+        padding: 6px 12px !important; 
+      }
+      .lp-nav-btn-primary { 
+        font-size: 12px !important; 
+        padding: 7px 14px !important; 
+      }
+      
+      /* Tablet styles */
+      @media (min-width: 600px) {
+        .lp-hero-title { font-size: 44px !important; }
+        .lp-hero-pad { padding: 60px 24px 50px 24px !important; }
+        .lp-hero-actions-mb { flex-direction: row !important; justify-content: center !important; }
+        .lp-features-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        .lp-section-pad { padding: 60px 24px !important; }
+        .lp-section-title { font-size: 32px !important; }
+      }
+      
+      /* Desktop styles */
+      @media (min-width: 1024px) {
+        .lp-hero-title { font-size: 56px !important; }
+        .lp-hero-pad { padding: 88px 5% 72px !important; }
+        .lp-features-grid { grid-template-columns: repeat(3, 1fr) !important; }
+        .lp-audience-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 2px !important; }
+        .lp-proof-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        .lp-footer-grid { grid-template-columns: 1.5fr 1fr 1fr 1fr !important; }
+        .lp-footer-brand-span { grid-column: auto !important; }
+        .lp-section-title { font-size: 36px !important; }
+        .lp-cta-title { font-size: 48px !important; }
+      }
+      
+      /* Utility */
+      .max-width-constrain {
+        max-width: 680px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    `;
+    document.head.appendChild(style);
   }, []);
 
   const features = [
@@ -36,10 +231,10 @@ export default function Landing({ navigate }) {
   ];
 
   const testimonials = [
-    { initials: 'JR', name: 'James R.', role: 'Earner — United States', text: '"I completed 12 tasks in my first week and withdrew straight to PayPal. The timer system makes it feel legitimate."' },
+    { initials: 'JR', name: 'James R.', role: 'Earner — United States', text: '"I completed 12 tasks in my first week and withdrew straight to PayPal. The timer system makes it feel legitimate compared to other platforms."' },
     { initials: 'AO', name: 'Amaka O.', role: 'Earner — Nigeria', text: '"I\'ve already withdrawn three times via Paystack. The quiz makes it fair — only real viewers get paid."' },
-    { initials: 'FK', name: 'Faith K.', role: 'Earner — Kenya', text: '"Tasks go live every day and the points add up fast. I love that I can do this from my phone."' },
-    { initials: 'MC', name: 'Marcus C.', role: 'Creator — Canada', text: '"I tried other platforms and got bot views. With Taskivo every viewer answered my quiz correctly."' },
+    { initials: 'FK', name: 'Faith K.', role: 'Earner — Kenya', text: '"Tasks go live every day and the points add up fast. I love that I can do this from my phone during my lunch break."' },
+    { initials: 'MC', name: 'Marcus C.', role: 'Creator — Canada', text: '"I tried other platforms and got bot views. With Taskivo every viewer answered my quiz correctly. That\'s actual watch time."' },
   ];
 
   const earnerSteps = [
@@ -56,162 +251,95 @@ export default function Landing({ navigate }) {
     'Watch real engagement arrive on your video',
   ];
 
-  // Mobile screen detection
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-
   return (
     <div style={{ 
       fontFamily: "'DM Sans', sans-serif", 
       background: C.off, 
       color: C.ink, 
-      minHeight: '100vh',
+      minHeight: '100vh', 
       width: '100%',
       overflowX: 'hidden',
-      margin: 0,
-      padding: 0,
     }}>
 
       {/* NAV */}
-      <nav style={{
-        position: 'sticky', 
-        top: 0, 
-        zIndex: 99,
-        display: 'flex', 
-        alignItems: 'center',
-        justifyContent: 'space-between',
+      <nav className="lp-nav-height lp-nav-pad" style={{
+        position: 'sticky', top: 0, zIndex: 99,
+        display: 'flex', alignItems: 'center',
         background: 'rgba(255,255,255,0.95)',
         backdropFilter: 'blur(16px)',
         borderBottom: `1px solid ${C.line}`,
-        padding: isMobile ? '10px 16px' : '12px 24px',
+        width: '100%',
       }}>
-        <div style={{
+        <div className="lp-nav-brand" style={{
           fontFamily: "'Syne', sans-serif",
-          fontWeight: 800, 
-          color: C.ink,
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 6,
-          fontSize: isMobile ? 16 : 19,
+          fontWeight: 800, color: C.ink, flex: 1, letterSpacing: '-0.5px',
+          display: 'flex', alignItems: 'center', gap: 6,
         }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.lime, display: 'inline-block' }}></span>
           Taskivo
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button style={{
-            background: 'none', 
-            border: 'none', 
-            fontWeight: 500,
-            color: C.slate, 
-            cursor: 'pointer',
-            fontFamily: "'DM Sans', sans-serif", 
-            borderRadius: 8,
-            padding: isMobile ? '5px 9px' : '7px 14px',
-            fontSize: isMobile ? 11 : 13,
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button className="lp-nav-btn-ghost" style={{
+            background: 'none', border: 'none', fontWeight: 500,
+            color: C.slate, cursor: 'pointer',
+            fontFamily: "'DM Sans', sans-serif", borderRadius: 8,
           }} onClick={function () { navigate('auth'); }}>Log in</button>
-          <button style={{
-            background: C.ink, 
-            border: 'none',
-            fontWeight: 600, 
-            color: C.lime, 
-            cursor: 'pointer',
-            fontFamily: "'DM Sans', sans-serif", 
-            borderRadius: 8,
-            padding: isMobile ? '6px 11px' : '8px 16px',
-            fontSize: isMobile ? 11 : 13,
+          <button className="lp-nav-btn-primary" style={{
+            background: C.ink, border: 'none',
+            fontWeight: 600, color: C.lime, cursor: 'pointer',
+            fontFamily: "'DM Sans', sans-serif", borderRadius: 8,
           }} onClick={function () { navigate('auth'); }}>Get Started →</button>
         </div>
       </nav>
 
       {/* HERO */}
-      <div style={{ 
-        background: C.ink, 
-        padding: isMobile ? '44px 16px 40px 16px' : '88px 24px 72px 24px',
-      }}>
-        <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
+      <div className="lp-hero-pad" style={{ background: C.ink, position: 'relative', overflow: 'hidden', width: '100%' }}>
+        <div style={{
+          position: 'absolute', top: -120, left: '50%', transform: 'translateX(-50%)',
+          width: 400, height: 400,
+          background: 'radial-gradient(ellipse at center, rgba(168,255,62,0.08) 0%, transparent 65%)',
+          pointerEvents: 'none',
+        }}></div>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 680, margin: '0 auto', textAlign: 'center', padding: '0 8px' }}>
           <div style={{
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: 6,
+            display: 'inline-flex', alignItems: 'center', gap: 6,
             background: 'rgba(168,255,62,0.08)',
             border: '1px solid rgba(168,255,62,0.18)',
-            color: 'rgba(168,255,62,0.8)',
-            fontSize: isMobile ? 8 : 10, 
-            fontWeight: 600,
-            letterSpacing: '1.2px', 
-            textTransform: 'uppercase',
-            padding: '4px 10px', 
-            borderRadius: 100, 
-            marginBottom: isMobile ? 16 : 22,
+            color: C.lime,
+            fontSize: 10, fontWeight: 600,
+            letterSpacing: '1.2px', textTransform: 'uppercase',
+            padding: '4px 10px', borderRadius: 100, marginBottom: 20,
           }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.lime }}></span>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.lime, animation: 'pulse 2s infinite' }}></span>
             LIVE — TASKS AVAILABLE NOW
           </div>
-          
-          <h1 style={{
+          <h1 className="lp-hero-title" style={{
             fontFamily: "'Syne', sans-serif",
             fontWeight: 800,
-            color: C.white, 
-            marginBottom: isMobile ? 8 : 14,
-            fontSize: isMobile ? 28 : 56,
-            lineHeight: 1.1,
-            letterSpacing: isMobile ? '-0.8px' : '-2px',
+            color: C.white, marginBottom: 12,
           }}>
             Complete Tasks.<br />
             <span style={{ color: C.lime }}>Get Paid.</span><br />
             Grow Faster.
           </h1>
-          
-          <p style={{
-            lineHeight: 1.6, 
-            color: 'rgba(255,255,255,0.45)',
-            maxWidth: 400, 
-            fontWeight: 400, 
-            margin: '0 auto',
-            fontSize: isMobile ? 12 : 16,
-            padding: '0 8px',
+          <p className="lp-hero-sub" style={{
+            lineHeight: 1.6, color: 'rgba(255,255,255,0.45)',
+            maxWidth: 400, fontWeight: 400, margin: '0 auto',
           }}>
             The platform where earners complete real YouTube tasks and creators get genuine engagement. Simple. Transparent. Global.
           </p>
-          
-          <div style={{ 
-            display: 'flex', 
-            gap: 10, 
-            justifyContent: 'center', 
-            flexWrap: 'wrap',
-            margin: isMobile ? '28px 0 32px 0' : '36px 0 56px 0',
-          }}>
-            <button style={{
-              background: C.lime, 
-              color: C.ink, 
-              border: 'none', 
-              borderRadius: 10,
-              fontWeight: 700, 
-              cursor: 'pointer', 
-              fontFamily: "'DM Sans', sans-serif",
-              padding: isMobile ? '10px 16px' : '13px 26px',
-              fontSize: isMobile ? 12 : 14,
+          <div className="lp-hero-actions-mb" style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', margin: '28px 0' }}>
+            <button className="lp-btn-hero" style={{
+              background: C.lime, color: C.ink, border: 'none', borderRadius: 10,
+              fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
             }} onClick={function () { navigate('auth'); }}>Start Earning Free →</button>
-            <button style={{
-              background: 'rgba(255,255,255,0.06)', 
-              color: 'rgba(255,255,255,0.75)',
-              border: '1px solid rgba(255,255,255,0.12)', 
-              borderRadius: 10,
-              fontWeight: 500, 
-              cursor: 'pointer', 
-              fontFamily: "'DM Sans', sans-serif",
-              padding: isMobile ? '10px 16px' : '13px 26px',
-              fontSize: isMobile ? 12 : 14,
+            <button className="lp-btn-hero" style={{
+              background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.75)',
+              border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10,
+              fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
             }} onClick={function () { navigate('auth'); }}>I'm a Creator</button>
           </div>
-          
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            borderTop: '1px solid rgba(255,255,255,0.06)', 
-            paddingTop: isMobile ? 20 : 28,
-            flexWrap: 'wrap',
-            gap: '8px',
-          }}>
+          <div style={{ display: 'flex', justifyContent: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 24, flexWrap: 'wrap', gap: 8 }}>
             {[
               { num: '50K+', label: 'Active Earners' },
               { num: '2.1M', label: 'Points Awarded' },
@@ -219,24 +347,12 @@ export default function Landing({ navigate }) {
               { num: '30+', label: 'Countries' },
             ].map(function (stat, i, arr) {
               return (
-                <div key={i} style={{
-                  flex: 1, 
-                  textAlign: 'center', 
-                  minWidth: isMobile ? '70px' : 'auto',
+                <div key={i} className="lp-stat-pad" style={{
+                  flex: 1, textAlign: 'center', minWidth: '70px',
                   borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
                 }}>
-                  <div style={{ 
-                    fontFamily: "'Syne', sans-serif", 
-                    fontWeight: 800, 
-                    color: C.white,
-                    fontSize: isMobile ? 15 : 26,
-                  }}>{stat.num}</div>
-                  <div style={{ 
-                    color: 'rgba(255,255,255,0.3)', 
-                    marginTop: 3, 
-                    fontWeight: 400,
-                    fontSize: isMobile ? 8 : 11,
-                  }}>{stat.label}</div>
+                  <div className="lp-stat-num" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.white }}>{stat.num}</div>
+                  <div className="lp-stat-label" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 3, fontWeight: 400 }}>{stat.label}</div>
                 </div>
               );
             })}
@@ -244,123 +360,37 @@ export default function Landing({ navigate }) {
         </div>
       </div>
 
-      {/* AUDIENCE SECTION */}
-      <section style={{ 
-        background: C.white, 
-        padding: isMobile ? '44px 16px' : '80px 24px',
-      }}>
-        <div style={{ maxWidth: 480, marginBottom: 28 }}>
-          <div style={{ 
-            fontSize: isMobile ? 10 : 11, 
-            fontWeight: 600, 
-            letterSpacing: 2, 
-            textTransform: 'uppercase', 
-            color: C.lime, 
-            marginBottom: 8 
-          }}>WHO IS TASKIVO FOR?</div>
-          <h2 style={{ 
-            fontFamily: "'Syne', sans-serif", 
-            fontWeight: 800, 
-            color: C.ink, 
-            lineHeight: 1.2, 
-            marginBottom: 10,
-            fontSize: isMobile ? 20 : 36,
-          }}>Two sides.<br />One platform.</h2>
-          <p style={{ 
-            color: C.slate, 
-            lineHeight: 1.6,
-            fontSize: isMobile ? 12 : 15,
-          }}>
+      {/* AUDIENCE - For Earners & For Creators */}
+      <section className="lp-section-pad" style={{ background: C.white, width: '100%' }}>
+        <div style={{ maxWidth: 480, marginBottom: 28, marginLeft: 'auto', marginRight: 'auto' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: C.lime, marginBottom: 8 }}>WHO IS TASKIVO FOR?</div>
+          <h2 className="lp-section-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.2, marginBottom: 10 }}>Two sides.<br />One platform.</h2>
+          <p className="lp-section-sub" style={{ color: C.slate, lineHeight: 1.6 }}>
             Whether you want to earn money completing tasks or grow your YouTube channel with verified engagement — Taskivo was built for you.
           </p>
         </div>
-        
-        <div style={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: 16,
-        }}>
+        <div className="lp-audience-grid" style={{ display: 'grid', gap: 16 }}>
           {[
             { tag: 'FOR EARNERS', title: 'Complete tasks.\nEarn real cash.', desc: 'Watch YouTube videos, complete simple actions, and withdraw real money. No experience needed. Works from any phone.', steps: earnerSteps, btn: 'Start Earning Free →' },
             { tag: 'FOR CREATORS', title: 'Real views.\nReal engagement.', desc: 'Get verified views, likes, and comments from real people. Every earner passes a quiz proving they actually watched.', steps: creatorSteps, btn: 'Post Your First Task →' },
           ].map(function (card, ci) {
             return (
-              <div key={ci} style={{ 
-                background: C.white, 
-                position: 'relative',
-                border: `1px solid ${C.line}`,
-                borderRadius: 16,
-                flex: 1,
-                padding: isMobile ? '24px 16px' : '40px 36px',
-              }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.lime, borderTopLeftRadius: 16, borderTopRightRadius: 16 }}></div>
-                <span style={{ 
-                  display: 'inline-block', 
-                  background: C.limeDim, 
-                  color: '#4a7a00', 
-                  fontSize: isMobile ? 10 : 11, 
-                  fontWeight: 700, 
-                  letterSpacing: 1, 
-                  textTransform: 'uppercase', 
-                  padding: '4px 10px', 
-                  borderRadius: 6, 
-                  marginBottom: 14 
-                }}>{card.tag}</span>
-                <div style={{ 
-                  fontFamily: "'Syne', sans-serif", 
-                  fontWeight: 800, 
-                  color: C.ink, 
-                  marginBottom: 8, 
-                  whiteSpace: 'pre-line',
-                  fontSize: isMobile ? 18 : 22,
-                }}>{card.title}</div>
-                <p style={{ 
-                  color: C.slate, 
-                  lineHeight: 1.6,
-                  fontSize: isMobile ? 12 : 14,
-                  marginBottom: 20,
-                }}>{card.desc}</p>
+              <div key={ci} className="lp-audience-card-pad" style={{ background: C.white, position: 'relative', border: `1px solid ${C.line}`, borderRadius: 16, overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: C.lime }}></div>
+                <span style={{ display: 'inline-block', background: C.limeDim, color: '#4a7a00', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 6, marginBottom: 14 }}>{card.tag}</span>
+                <div className="lp-audience-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, marginBottom: 8, whiteSpace: 'pre-line' }}>{card.title}</div>
+                <p className="lp-audience-desc" style={{ color: C.slate, lineHeight: 1.6 }}>{card.desc}</p>
                 <ul style={{ listStyle: 'none', padding: 0, marginBottom: 20 }}>
                   {card.steps.map(function (step, i) {
                     return (
                       <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
-                        <span style={{ 
-                          width: 20, 
-                          height: 20, 
-                          borderRadius: '50%', 
-                          background: C.ink, 
-                          color: C.lime, 
-                          fontSize: 10, 
-                          fontWeight: 800, 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          flexShrink: 0, 
-                          marginTop: 2 
-                        }}>{i + 1}</span>
-                        <span style={{ 
-                          color: '#444', 
-                          lineHeight: 1.5,
-                          fontSize: isMobile ? 12 : 13,
-                        }}>{step}</span>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: C.ink, color: C.lime, fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                        <span className="lp-step-text" style={{ color: '#444', lineHeight: 1.5 }}>{step}</span>
                       </li>
                     );
                   })}
                 </ul>
-                <button style={{ 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  gap: 6, 
-                  background: C.ink, 
-                  color: C.lime, 
-                  border: 'none', 
-                  borderRadius: 8, 
-                  fontWeight: 600, 
-                  cursor: 'pointer', 
-                  fontFamily: "'DM Sans', sans-serif",
-                  padding: isMobile ? '9px 14px' : '10px 18px',
-                  fontSize: isMobile ? 12 : 13,
-                }} onClick={function () { navigate('auth'); }}>{card.btn}</button>
+                <button className="lp-audience-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: C.ink, color: C.lime, border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={function () { navigate('auth'); }}>{card.btn}</button>
               </div>
             );
           })}
@@ -368,70 +398,19 @@ export default function Landing({ navigate }) {
       </section>
 
       {/* FEATURES */}
-      <section style={{ 
-        background: C.off, 
-        padding: isMobile ? '44px 16px' : '80px 24px',
-      }}>
-        <div style={{ 
-          fontSize: isMobile ? 10 : 11, 
-          fontWeight: 600, 
-          letterSpacing: 2, 
-          textTransform: 'uppercase', 
-          color: C.lime, 
-          marginBottom: 8 
-        }}>PLATFORM FEATURES</div>
-        <h2 style={{ 
-          fontFamily: "'Syne', sans-serif", 
-          fontWeight: 800, 
-          color: C.ink, 
-          lineHeight: 1.2, 
-          marginBottom: 10,
-          fontSize: isMobile ? 20 : 36,
-        }}>Built for trust.<br />Designed for scale.</h2>
-        <p style={{ 
-          color: C.slate, 
-          lineHeight: 1.6, 
-          maxWidth: 440,
-          fontSize: isMobile ? 12 : 15,
-          marginBottom: isMobile ? 24 : 36,
-        }}>Every feature exists to guarantee genuine engagement — not gaming the system.</p>
-        
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-          gap: 12,
-        }}>
+      <section className="lp-section-pad" style={{ background: C.off, width: '100%' }}>
+        <div style={{ maxWidth: 680, marginLeft: 'auto', marginRight: 'auto' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: C.lime, marginBottom: 8 }}>PLATFORM FEATURES</div>
+          <h2 className="lp-section-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.2, marginBottom: 10 }}>Built for trust.<br />Designed for scale.</h2>
+          <p className="lp-section-sub" style={{ color: C.slate, lineHeight: 1.6 }}>Every feature exists to guarantee genuine engagement — not gaming the system.</p>
+        </div>
+        <div className="lp-features-grid" style={{ display: 'grid', gap: 12, maxWidth: 680, marginLeft: 'auto', marginRight: 'auto' }}>
           {features.map(function (f, i) {
             return (
-              <div key={i} style={{ 
-                background: C.white, 
-                borderRadius: 14, 
-                border: `1px solid ${C.line}`,
-                padding: isMobile ? '14px 12px' : '28px 24px',
-              }}>
-                <div style={{ 
-                  width: isMobile ? 32 : 36, 
-                  height: isMobile ? 32 : 36, 
-                  borderRadius: 10, 
-                  background: C.limeDim, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  fontSize: isMobile ? 16 : 18, 
-                  marginBottom: 10 
-                }}>{f.icon}</div>
-                <div style={{ 
-                  fontFamily: "'Syne', sans-serif", 
-                  fontWeight: 700, 
-                  color: C.ink, 
-                  marginBottom: 5,
-                  fontSize: isMobile ? 12 : 15,
-                }}>{f.name}</div>
-                <p style={{ 
-                  color: C.slate, 
-                  lineHeight: 1.6,
-                  fontSize: isMobile ? 11 : 13,
-                }}>{f.desc}</p>
+              <div key={i} className="lp-feature-card-pad" style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.line}` }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: C.limeDim, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, marginBottom: 10 }}>{f.icon}</div>
+                <div className="lp-feature-name" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, color: C.ink, marginBottom: 5 }}>{f.name}</div>
+                <p className="lp-feature-desc" style={{ color: C.slate, lineHeight: 1.6 }}>{f.desc}</p>
               </div>
             );
           })}
@@ -439,73 +418,23 @@ export default function Landing({ navigate }) {
       </section>
 
       {/* TESTIMONIALS */}
-      <section style={{ 
-        background: C.ink, 
-        padding: isMobile ? '44px 16px' : '80px 24px',
-      }}>
-        <div style={{ 
-          fontSize: isMobile ? 10 : 11, 
-          fontWeight: 600, 
-          letterSpacing: 2, 
-          textTransform: 'uppercase', 
-          color: 'rgba(168,255,62,0.5)', 
-          marginBottom: 8 
-        }}>WHAT PEOPLE SAY</div>
-        <h2 style={{ 
-          fontFamily: "'Syne', sans-serif", 
-          fontWeight: 800, 
-          color: C.white, 
-          lineHeight: 1.2, 
-          marginBottom: 10,
-          fontSize: isMobile ? 20 : 36,
-        }}>Trusted worldwide.</h2>
-        <p style={{ 
-          color: 'rgba(255,255,255,0.4)', 
-          lineHeight: 1.6, 
-          maxWidth: 440,
-          fontSize: isMobile ? 12 : 15,
-          marginBottom: isMobile ? 24 : 36,
-        }}>Real people. Real results. Real money.</p>
-        
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
-          gap: 12,
-        }}>
+      <section className="lp-section-pad" style={{ background: C.ink, width: '100%' }}>
+        <div style={{ maxWidth: 680, marginLeft: 'auto', marginRight: 'auto' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(168,255,62,0.5)', marginBottom: 8 }}>WHAT PEOPLE SAY</div>
+          <h2 className="lp-section-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.white, lineHeight: 1.2, marginBottom: 10 }}>Trusted worldwide.</h2>
+          <p className="lp-section-sub" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>Real people. Real results. Real money.</p>
+        </div>
+        <div className="lp-proof-grid" style={{ display: 'grid', gap: 12, maxWidth: 680, marginLeft: 'auto', marginRight: 'auto' }}>
           {testimonials.map(function (t, i) {
             return (
-              <div key={i} style={{ 
-                background: 'rgba(255,255,255,0.04)', 
-                border: '1px solid rgba(255,255,255,0.07)', 
-                borderRadius: 14,
-                padding: isMobile ? '16px' : '24px',
-              }}>
-                <div style={{ color: C.lime, fontSize: isMobile ? 10 : 11, marginBottom: 10, letterSpacing: 2 }}>★★★★★</div>
-                <p style={{ 
-                  color: 'rgba(255,255,255,0.6)', 
-                  lineHeight: 1.7, 
-                  marginBottom: 16, 
-                  fontStyle: 'italic',
-                  fontSize: isMobile ? 11 : 13,
-                }}>{t.text}</p>
+              <div key={i} className="lp-proof-card-pad" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14 }}>
+                <div style={{ color: C.lime, fontSize: 11, marginBottom: 10, letterSpacing: 2 }}>★★★★★</div>
+                <p className="lp-proof-text" style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, marginBottom: 16, fontStyle: 'italic' }}>{t.text}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ 
-                    width: 32, 
-                    height: 32, 
-                    borderRadius: '50%', 
-                    background: C.limeDim, 
-                    border: `1px solid ${C.limeBorder}`, 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    fontSize: isMobile ? 10 : 11, 
-                    fontWeight: 700, 
-                    color: C.lime, 
-                    flexShrink: 0 
-                  }}>{t.initials}</div>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.limeDim, border: `1px solid ${C.limeBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: C.lime, flexShrink: 0 }}>{t.initials}</div>
                   <div>
-                    <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 600, color: C.white }}>{t.name}</div>
-                    <div style={{ fontSize: isMobile ? 10 : 11, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{t.role}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.white }}>{t.name}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>{t.role}</div>
                   </div>
                 </div>
               </div>
@@ -515,148 +444,55 @@ export default function Landing({ navigate }) {
       </section>
 
       {/* CTA */}
-      <section style={{ 
-        background: C.white, 
-        borderTop: `1px solid ${C.line}`, 
-        textAlign: 'center',
-        padding: isMobile ? '52px 16px' : '100px 24px',
-      }}>
-        <div style={{ 
-          display: 'inline-block', 
-          background: C.limeDim, 
-          color: '#3d6600', 
-          fontSize: isMobile ? 10 : 11, 
-          fontWeight: 700, 
-          letterSpacing: 1, 
-          textTransform: 'uppercase', 
-          padding: '4px 12px', 
-          borderRadius: 6, 
-          marginBottom: 18 
-        }}>JOIN FREE TODAY</div>
-        <h2 style={{ 
-          fontFamily: "'Syne', sans-serif", 
-          fontWeight: 800, 
-          color: C.ink, 
-          marginBottom: 12,
-          fontSize: isMobile ? 24 : 48,
-          lineHeight: 1.15,
-        }}>
-          Your time is{' '}<span style={{ color: C.lime, textDecoration: 'underline', textDecorationColor: 'rgba(168,255,62,0.4)' }}>worth more.</span>
-        </h2>
-        <p style={{ 
-          color: C.slate, 
-          marginBottom: 28, 
-          maxWidth: 360, 
-          marginLeft: 'auto', 
-          marginRight: 'auto', 
-          lineHeight: 1.6,
-          fontSize: isMobile ? 12 : 15,
-          padding: '0 8px',
-        }}>
-          Join thousands of earners already making money on Taskivo. Free to join. No skills required.
-        </p>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button style={{ 
-            background: C.ink, 
-            color: C.lime, 
-            border: 'none', 
-            borderRadius: 10, 
-            fontWeight: 700, 
-            cursor: 'pointer', 
-            fontFamily: "'DM Sans', sans-serif",
-            padding: isMobile ? '10px 16px' : '13px 26px',
-            fontSize: isMobile ? 12 : 14,
-          }} onClick={function () { navigate('auth'); }}>Start Earning Free →</button>
-          <button style={{ 
-            background: 'none', 
-            color: C.slate, 
-            border: `1px solid ${C.line}`, 
-            borderRadius: 10, 
-            fontWeight: 500, 
-            cursor: 'pointer', 
-            fontFamily: "'DM Sans', sans-serif",
-            padding: isMobile ? '10px 16px' : '13px 26px',
-            fontSize: isMobile ? 12 : 14,
-          }} onClick={function () { navigate('auth'); }}>Post a Task</button>
-        </div>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          flexWrap: 'wrap', 
-          gap: isMobile ? 12 : 20,
-          marginTop: isMobile ? 14 : 20,
-        }}>
-          {['Free to join', 'Instant payouts', 'No experience needed'].map(function (item) {
-            return (
-              <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: isMobile ? 10 : 12, color: C.slate }}>
-                <div style={{ 
-                  width: 16, 
-                  height: 16, 
-                  borderRadius: '50%', 
-                  background: C.limeDim, 
-                  color: '#3d6600', 
-                  fontSize: 9, 
-                  fontWeight: 800, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center' 
-                }}>✓</div>
-                {item}
-              </div>
-            );
-          })}
+      <section className="lp-cta-pad" style={{ background: C.white, borderTop: `1px solid ${C.line}`, textAlign: 'center', width: '100%' }}>
+        <div style={{ maxWidth: 680, marginLeft: 'auto', marginRight: 'auto' }}>
+          <div style={{ display: 'inline-block', background: C.limeDim, color: '#3d6600', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '5px 12px', borderRadius: 6, marginBottom: 18 }}>JOIN FREE TODAY</div>
+          <h2 className="lp-cta-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, marginBottom: 12, lineHeight: 1.15 }}>
+            Your next payout<br />is one task away.
+          </h2>
+          <p className="lp-cta-sub" style={{ color: C.slate, marginBottom: 28, maxWidth: 360, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
+            Join thousands of earners already making money on Taskivo. Free to join. No skills required.
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button className="lp-btn-hero" style={{ background: C.ink, color: C.lime, border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={function () { navigate('auth'); }}>Start Earning Free →</button>
+            <button className="lp-btn-hero" style={{ background: 'none', color: C.slate, border: `1px solid ${C.line}`, borderRadius: 10, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={function () { navigate('auth'); }}>I'm a Creator</button>
+          </div>
+          <div className="lp-trust-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 24 }}>
+            {['Free to join', 'Instant payouts', 'No experience needed'].map(function (item) {
+              return (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: C.slate }}>
+                  <div style={{ width: 16, height: 16, borderRadius: '50%', background: C.limeDim, color: '#3d6600', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✓</div>
+                  {item}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer style={{ 
-        background: C.ink, 
-        color: 'rgba(255,255,255,0.4)',
-        padding: isMobile ? '36px 16px 18px 16px' : '52px 24px 28px 24px',
-      }}>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: isMobile ? '1fr 1fr' : '1.5fr 1fr 1fr 1fr',
-          gap: isMobile ? 20 : 32,
-          marginBottom: 36,
-        }}>
-          <div style={{ gridColumn: isMobile ? '1 / -1' : 'auto' }}>
-            <div style={{ 
-              fontFamily: "'Syne', sans-serif", 
-              fontSize: isMobile ? 16 : 17, 
-              fontWeight: 800, 
-              color: C.white, 
-              marginBottom: 8, 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 6 
-            }}>
+      <footer className="lp-footer-pad" style={{ background: C.ink, color: 'rgba(255,255,255,0.4)', width: '100%' }}>
+        <div className="lp-footer-grid" style={{ display: 'grid', marginBottom: 36, maxWidth: 680, marginLeft: 'auto', marginRight: 'auto' }}>
+          <div className="lp-footer-brand-span">
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 800, color: C.white, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.lime, display: 'inline-block' }}></span>
               Taskivo
             </div>
-            <p style={{ fontSize: isMobile ? 12 : 13, lineHeight: 1.6 }}>Complete tasks. Earn real cash. The global platform for earners and creators.</p>
+            <p style={{ fontSize: 13, lineHeight: 1.6 }}>The task completion platform connecting earners and creators worldwide.</p>
           </div>
           {[
-            { title: 'Platform', links: ['Browse Tasks', 'Earn Points', 'Withdraw', 'Leaderboard'] },
-            { title: 'Creators', links: ['Post a Task', 'Pricing', 'Creator Dashboard', 'Analytics'] },
-            { title: 'Company', links: ['About', 'Blog', 'Contact', 'Terms'] },
+            { title: 'PLATFORM', links: ['For Earners', 'For Creators', 'Pricing', 'Browse Tasks'] },
+            { title: 'COMPANY', links: ['About', 'Blog', 'Contact', 'Careers'] },
+            { title: 'LEGAL', links: ['Terms', 'Privacy', 'Cookies'] },
           ].map(function (col) {
             return (
               <div key={col.title}>
-                <div style={{ 
-                  fontSize: isMobile ? 10 : 11, 
-                  fontWeight: 600, 
-                  letterSpacing: '1.5px', 
-                  textTransform: 'uppercase', 
-                  color: 'rgba(255,255,255,0.25)', 
-                  marginBottom: 14 
-                }}>{col.title}</div>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', marginBottom: 14 }}>{col.title}</div>
                 <ul style={{ listStyle: 'none', padding: 0 }}>
                   {col.links.map(function (link) {
                     return (
-                      <li key={link} style={{ marginBottom: 9 }}>
-                        <a href="#" style={{ fontSize: isMobile ? 12 : 13, color: 'rgba(255,255,255,0.45)', textDecoration: 'none' }}>{link}</a>
+                      <li key={link} style={{ marginBottom: 10 }}>
+                        <button style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer' }} onClick={function () { navigate('auth'); }}>{link}</button>
                       </li>
                     );
                   })}
@@ -665,18 +501,9 @@ export default function Landing({ navigate }) {
             );
           })}
         </div>
-        <div style={{ 
-          borderTop: '1px solid rgba(255,255,255,0.06)', 
-          paddingTop: 18, 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          flexWrap: 'wrap', 
-          gap: 8,
-          fontSize: isMobile ? 11 : 12,
-        }}>
-          <span>© 2025 Taskivo. All rights reserved.</span>
-          <span>taskivo.online</span>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, maxWidth: 680, marginLeft: 'auto', marginRight: 'auto' }}>
+          <span style={{ fontSize: 12 }}>© 2025 Taskivo. All rights reserved.</span>
+          <span style={{ fontSize: 12 }}>taskivo.online</span>
         </div>
       </footer>
 
