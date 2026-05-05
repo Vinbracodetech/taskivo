@@ -1,264 +1,712 @@
 export default function Landing({ navigate, setAuthMode }) {
 
   function goRegister() {
-    setAuthMode("register");
-    navigate("auth");
+    setAuthMode('register');
+    navigate('auth');
   }
 
   function goLogin() {
-    setAuthMode("login");
-    navigate("auth");
+    setAuthMode('login');
+    navigate('auth');
   }
 
-  return (
-    <div className="landing">
+  const s = {
+    page: {
+      fontFamily: "'DM Sans', sans-serif",
+      background: '#F7F8FA',
+      color: '#0D0D14',
+    },
 
-      {/* ── NAV ── */}
-      <nav style={{
-        padding: "0 5%",
-        height: 72,
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        position: "sticky",
-        top: 0,
-        background: "rgba(255,255,255,.92)",
-        backdropFilter: "blur(12px)",
-        zIndex: 50,
-        borderBottom: "1px solid var(--line)",
-      }}>
-        <span style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 22,
-          fontWeight: 700,
-          color: "var(--ink)",
-          flex: 1,
-        }}>
-          ⚡ Taskivo
+    // NAV
+    nav: {
+      padding: '0 5%',
+      height: 70,
+      display: 'flex',
+      alignItems: 'center',
+      position: 'sticky',
+      top: 0,
+      background: 'rgba(255,255,255,0.95)',
+      backdropFilter: 'blur(12px)',
+      zIndex: 50,
+      borderBottom: '1px solid #EBEBEB',
+    },
+    navBrand: {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: 20,
+      fontWeight: 800,
+      color: '#0D0D14',
+      flex: 1,
+      letterSpacing: '-0.5px',
+    },
+    navAccent: {
+      color: '#A8FF3E',
+    },
+    navLoginBtn: {
+      padding: '8px 18px',
+      background: 'none',
+      border: '1.5px solid #E0E0E0',
+      borderRadius: '8px',
+      fontSize: '14px',
+      fontWeight: 600,
+      cursor: 'pointer',
+      color: '#0D0D14',
+      marginRight: '8px',
+      fontFamily: "'DM Sans', sans-serif",
+    },
+    navRegisterBtn: {
+      padding: '8px 18px',
+      background: '#0D0D14',
+      border: 'none',
+      borderRadius: '8px',
+      fontSize: '14px',
+      fontWeight: 700,
+      cursor: 'pointer',
+      color: '#A8FF3E',
+      fontFamily: "'DM Sans', sans-serif",
+    },
+
+    // HERO
+    hero: {
+      background: 'linear-gradient(160deg, #0D0D14 0%, #1a1a2e 100%)',
+      padding: '80px 5% 90px',
+      textAlign: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    heroGlow: {
+      position: 'absolute',
+      top: '-80px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '600px',
+      height: '400px',
+      background: 'radial-gradient(ellipse, rgba(168,255,62,0.12) 0%, transparent 70%)',
+      pointerEvents: 'none',
+    },
+    heroEyebrow: {
+      display: 'inline-block',
+      background: 'rgba(168,255,62,0.12)',
+      border: '1px solid rgba(168,255,62,0.3)',
+      color: '#A8FF3E',
+      fontSize: '12px',
+      fontWeight: 700,
+      letterSpacing: '1px',
+      textTransform: 'uppercase',
+      padding: '6px 16px',
+      borderRadius: '20px',
+      marginBottom: '24px',
+    },
+    heroTitle: {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: 'clamp(36px, 7vw, 64px)',
+      fontWeight: 800,
+      color: '#fff',
+      lineHeight: 1.1,
+      letterSpacing: '-1.5px',
+      margin: '0 0 20px 0',
+    },
+    heroAccent: {
+      color: '#A8FF3E',
+    },
+    heroSub: {
+      fontSize: '17px',
+      color: 'rgba(255,255,255,0.6)',
+      maxWidth: '520px',
+      margin: '0 auto 36px',
+      lineHeight: 1.7,
+    },
+    heroBtns: {
+      display: 'flex',
+      gap: '12px',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
+      marginBottom: '56px',
+    },
+    heroPrimaryBtn: {
+      padding: '14px 28px',
+      background: '#A8FF3E',
+      color: '#0D0D14',
+      border: 'none',
+      borderRadius: '10px',
+      fontWeight: 800,
+      fontSize: '15px',
+      cursor: 'pointer',
+      fontFamily: "'Syne', sans-serif",
+      letterSpacing: '-0.3px',
+    },
+    heroOutlineBtn: {
+      padding: '14px 28px',
+      background: 'transparent',
+      color: '#fff',
+      border: '1.5px solid rgba(255,255,255,0.25)',
+      borderRadius: '10px',
+      fontWeight: 700,
+      fontSize: '15px',
+      cursor: 'pointer',
+      fontFamily: "'DM Sans', sans-serif",
+    },
+    statsRow: {
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '48px',
+      flexWrap: 'wrap',
+    },
+    statNum: {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: '28px',
+      fontWeight: 800,
+      color: '#fff',
+    },
+    statLabel: {
+      fontSize: '12px',
+      color: 'rgba(255,255,255,0.45)',
+      marginTop: '2px',
+    },
+
+    // SECTION SHARED
+    section: {
+      padding: '80px 5%',
+    },
+    sectionDark: {
+      padding: '80px 5%',
+      background: '#0D0D14',
+    },
+    sectionLabel: {
+      fontSize: '11px',
+      fontWeight: 700,
+      letterSpacing: '2px',
+      textTransform: 'uppercase',
+      color: '#A8FF3E',
+      marginBottom: '12px',
+    },
+    sectionLabelDark: {
+      fontSize: '11px',
+      fontWeight: 700,
+      letterSpacing: '2px',
+      textTransform: 'uppercase',
+      color: 'rgba(168,255,62,0.6)',
+      marginBottom: '12px',
+    },
+    sectionTitle: {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: 'clamp(26px, 4vw, 40px)',
+      fontWeight: 800,
+      color: '#0D0D14',
+      letterSpacing: '-1px',
+      margin: '0 0 12px 0',
+      lineHeight: 1.15,
+    },
+    sectionTitleLight: {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: 'clamp(26px, 4vw, 40px)',
+      fontWeight: 800,
+      color: '#fff',
+      letterSpacing: '-1px',
+      margin: '0 0 12px 0',
+      lineHeight: 1.15,
+    },
+    sectionSub: {
+      fontSize: '15px',
+      color: '#777',
+      maxWidth: '480px',
+      lineHeight: 1.7,
+      margin: '0 0 48px 0',
+    },
+    sectionSubLight: {
+      fontSize: '15px',
+      color: 'rgba(255,255,255,0.5)',
+      maxWidth: '480px',
+      lineHeight: 1.7,
+      margin: '0 0 48px 0',
+    },
+
+    // EARNER SECTION
+    splitGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+      gap: '20px',
+      maxWidth: '1100px',
+      margin: '0 auto',
+    },
+    audienceCard: {
+      background: '#fff',
+      borderRadius: '18px',
+      padding: '36px 28px',
+      boxShadow: '0 2px 20px rgba(0,0,0,0.06)',
+      borderTop: '4px solid #A8FF3E',
+    },
+    audienceCardDark: {
+      background: '#141420',
+      borderRadius: '18px',
+      padding: '36px 28px',
+      border: '1px solid rgba(255,255,255,0.07)',
+      borderTop: '4px solid #A8FF3E',
+    },
+    audienceIcon: {
+      fontSize: '32px',
+      marginBottom: '16px',
+    },
+    audienceTitle: {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: '22px',
+      fontWeight: 800,
+      color: '#0D0D14',
+      marginBottom: '8px',
+      letterSpacing: '-0.5px',
+    },
+    audienceTitleLight: {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: '22px',
+      fontWeight: 800,
+      color: '#fff',
+      marginBottom: '8px',
+      letterSpacing: '-0.5px',
+    },
+    audienceSub: {
+      fontSize: '14px',
+      color: '#888',
+      lineHeight: 1.7,
+      marginBottom: '24px',
+    },
+    audienceSubLight: {
+      fontSize: '14px',
+      color: 'rgba(255,255,255,0.5)',
+      lineHeight: 1.7,
+      marginBottom: '24px',
+    },
+    stepItem: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '12px',
+      marginBottom: '14px',
+    },
+    stepBadge: {
+      width: '24px',
+      height: '24px',
+      borderRadius: '50%',
+      background: '#A8FF3E',
+      color: '#0D0D14',
+      fontSize: '11px',
+      fontWeight: 800,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      marginTop: '2px',
+    },
+    stepText: {
+      fontSize: '14px',
+      color: '#444',
+      lineHeight: 1.6,
+    },
+    stepTextLight: {
+      fontSize: '14px',
+      color: 'rgba(255,255,255,0.6)',
+      lineHeight: 1.6,
+    },
+    audienceBtn: {
+      width: '100%',
+      padding: '13px',
+      background: '#0D0D14',
+      color: '#A8FF3E',
+      border: 'none',
+      borderRadius: '10px',
+      fontWeight: 700,
+      fontSize: '14px',
+      cursor: 'pointer',
+      fontFamily: "'DM Sans', sans-serif",
+      marginTop: '8px',
+    },
+    audienceBtnLight: {
+      width: '100%',
+      padding: '13px',
+      background: '#A8FF3E',
+      color: '#0D0D14',
+      border: 'none',
+      borderRadius: '10px',
+      fontWeight: 700,
+      fontSize: '14px',
+      cursor: 'pointer',
+      fontFamily: "'DM Sans', sans-serif",
+      marginTop: '8px',
+    },
+
+    // FEATURES
+    featuresGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+      gap: '16px',
+      maxWidth: '1100px',
+      margin: '0 auto',
+    },
+    featureCard: {
+      background: '#fff',
+      borderRadius: '14px',
+      padding: '24px',
+      boxShadow: '0 1px 8px rgba(0,0,0,0.05)',
+      borderLeft: '3px solid #A8FF3E',
+    },
+    featureIcon: {
+      fontSize: '24px',
+      marginBottom: '12px',
+    },
+    featureTitle: {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: '16px',
+      fontWeight: 700,
+      color: '#0D0D14',
+      marginBottom: '6px',
+    },
+    featureDesc: {
+      fontSize: '13px',
+      color: '#777',
+      lineHeight: 1.65,
+    },
+
+    // TESTIMONIALS
+    testimonialsGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+      gap: '16px',
+      maxWidth: '1100px',
+      margin: '0 auto',
+    },
+    testimonialCard: {
+      background: '#141420',
+      borderRadius: '14px',
+      padding: '24px',
+      border: '1px solid rgba(255,255,255,0.07)',
+    },
+    testimonialText: {
+      fontSize: '14px',
+      color: 'rgba(255,255,255,0.7)',
+      lineHeight: 1.7,
+      marginBottom: '16px',
+      fontStyle: 'italic',
+    },
+    testimonialName: {
+      fontSize: '13px',
+      fontWeight: 700,
+      color: '#fff',
+    },
+    testimonialRole: {
+      fontSize: '11px',
+      color: 'rgba(168,255,62,0.7)',
+      marginTop: '2px',
+    },
+
+    // CTA
+    ctaSection: {
+      padding: '80px 5%',
+      background: '#A8FF3E',
+      textAlign: 'center',
+    },
+    ctaTitle: {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: 'clamp(28px, 5vw, 48px)',
+      fontWeight: 800,
+      color: '#0D0D14',
+      letterSpacing: '-1px',
+      margin: '0 0 12px 0',
+    },
+    ctaSub: {
+      fontSize: '16px',
+      color: 'rgba(13,13,20,0.65)',
+      marginBottom: '36px',
+    },
+    ctaPrimaryBtn: {
+      padding: '15px 32px',
+      background: '#0D0D14',
+      color: '#A8FF3E',
+      border: 'none',
+      borderRadius: '10px',
+      fontWeight: 800,
+      fontSize: '15px',
+      cursor: 'pointer',
+      fontFamily: "'Syne', sans-serif",
+      marginRight: '12px',
+    },
+    ctaOutlineBtn: {
+      padding: '15px 32px',
+      background: 'transparent',
+      color: '#0D0D14',
+      border: '2px solid rgba(13,13,20,0.25)',
+      borderRadius: '10px',
+      fontWeight: 700,
+      fontSize: '15px',
+      cursor: 'pointer',
+      fontFamily: "'DM Sans', sans-serif",
+    },
+
+    // FOOTER
+    footer: {
+      background: '#0D0D14',
+      padding: '60px 5% 30px',
+    },
+    footerGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+      gap: '32px',
+      marginBottom: '48px',
+    },
+    footerBrand: {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: '20px',
+      fontWeight: 800,
+      color: '#fff',
+      marginBottom: '10px',
+    },
+    footerTagline: {
+      fontSize: '13px',
+      color: 'rgba(255,255,255,0.4)',
+      lineHeight: 1.7,
+    },
+    footerColTitle: {
+      fontSize: '11px',
+      fontWeight: 700,
+      letterSpacing: '1.5px',
+      textTransform: 'uppercase',
+      color: 'rgba(255,255,255,0.3)',
+      marginBottom: '14px',
+    },
+    footerLink: {
+      display: 'block',
+      fontSize: '13px',
+      color: 'rgba(255,255,255,0.55)',
+      marginBottom: '10px',
+      textDecoration: 'none',
+      cursor: 'pointer',
+    },
+    footerBottom: {
+      borderTop: '1px solid rgba(255,255,255,0.07)',
+      paddingTop: '24px',
+      fontSize: '12px',
+      color: 'rgba(255,255,255,0.25)',
+      display: 'flex',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
+      gap: '8px',
+    },
+  };
+
+  return (
+    <div style={s.page}>
+
+      {/* NAV */}
+      <nav style={s.nav}>
+        <span style={s.navBrand}>
+          <span style={s.navAccent}>⚡</span> Taskivo
         </span>
-        <div style={{ display: "flex", gap: 4 }}>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={function () { navigate("blog"); }}
-          >
-            Blog
-          </button>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-outline btn-sm" onClick={goLogin}>
-            Log in
-          </button>
-          <button className="btn btn-primary btn-sm" onClick={goRegister}>
-            Get Started
-          </button>
-        </div>
+        <button style={s.navLoginBtn} onClick={goLogin}>Log in</button>
+        <button style={s.navRegisterBtn} onClick={goRegister}>Get Started →</button>
       </nav>
 
-      {/* ── HERO ── */}
-      <section style={{
-        background: "linear-gradient(180deg, #fff 0%, #F9FFF5 100%)",
-        borderBottom: "1px solid var(--line)",
-      }}>
-        <div className="hero">
-          <div>
-            <div className="hero-eyebrow">⚡ Earn While You Watch</div>
-            <h1 className="hero-title">
-              Real Tasks.<br />
-              Real <span>Rewards</span>.<br />
-              Real Insights.
-            </h1>
-            <p className="hero-sub">
-              Taskivo connects curious viewers with creators who want genuine
-              feedback. Watch videos, answer questions, earn points — and get paid.
-            </p>
-            <div className="hero-actions">
-              <button className="btn btn-primary btn-xl" onClick={goRegister}>
-                Start Earning Free →
-              </button>
-              <button className="btn btn-outline btn-xl" onClick={goRegister}>
-                I'm a Creator
-              </button>
-            </div>
-            <div style={{ display: "flex", gap: 32, marginTop: 36 }}>
-              {[
-                ["50K+", "Active Earners"],
-                ["2.1M", "Points Earned"],
-                ["12K+", "Tasks Completed"],
-              ].map(function (s) {
-                return (
-                  <div key={s[1]}>
-                    <div style={{
-                      fontFamily: "var(--font-display)",
-                      fontSize: 26,
-                      fontWeight: 700,
-                      color: "var(--ink)",
-                    }}>
-                      {s[0]}
-                    </div>
-                    <div style={{ fontSize: 12, color: "var(--slate)" }}>
-                      {s[1]}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* HERO CARD */}
-          <div>
-            <div className="hero-card">
-              <div style={{
-                fontSize: 13,
-                color: "rgba(255,255,255,.6)",
-                marginBottom: 20,
-                fontWeight: 600,
-              }}>
-                📋 Live Tasks Right Now
-              </div>
-              {[
-                { title: "Watch & Review: AI Tools 2025", time: "90s", reward: 250, slots: 47 },
-                { title: "Product Unboxing Feedback", time: "60s", reward: 180, slots: 31 },
-                { title: "Rate This Tutorial Video", time: "120s", reward: 350, slots: 12 },
-              ].map(function (t) {
-                return (
-                  <div className="task-preview" key={t.title}>
-                    <div className="task-preview-title">{t.title}</div>
-                    <div className="task-preview-meta">
-                      <span>⏱ {t.time} watch</span>
-                      <span className="task-preview-reward">+{t.reward} pts</span>
-                      <span>{t.slots} slots left</span>
-                    </div>
-                    <div className="progress" style={{ marginTop: 8 }}>
-                      <div
-                        className="progress-bar"
-                        style={{ width: (100 - t.slots) + "%" }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-              <button
-                className="btn btn-primary"
-                style={{ width: "100%", marginTop: 8, justifyContent: "center" }}
-                onClick={goRegister}
-              >
-                View All Tasks →
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEATURES ── */}
-      <section className="features-section" id="features">
-        <div className="section-label">Platform Features</div>
-        <h2 className="section-title">Everything You Need to Earn & Grow</h2>
-        <p className="section-sub">
-          A complete ecosystem where meaningful engagement is rewarded
-          and creators get real data.
+      {/* HERO */}
+      <section style={s.hero}>
+        <div style={s.heroGlow} />
+        <div style={s.heroEyebrow}>⚡ Earn From Anywhere. Grow Everywhere.</div>
+        <h1 style={s.heroTitle}>
+          Complete Tasks.<br />
+          <span style={s.heroAccent}>Get Paid.</span> Grow Faster.
+        </h1>
+        <p style={s.heroSub}>
+          Taskivo connects earners who complete real YouTube tasks with creators
+          who want genuine engagement. Everyone wins.
         </p>
-        <div className="features-grid">
+        <div style={s.heroBtns}>
+          <button style={s.heroPrimaryBtn} onClick={goRegister}>
+            Start Earning Free →
+          </button>
+          <button style={s.heroOutlineBtn} onClick={goRegister}>
+            I'm a Creator
+          </button>
+        </div>
+        <div style={s.statsRow}>
           {[
-            { icon: "▶", title: "Watch & Earn", desc: "Complete video tasks with enforced watch timers. Points are awarded only after verified engagement — no shortcuts." },
-            { icon: "🧠", title: "Smart Questions", desc: "Answer comprehension questions, rate content, or provide written feedback. Every task validates real watching." },
-            { icon: "💰", title: "Points → Cash", desc: "Accumulate points and withdraw via Paystack or Flutterwave. Transparent rates, admin-approved payouts." },
-            { icon: "🛡️", title: "Anti-Cheat Built In", desc: "Tab-switch detection, randomised questions, and daily limits keep the platform fair for everyone." },
-            { icon: "📊", title: "Creator Analytics", desc: "Creators get real completion stats, feedback scores, and engagement breakdowns — not vanity metrics." },
-            { icon: "🌍", title: "Global Platform", desc: "Available worldwide with country-based point rates. Earn from Nigeria, US, UK, Canada and beyond." },
-          ].map(function (f) {
+            ['50K+', 'Active Earners'],
+            ['2.1M', 'Points Awarded'],
+            ['12K+', 'Tasks Completed'],
+            ['30+', 'Countries'],
+          ].map(function (stat) {
             return (
-              <div className="feature-card" key={f.title}>
-                <div className="feature-icon">{f.icon}</div>
-                <div className="feature-title">{f.title}</div>
-                <div className="feature-desc">{f.desc}</div>
+              <div key={stat[1]} style={{ textAlign: 'center' }}>
+                <div style={s.statNum}>{stat[0]}</div>
+                <div style={s.statLabel}>{stat[1]}</div>
               </div>
             );
           })}
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
-      <section className="how-section">
-        <div className="section-label" style={{ color: "rgba(168,255,62,.7)" }}>
-          How It Works
-        </div>
-        <h2 className="section-title">From Zero to Earning in Minutes</h2>
-        <p className="section-sub">
-          A simple flow designed for real engagement — not gaming the system.
-        </p>
-        <div className="steps-grid">
-          {[
-            { n: "1", title: "Register Free", desc: "Create your account with email or Google. No payment needed to start." },
-            { n: "2", title: "Pick a Task", desc: "Browse available video tasks filtered by topic, reward, and duration." },
-            { n: "3", title: "Watch & Answer", desc: "Watch the full video (timer enforced), then answer questions or give feedback." },
-            { n: "4", title: "Earn & Withdraw", desc: "Points land in your wallet instantly. Request withdrawal when you hit the minimum." },
-          ].map(function (s) {
-            return (
-              <div style={{ textAlign: "center" }} key={s.n}>
-                <div className="step-num">{s.n}</div>
-                <div className="step-title">{s.title}</div>
-                <div className="step-desc">{s.desc}</div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section className="cta-section">
-        <div className="cta-inner">
-          <h2 className="cta-title">Ready to Start Earning?</h2>
-          <p className="cta-sub">
-            Join 50,000+ earners already on Taskivo. Free to join, real rewards, no spam.
+      {/* EARNERS + CREATORS — Two Sections */}
+      <section style={s.section}>
+        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+          <div style={s.sectionLabel}>Who Is Taskivo For?</div>
+          <h2 style={s.sectionTitle}>Two Sides. One Platform.</h2>
+          <p style={{ ...s.sectionSub, margin: '0 auto' }}>
+            Whether you want to earn money or grow your channel — Taskivo was built for you.
           </p>
-          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <button className="btn btn-dark btn-xl" onClick={goRegister}>
-              Create Free Account
+        </div>
+        <div style={s.splitGrid}>
+
+          {/* EARNER CARD */}
+          <div style={s.audienceCard}>
+            <div style={s.audienceIcon}>💰</div>
+            <div style={s.audienceTitle}>For Earners</div>
+            <div style={s.audienceSub}>
+              Complete simple YouTube tasks and earn real cash — no experience needed.
+              Works from any phone, anywhere in the world.
+            </div>
+            {[
+              'Create a free account in 60 seconds',
+              'Browse available video tasks',
+              'Watch, like, comment and answer a quiz',
+              'Earn points and withdraw to your bank',
+            ].map(function (step, i) {
+              return (
+                <div key={i} style={s.stepItem}>
+                  <div style={s.stepBadge}>{i + 1}</div>
+                  <div style={s.stepText}>{step}</div>
+                </div>
+              );
+            })}
+            <button style={s.audienceBtn} onClick={goRegister}>
+              Start Earning Free →
             </button>
-            <button
-              className="btn btn-outline btn-xl"
-              style={{ background: "rgba(255,255,255,.5)" }}
-              onClick={goLogin}
-            >
-              I Have an Account
+          </div>
+
+          {/* CREATOR CARD */}
+          <div style={s.audienceCard}>
+            <div style={s.audienceIcon}>🎬</div>
+            <div style={s.audienceTitle}>For Creators</div>
+            <div style={s.audienceSub}>
+              Get real views, likes, and comments from genuine people —
+              not bots. Boost your YouTube algorithm ranking with verified engagement.
+            </div>
+            {[
+              'Register and select Creator account',
+              'Choose a task package for your video',
+              'Pay securely via Paystack or PayPal',
+              'Watch real engagement roll in within 24hrs',
+            ].map(function (step, i) {
+              return (
+                <div key={i} style={s.stepItem}>
+                  <div style={s.stepBadge}>{i + 1}</div>
+                  <div style={s.stepText}>{step}</div>
+                </div>
+              );
+            })}
+            <button style={s.audienceBtn} onClick={goRegister}>
+              Post Your First Task →
             </button>
+          </div>
+
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section style={{ ...s.section, background: '#fff', paddingTop: '70px', paddingBottom: '70px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={s.sectionLabel}>Platform Features</div>
+          <h2 style={s.sectionTitle}>Built Different. Built to Last.</h2>
+          <p style={s.sectionSub}>
+            Every feature exists to ensure genuine engagement — not gaming the system.
+          </p>
+          <div style={s.featuresGrid}>
+            {[
+              { icon: '⏱', title: 'Enforced Watch Timer', desc: 'Earners must watch for the full required duration. Tab switching pauses the timer. No shortcuts.' },
+              { icon: '🧠', title: 'Anti-Cheat Quiz', desc: 'After watching, earners answer a question set by the creator. Proves they actually watched.' },
+              { icon: '💸', title: 'Real Cash Withdrawals', desc: 'Points convert to real money. Withdraw via Paystack, Flutterwave or PayPal. Processed within 48hrs.' },
+              { icon: '🌍', title: 'Global Earner Pool', desc: 'Earners from 30+ countries. Creators can target specific regions for more relevant engagement.' },
+              { icon: '📊', title: 'Creator Reports', desc: 'See exactly how many people watched, liked, commented and subscribed to your channel.' },
+              { icon: '🛡️', title: 'Admin Verified', desc: 'Every task and withdrawal is manually reviewed by our team before going live or being paid out.' },
+            ].map(function (f) {
+              return (
+                <div key={f.title} style={s.featureCard}>
+                  <div style={s.featureIcon}>{f.icon}</div>
+                  <div style={s.featureTitle}>{f.title}</div>
+                  <div style={s.featureDesc}>{f.desc}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer className="landing-footer">
-        <div className="footer-grid">
+      {/* TESTIMONIALS */}
+      <section style={s.sectionDark}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={s.sectionLabelDark}>What People Say</div>
+          <h2 style={s.sectionTitleLight}>Trusted by Earners & Creators</h2>
+          <p style={{ ...s.sectionSubLight, marginBottom: '40px' }}>
+            Real people. Real results. Real money.
+          </p>
+          <div style={s.testimonialsGrid}>
+            {[
+  { text: 'I completed 12 tasks in my first week and withdrew straight to PayPal. The timer system makes it feel legitimate compared to other platforms.', name: 'James R.', role: 'Earner — Toronto, Canada' },
+  { text: 'My video engagement doubled within 4 days of posting on Taskivo. The quiz feature means I know people actually watched — not just clicked.', name: 'Sofia M.', role: 'Creator — Madrid, Spain' },
+  { text: 'I do tasks between classes on my phone. It is not going to replace my job but it genuinely pays out fast and the tasks are simple.', name: 'Priya K.', role: 'Earner — London, UK' },
+  { text: 'I referred three friends and all of them are active. The platform just works — clean interface, honest payouts, no drama.', name: 'Marcus L.', role: 'Earner — Atlanta, USA' },
+  { text: 'As a small creator the quiz system is what sold me. Real people, real watch time. My retention metrics actually improved after running a campaign.', name: 'Yuki T.', role: 'Creator — Tokyo, Japan' },
+  { text: 'Tried three other micro-task platforms before this. Taskivo is the only one where withdrawals actually arrived when they said they would.', name: 'Daniel F.', role: 'Earner — Berlin, Germany' },
+].map(function (t) {
+              return (
+                <div key={t.name} style={s.testimonialCard}>
+                  <div style={{ color: '#A8FF3E', fontSize: '16px', marginBottom: '10px' }}>★★★★★</div>
+                  <p style={s.testimonialText}>{t.text}</p>
+                  <div style={s.testimonialName}>{t.name}</div>
+                  <div style={s.testimonialRole}>{t.role}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={s.ctaSection}>
+        <h2 style={s.ctaTitle}>Your Next Withdrawal Starts Here.</h2>
+        <p style={s.ctaSub}>
+          Join thousands of earners and creators already on Taskivo. Free to join. Real rewards.
+        </p>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button style={s.ctaPrimaryBtn} onClick={goRegister}>
+            Create Free Account
+          </button>
+          <button style={s.ctaOutlineBtn} onClick={goLogin}>
+            I Have an Account
+          </button>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer style={s.footer}>
+        <div style={s.footerGrid}>
           <div>
-            <div className="footer-brand">⚡ Taskivo</div>
-            <div style={{ fontSize: 13, lineHeight: 1.7 }}>
-              A global task-based engagement platform connecting
-              earners with creators for meaningful video feedback.
-            </div>
+            <div style={s.footerBrand}>⚡ Taskivo</div>
+            <p style={s.footerTagline}>
+              A global task-based platform connecting earners with creators
+              for real, verified YouTube engagement.
+            </p>
           </div>
           {[
-            { title: "Platform", links: ["How it Works", "Browse Tasks", "Creator Hub", "Pricing"] },
-            { title: "Company", links: ["About Us", "Blog", "Careers", "Contact"] },
-            { title: "Legal", links: ["Privacy Policy", "Terms of Service", "Cookie Policy"] },
+            { title: 'Platform', links: ['How it Works', 'Browse Tasks', 'Creator Hub', 'Withdraw'] },
+            { title: 'Company', links: ['About Us', 'Blog', 'Contact'] },
+            { title: 'Legal', links: ['Privacy Policy', 'Terms of Service'] },
           ].map(function (col) {
             return (
               <div key={col.title}>
-                <div className="footer-col-title">{col.title}</div>
-                <ul className="footer-col-links">
-                  {col.links.map(function (l) {
-                    return (
-                      <li key={l}>
-                        <a href="#">{l}</a>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div style={s.footerColTitle}>{col.title}</div>
+                {col.links.map(function (l) {
+                  return <a key={l} style={s.footerLink} href="#">{l}</a>;
+                })}
               </div>
             );
           })}
         </div>
-        <div className="footer-bottom">
-          © 2025 Taskivo.online — All rights reserved.
+        <div style={s.footerBottom}>
+          <span>© 2026 Taskivo.online — All rights reserved.</span>
+          <span>Built for earners. Powered by creators.</span>
         </div>
       </footer>
 
