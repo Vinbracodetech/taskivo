@@ -1,9 +1,16 @@
 // src/styles/global.js
 const CSS = `
+  /* =========================
+     RESET
+  ========================== */
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+  }
+
+  html, body {
+    max-width: 100%;
   }
 
   body {
@@ -13,10 +20,11 @@ const CSS = `
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
-    width: 100%;
   }
 
-  /* MOBILE FIRST - Base styles for all screen sizes */
+  /* =========================
+     APP LAYOUT (MOBILE FIRST)
+  ========================== */
   .app {
     display: flex;
     min-height: 100vh;
@@ -24,20 +32,19 @@ const CSS = `
     overflow-x: hidden;
   }
 
-  /* Hide sidebar on mobile by default */
   .sidebar {
     display: none;
   }
 
-  /* Main content - full width on mobile */
   .page {
     flex: 1;
     padding: 20px 16px;
     width: 100%;
-    overflow-x: hidden;
   }
 
-  /* Typography - Mobile sizes (small, readable) */
+  /* =========================
+     TYPOGRAPHY
+  ========================== */
   h1 {
     font-size: 28px;
     line-height: 1.2;
@@ -59,32 +66,54 @@ const CSS = `
     font-weight: 700;
   }
 
-  p, li, span, div {
+  p, li {
     font-size: 14px;
     line-height: 1.5;
   }
 
-  /* Buttons - touch friendly */
+  /* =========================
+     BUTTONS / INPUTS
+  ========================== */
   button {
     min-height: 44px;
     min-width: 44px;
     cursor: pointer;
   }
 
-  /* Grid layouts - single column on mobile */
+  input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  /* =========================
+     LAYOUT SYSTEMS
+  ========================== */
   .features-grid,
   .steps-grid,
-  .admin-overview {
+  .admin-overview,
+  .wallet-grid,
+  .withdrawal-methods,
+  .tasks-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 16px;
   }
 
-  /* Hero section */
+  .stats-grid,
+  .creator-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* =========================
+     HERO
+  ========================== */
   .hero {
     display: flex;
     flex-direction: column;
-    padding: 48px 16px 60px 16px;
+    padding: 48px 16px 60px;
     text-align: center;
   }
 
@@ -92,7 +121,9 @@ const CSS = `
     display: none;
   }
 
-  /* Auth page */
+  /* =========================
+     AUTH
+  ========================== */
   .auth-page {
     display: flex;
     flex-direction: column;
@@ -108,21 +139,9 @@ const CSS = `
     width: 100%;
   }
 
-  /* Footer */
-  .footer-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-  }
-
-  /* Dashboard cards */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-
-  /* Tables - make scrollable on mobile */
+  /* =========================
+     TABLES
+  ========================== */
   .table-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -132,55 +151,24 @@ const CSS = `
     min-width: 600px;
   }
 
-  /* Form inputs - full width on mobile */
-  input, select, textarea {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-  }
-
-  /* Modal - full screen on mobile */
+  /* =========================
+     MODAL
+  ========================== */
   .modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: white;
     z-index: 1000;
     overflow-y: auto;
   }
 
-  /* Wallet and withdrawal cards */
-  .wallet-grid,
-  .withdrawal-methods {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
+  body.modal-open {
+    overflow: hidden;
   }
 
-  /* Admin panel */
-  .admin-users,
-  .admin-tasks,
-  .admin-withdrawals {
-    overflow-x: auto;
-  }
-
-  /* Creator dashboard */
-  .creator-stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-
-  /* Task cards */
-  .tasks-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  /* Task player */
+  /* =========================
+     TASK PLAYER
+  ========================== */
   .task-player {
     padding: 16px;
   }
@@ -190,7 +178,9 @@ const CSS = `
     height: 200px;
   }
 
-  /* Toast notifications */
+  /* =========================
+     TOAST
+  ========================== */
   .toast {
     position: fixed;
     bottom: 20px;
@@ -204,38 +194,61 @@ const CSS = `
     text-align: center;
   }
 
-  /* TABLET STYLES (min-width: 768px) */
+  /* =========================
+     UTILITIES
+  ========================== */
+  .text-center { text-align: center; }
+  .text-lime { color: #A8FF3E; }
+  .bg-lime { background: #A8FF3E; }
+  .bg-dark { background: #0D0D14; }
+  .bg-off { background: #F7F8FA; }
+
+  .rounded-lg { border-radius: 12px; }
+  .rounded-xl { border-radius: 16px; }
+
+  .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  .shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
+
+  .p-4 { padding: 16px; }
+  .p-6 { padding: 24px; }
+
+  .mb-2 { margin-bottom: 8px; }
+  .mb-4 { margin-bottom: 16px; }
+  .mb-6 { margin-bottom: 24px; }
+  .mt-4 { margin-top: 16px; }
+
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+
+  .gap-2 { gap: 8px; }
+  .gap-4 { gap: 16px; }
+
+  .w-full { width: 100%; }
+
+  /* =========================
+     TABLET (768px+)
+  ========================== */
   @media (min-width: 768px) {
     .page {
       padding: 24px 32px;
     }
 
-    h1 {
-      font-size: 36px;
-    }
-
-    h2 {
-      font-size: 28px;
-    }
-
-    h3 {
-      font-size: 20px;
-    }
+    h1 { font-size: 36px; }
+    h2 { font-size: 28px; }
+    h3 { font-size: 20px; }
 
     .hero {
       flex-direction: row;
-      padding: 60px 40px;
       text-align: left;
       align-items: center;
       gap: 48px;
+      padding: 60px 40px;
     }
 
     .hero-visual {
       display: block;
-      flex: 1;
-    }
-
-    .hero-content {
       flex: 1;
     }
 
@@ -256,39 +269,20 @@ const CSS = `
       padding: 48px;
     }
 
-    .features-grid {
+    .features-grid,
+    .steps-grid,
+    .tasks-grid,
+    .admin-overview {
       grid-template-columns: repeat(2, 1fr);
     }
 
-    .steps-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .footer-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .stats-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .wallet-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .withdrawal-methods {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
+    .stats-grid,
     .creator-stats {
       grid-template-columns: repeat(4, 1fr);
     }
 
-    .tasks-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .admin-overview {
+    .wallet-grid,
+    .withdrawal-methods {
       grid-template-columns: repeat(2, 1fr);
     }
 
@@ -303,54 +297,7 @@ const CSS = `
       min-width: 300px;
       max-width: 400px;
     }
-  }
 
-  /* DESKTOP STYLES (min-width: 1024px) */
-  @media (min-width: 1024px) {
-    .page {
-      padding: 32px 48px;
-    }
-
-    h1 {
-      font-size: 48px;
-    }
-
-    h2 {
-      font-size: 36px;
-    }
-
-    .features-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .tasks-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .hero {
-      padding: 80px 60px;
-    }
-  }
-
-  /* LARGE DESKTOP (min-width: 1440px) */
-  @media (min-width: 1440px) {
-    .page {
-      padding: 40px 60px;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      font-size: 56px;
-    }
-
-    .hero {
-      padding: 100px 80px;
-    }
-  }
-
-  /* Sidebar - only show on tablet/desktop */
-  @media (min-width: 768px) {
     .sidebar {
       display: flex;
       flex-direction: column;
@@ -361,106 +308,50 @@ const CSS = `
       top: 0;
       height: 100vh;
     }
-  }
 
-  /* Hide mobile menu button on tablet/desktop */
-  .mobile-menu-btn {
-    display: block;
-  }
-
-  @media (min-width: 768px) {
     .mobile-menu-btn {
       display: none;
     }
   }
 
-  /* Utility classes */
-  .text-center {
-    text-align: center;
+  /* =========================
+     DESKTOP (1024px+)
+  ========================== */
+  @media (min-width: 1024px) {
+    .page {
+      padding: 32px 48px;
+    }
+
+    h1 { font-size: 48px; }
+    h2 { font-size: 36px; }
+
+    .features-grid,
+    .tasks-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .hero {
+      padding: 80px 60px;
+    }
   }
 
-  .text-lime {
-    color: #A8FF3E;
-  }
+  /* =========================
+     LARGE DESKTOP (1440px+)
+  ========================== */
+  @media (min-width: 1440px) {
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 60px;
+    }
 
-  .bg-lime {
-    background: #A8FF3E;
-  }
+    h1 {
+      font-size: 56px;
+    }
 
-  .bg-dark {
-    background: #0D0D14;
-  }
-
-  .bg-off {
-    background: #F7F8FA;
-  }
-
-  .rounded-lg {
-    border-radius: 12px;
-  }
-
-  .rounded-xl {
-    border-radius: 16px;
-  }
-
-  .shadow-sm {
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  }
-
-  .shadow-md {
-    box-shadow: 0 4px 6px rgba(0,0,0,0.07);
-  }
-
-  .p-4 {
-    padding: 16px;
-  }
-
-  .p-6 {
-    padding: 24px;
-  }
-
-  .mb-2 {
-    margin-bottom: 8px;
-  }
-
-  .mb-4 {
-    margin-bottom: 16px;
-  }
-
-  .mb-6 {
-    margin-bottom: 24px;
-  }
-
-  .mt-4 {
-    margin-top: 16px;
-  }
-
-  .flex {
-    display: flex;
-  }
-
-  .flex-col {
-    flex-direction: column;
-  }
-
-  .items-center {
-    align-items: center;
-  }
-
-  .justify-between {
-    justify-content: space-between;
-  }
-
-  .gap-2 {
-    gap: 8px;
-  }
-
-  .gap-4 {
-    gap: 16px;
-  }
-
-  .w-full {
-    width: 100%;
+    .hero {
+      padding: 100px 80px;
+    }
   }
 `;
 
