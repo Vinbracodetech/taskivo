@@ -56,19 +56,8 @@ export default function Landing({ navigate, setAuthMode }) {
       .lp-footer-pad { padding: 52px 5% 28px; }
       .lp-footer-grid { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; }
       .lp-footer-brand-span { grid-column: auto; }
-      .lp-nav-height { height: 64px; }
-      .lp-nav-pad { padding: 0 5%; }
-      .lp-nav-brand { font-size: 19px; }
-      .lp-nav-btn-ghost { font-size: 13px; padding: 7px 14px; }
-      .lp-nav-btn-primary { font-size: 13px; padding: 8px 16px; }
 
       @media (max-width: 600px) {
-        .lp-nav-height { height: 52px !important; }
-        .lp-nav-pad { padding: 0 4% !important; }
-        .lp-nav-brand { font-size: 16px !important; }
-        .lp-nav-btn-ghost { font-size: 11px !important; padding: 5px 9px !important; }
-        .lp-nav-btn-primary { font-size: 11px !important; padding: 6px 11px !important; }
-
         .lp-hero-pad { padding: 44px 4% 40px !important; }
         .lp-hero-title { font-size: 28px !important; letter-spacing: -0.8px !important; line-height: 1.12 !important; }
         .lp-hero-sub { font-size: 13px !important; margin: 0 auto 22px !important; }
@@ -153,37 +142,7 @@ export default function Landing({ navigate, setAuthMode }) {
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.off, color: C.ink, minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
-
-      {/* NAV */}
-      <nav className="lp-nav-height lp-nav-pad" style={{
-        position: 'sticky', top: 0, zIndex: 99,
-        display: 'flex', alignItems: 'center',
-        background: 'rgba(255,255,255,0.92)',
-        backdropFilter: 'blur(16px)',
-        borderBottom: `1px solid ${C.line}`,
-      }}>
-        <div className="lp-nav-brand" style={{
-          fontFamily: "'DM Sans', sans-serif",
-          fontWeight: 800, color: C.ink, flex: 1, letterSpacing: '-0.5px',
-          display: 'flex', alignItems: 'center', gap: 6,
-        }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.lime, display: 'inline-block' }}></span>
-          Taskivo
-        </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button className="lp-nav-btn-ghost" style={{
-            background: 'none', border: 'none', fontWeight: 500,
-            color: C.slate, cursor: 'pointer',
-            fontFamily: "'DM Sans', sans-serif", borderRadius: 8,
-          }} onClick={goLogin}>Log in</button>
-          <button className="lp-nav-btn-primary" style={{
-            background: C.ink, border: 'none',
-            fontWeight: 600, color: C.lime, cursor: 'pointer',
-            fontFamily: "'DM Sans', sans-serif", borderRadius: 8,
-          }} onClick={goRegister}>Get Started →</button>
-        </div>
-      </nav>
-
+      
       {/* HERO */}
       <div className="lp-hero-pad" style={{ background: C.ink, position: 'relative', overflow: 'hidden' }}>
         <div style={{
@@ -357,7 +316,7 @@ export default function Landing({ navigate, setAuthMode }) {
       </section>
 
       {/* FOOTER */}
-    <footer className="lp-footer-pad" style={{ background: "var(--surface-card)", borderTop: "1px solid var(--line)" }}>
+      <footer className="lp-footer-pad" style={{ background: "var(--surface-card)", borderTop: "1px solid var(--line)" }}>
         <div className="lp-footer-grid" style={{ display: 'grid', marginBottom: 40, padding: "40px 5% 0" }}>
           <div className="lp-footer-brand-span">
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: "var(--ink)", fontSize: 20, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -369,7 +328,6 @@ export default function Landing({ navigate, setAuthMode }) {
             </p>
           </div>
           
-          
           <div>
             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--slate)", letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Platform</div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -378,7 +336,6 @@ export default function Landing({ navigate, setAuthMode }) {
             </ul>
           </div>
 
-          
           <div>
             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--slate)", letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Company</div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -387,7 +344,6 @@ export default function Landing({ navigate, setAuthMode }) {
             </ul>
           </div>
 
-          
           <div>
             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--slate)", letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Legal</div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -395,7 +351,6 @@ export default function Landing({ navigate, setAuthMode }) {
               <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("privacy"); }}>Privacy Policy</span></li>
             </ul>
           </div>
-
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: "1px solid var(--line)", padding: "24px 5%", color: "var(--slate)", fontSize: 12 }}>
           <div>© 2026 Taskivo. All rights reserved.</div>
