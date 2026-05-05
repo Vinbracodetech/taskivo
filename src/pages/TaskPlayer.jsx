@@ -4,7 +4,7 @@ import useToast from '../components/useToast';
 import Toast from '../components/Toast';
 
 export default function TaskPlayer({ task, user, navigate }) {
-  const { toasts, showToast } = useToast();
+  const { toasts, show: showToast } = useToast();
   const [profile, setProfile] = useState(null);
   const [timerDone, setTimerDone] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(task ? task.watch_duration || 60 : 60);
