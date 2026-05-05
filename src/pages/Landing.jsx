@@ -17,6 +17,159 @@ export default function Landing({ navigate }) {
     document.title = 'Taskivo — Complete Tasks. Get Paid.';
   }, []);
 
+  useEffect(function () {
+    if (document.getElementById('taskivo-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'taskivo-styles';
+    style.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap');
+      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Base responsive container */
+      .lp-container {
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+
+      .lp-hero-title { 
+        font-size: 56px; 
+        letter-spacing: -2px; 
+        line-height: 1.06; 
+        word-break: break-word;
+      }
+      .lp-hero-pad { padding: 88px 5% 72px; }
+      .lp-hero-sub { font-size: 16px; margin: 0 auto 36px; max-width: 90%; }
+      .lp-hero-actions-mb { margin-bottom: 56px; }
+      .lp-btn-hero { padding: 13px 26px; font-size: 14px; white-space: nowrap; }
+      .lp-stat-num { font-size: 26px; letter-spacing: -1px; }
+      .lp-stat-label { font-size: 11px; }
+      .lp-stat-pad { padding: 0 16px; }
+      .lp-section-pad { padding: 80px 5%; }
+      .lp-section-title { font-size: 36px; letter-spacing: -1px; word-break: break-word; }
+      .lp-section-sub { font-size: 15px; margin-bottom: 36px; }
+      .lp-audience-grid { grid-template-columns: repeat(2, 1fr); }
+      .lp-audience-card-pad { padding: 40px 36px; }
+      .lp-audience-title { font-size: 22px; letter-spacing: -0.5px; word-break: break-word; }
+      .lp-audience-desc { font-size: 14px; margin-bottom: 20px; }
+      .lp-step-text { font-size: 13px; }
+      .lp-audience-btn { font-size: 13px; padding: 10px 18px; white-space: nowrap; }
+      .lp-features-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+      .lp-feature-card-pad { padding: 28px 24px; }
+      .lp-feature-name { font-size: 15px; word-break: break-word; }
+      .lp-feature-desc { font-size: 13px; word-break: break-word; }
+      .lp-proof-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .lp-proof-card-pad { padding: 24px; }
+      .lp-proof-text { font-size: 13px; word-break: break-word; }
+      .lp-cta-pad { padding: 100px 5%; }
+      .lp-cta-title { font-size: 48px; letter-spacing: -1.5px; word-break: break-word; }
+      .lp-cta-sub { font-size: 15px; }
+      .lp-trust-row { margin-top: 20px; gap: 20px; flex-wrap: wrap; }
+      .lp-footer-pad { padding: 52px 5% 28px; }
+      .lp-footer-grid { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; }
+      .lp-footer-brand-span { grid-column: auto; }
+      .lp-nav-height { height: 64px; }
+      .lp-nav-pad { padding: 0 5%; }
+      .lp-nav-brand { font-size: 19px; }
+      .lp-nav-btn-ghost { font-size: 13px; padding: 7px 14px; white-space: nowrap; }
+      .lp-nav-btn-primary { font-size: 13px; padding: 8px 16px; white-space: nowrap; }
+
+      @media (max-width: 768px) {
+        .lp-hero-title { font-size: 42px !important; letter-spacing: -1px !important; }
+        .lp-section-title { font-size: 28px !important; }
+        .lp-cta-title { font-size: 32px !important; }
+        .lp-stat-num { font-size: 20px !important; }
+      }
+
+      @media (max-width: 600px) {
+        .lp-nav-height { height: 52px !important; }
+        .lp-nav-pad { padding: 0 4% !important; }
+        .lp-nav-brand { font-size: 16px !important; }
+        .lp-nav-btn-ghost { font-size: 11px !important; padding: 5px 9px !important; }
+        .lp-nav-btn-primary { font-size: 11px !important; padding: 6px 11px !important; }
+
+        .lp-hero-pad { padding: 44px 4% 40px !important; }
+        .lp-hero-title { font-size: 28px !important; letter-spacing: -0.8px !important; line-height: 1.12 !important; }
+        .lp-hero-sub { font-size: 13px !important; margin: 0 auto 22px !important; max-width: 100% !important; }
+        .lp-hero-actions-mb { margin-bottom: 32px !important; }
+        .lp-hero-actions-mb .lp-btn-hero { 
+          padding: 10px 14px !important; 
+          font-size: 11px !important;
+          white-space: nowrap !important;
+        }
+        .lp-stat-num { font-size: 15px !important; letter-spacing: -0.3px !important; }
+        .lp-stat-label { font-size: 8px !important; }
+        .lp-stat-pad { padding: 0 4px !important; }
+
+        .lp-section-pad { padding: 44px 4% !important; }
+        .lp-section-title { font-size: 22px !important; letter-spacing: -0.3px !important; }
+        .lp-section-sub { font-size: 12px !important; margin-bottom: 20px !important; }
+
+        .lp-audience-grid { grid-template-columns: 1fr !important; }
+        .lp-audience-card-pad { padding: 20px 16px !important; }
+        .lp-audience-title { font-size: 18px !important; letter-spacing: -0.2px !important; }
+        .lp-audience-desc { font-size: 12px !important; margin-bottom: 14px !important; }
+        .lp-step-text { font-size: 12px !important; }
+        .lp-audience-btn { 
+          font-size: 11px !important; 
+          padding: 8px 12px !important;
+          white-space: nowrap !important;
+        }
+
+        .lp-features-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+        .lp-feature-card-pad { padding: 14px 12px !important; }
+        .lp-feature-name { font-size: 12px !important; }
+        .lp-feature-desc { font-size: 10px !important; }
+
+        .lp-proof-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+        .lp-proof-card-pad { padding: 16px !important; }
+        .lp-proof-text { font-size: 11px !important; }
+
+        .lp-cta-pad { padding: 52px 4% !important; }
+        .lp-cta-title { font-size: 24px !important; letter-spacing: -0.5px !important; }
+        .lp-cta-sub { font-size: 12px !important; }
+        .lp-trust-row { margin-top: 14px !important; gap: 10px !important; }
+        .lp-trust-row > div { font-size: 10px !important; }
+
+        .lp-footer-pad { padding: 36px 4% 18px !important; }
+        .lp-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 20px !important; }
+        .lp-footer-brand-span { grid-column: 1 / -1 !important; }
+        
+        .lp-nav-btn-ghost, .lp-nav-btn-primary {
+          white-space: nowrap !important;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .lp-features-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+        .lp-hero-actions-mb { 
+          display: flex !important; 
+          flex-direction: column !important;
+          align-items: center !important;
+        }
+        .lp-hero-actions-mb button {
+          width: auto !important;
+          min-width: 160px !important;
+        }
+        .lp-trust-row { 
+          flex-direction: column !important;
+          align-items: center !important;
+          gap: 8px !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
   const features = [
     { icon: '⏱️', name: 'Timed Watch Sessions', desc: 'Earners must watch for a minimum duration before any action unlocks. Tab-switching pauses the timer.' },
     { icon: '🧠', name: 'Anti-Cheat Quiz', desc: 'After watching, earners answer a question set by the creator — proving they actually paid attention.' },
@@ -48,7 +201,15 @@ export default function Landing({ navigate }) {
   ];
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.off, color: C.ink, minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
+    <div className="lp-container" style={{ 
+      fontFamily: "'DM Sans', sans-serif", 
+      background: C.off, 
+      color: C.ink, 
+      minHeight: '100vh', 
+      WebkitFontSmoothing: 'antialiased',
+      width: '100%',
+      overflowX: 'hidden',
+    }}>
 
       {/* NAV */}
       <nav className="lp-nav-height lp-nav-pad" style={{
@@ -56,7 +217,8 @@ export default function Landing({ navigate }) {
         display: 'flex', alignItems: 'center',
         background: 'rgba(255,255,255,0.92)',
         backdropFilter: 'blur(16px)',
-        borderBottom: '1px solid ' + C.line,
+        borderBottom: `1px solid ${C.line}`,
+        width: '100%',
       }}>
         <div className="lp-nav-brand" style={{
           fontFamily: "'Syne', sans-serif",
@@ -81,14 +243,14 @@ export default function Landing({ navigate }) {
       </nav>
 
       {/* HERO */}
-      <div className="lp-hero-pad" style={{ background: C.ink, position: 'relative', overflow: 'hidden' }}>
+      <div className="lp-hero-pad" style={{ background: C.ink, position: 'relative', overflow: 'hidden', width: '100%' }}>
         <div style={{
           position: 'absolute', top: -120, left: '50%', transform: 'translateX(-50%)',
           width: 600, height: 400,
           background: 'radial-gradient(ellipse at center, rgba(168,255,62,0.08) 0%, transparent 65%)',
           pointerEvents: 'none',
         }}></div>
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 680, margin: '0 auto', textAlign: 'center', padding: '0 4%' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             background: 'rgba(168,255,62,0.08)',
@@ -97,6 +259,7 @@ export default function Landing({ navigate }) {
             fontSize: 10, fontWeight: 600,
             letterSpacing: '1.2px', textTransform: 'uppercase',
             padding: '5px 12px', borderRadius: 100, marginBottom: 22,
+            flexWrap: 'wrap',
           }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.lime, animation: 'pulse 2s infinite' }}></span>
             Live — Tasks available now
@@ -112,7 +275,7 @@ export default function Landing({ navigate }) {
           </h1>
           <p className="lp-hero-sub" style={{
             lineHeight: 1.7, color: 'rgba(255,255,255,0.45)',
-            maxWidth: 400, fontWeight: 400,
+            maxWidth: 400, fontWeight: 400, marginLeft: 'auto', marginRight: 'auto',
           }}>
             The platform where earners complete real YouTube tasks and creators get genuine engagement. Simple. Transparent. Global.
           </p>
@@ -120,14 +283,14 @@ export default function Landing({ navigate }) {
             <button className="lp-btn-hero" style={{
               background: C.lime, color: C.ink, border: 'none', borderRadius: 10,
               fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-            }} onClick={function () { navigate('auth'); }}>Start Earning Free →</button>
+            }} onClick={function () { navigate('auth'); }}>Start Earning →</button>
             <button className="lp-btn-hero" style={{
               background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.75)',
               border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10,
               fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
             }} onClick={function () { navigate('auth'); }}>I'm a Creator</button>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 28 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 28, flexWrap: 'wrap' }}>
             {[
               { num: '50K+', label: 'Active Earners' },
               { num: '2.1M', label: 'Points Awarded' },
@@ -136,7 +299,7 @@ export default function Landing({ navigate }) {
             ].map(function (stat, i, arr) {
               return (
                 <div key={i} className="lp-stat-pad" style={{
-                  flex: 1, textAlign: 'center',
+                  flex: 1, textAlign: 'center', minWidth: '70px',
                   borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
                 }}>
                   <div className="lp-stat-num" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.white }}>{stat.num}</div>
@@ -149,8 +312,8 @@ export default function Landing({ navigate }) {
       </div>
 
       {/* AUDIENCE */}
-      <section className="lp-section-pad" style={{ background: C.white }}>
-        <div style={{ maxWidth: 480, marginBottom: 28 }}>
+      <section className="lp-section-pad" style={{ background: C.white, width: '100%' }}>
+        <div style={{ maxWidth: 480, marginBottom: 28, marginLeft: 'auto', marginRight: 'auto' }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: C.lime, marginBottom: 8 }}>Who Is Taskivo For?</div>
           <h2 className="lp-section-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 10 }}>Two sides.<br />One platform.</h2>
           <p className="lp-section-sub" style={{ color: C.slate, lineHeight: 1.7 }}>
@@ -163,7 +326,7 @@ export default function Landing({ navigate }) {
           boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)',
         }}>
           {[
-            { tag: 'For Earners', title: 'Complete tasks.\nEarn real cash.', desc: 'Watch YouTube videos, complete simple actions, and withdraw real money. No experience needed. Works from any phone.', steps: earnerSteps, btn: 'Start Earning Free →' },
+            { tag: 'For Earners', title: 'Complete tasks.\nEarn real cash.', desc: 'Watch YouTube videos, complete simple actions, and withdraw real money. No experience needed. Works from any phone.', steps: earnerSteps, btn: 'Start Earning →' },
             { tag: 'For Creators', title: 'Real views.\nReal engagement.', desc: 'Get verified views, likes, and comments from real people. Every earner passes a quiz proving they actually watched.', steps: creatorSteps, btn: 'Post Your First Task →' },
           ].map(function (card, ci) {
             return (
@@ -190,14 +353,14 @@ export default function Landing({ navigate }) {
       </section>
 
       {/* FEATURES */}
-      <section className="lp-section-pad" style={{ background: C.off }}>
+      <section className="lp-section-pad" style={{ background: C.off, width: '100%' }}>
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: C.lime, marginBottom: 8 }}>Platform Features</div>
         <h2 className="lp-section-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 10 }}>Built for trust.<br />Designed for scale.</h2>
         <p className="lp-section-sub" style={{ color: C.slate, lineHeight: 1.7, maxWidth: 440 }}>Every feature exists to guarantee genuine engagement — not gaming the system.</p>
         <div className="lp-features-grid" style={{ display: 'grid' }}>
           {features.map(function (f, i) {
             return (
-              <div key={i} className="lp-feature-card-pad" style={{ background: C.white, borderRadius: 14, border: '1px solid ' + C.line }}>
+              <div key={i} className="lp-feature-card-pad" style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.line}` }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: C.limeDim, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, marginBottom: 10 }}>{f.icon}</div>
                 <div className="lp-feature-name" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, color: C.ink, marginBottom: 5 }}>{f.name}</div>
                 <p className="lp-feature-desc" style={{ color: C.slate, lineHeight: 1.6 }}>{f.desc}</p>
@@ -208,7 +371,7 @@ export default function Landing({ navigate }) {
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="lp-section-pad" style={{ background: C.ink }}>
+      <section className="lp-section-pad" style={{ background: C.ink, width: '100%' }}>
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(168,255,62,0.5)', marginBottom: 8 }}>What People Say</div>
         <h2 className="lp-section-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.white, lineHeight: 1.1, marginBottom: 10 }}>Trusted worldwide.</h2>
         <p className="lp-section-sub" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, maxWidth: 440 }}>Real people. Real results. Real money.</p>
@@ -219,7 +382,7 @@ export default function Landing({ navigate }) {
                 <div style={{ color: C.lime, fontSize: 11, marginBottom: 10, letterSpacing: 2 }}>★★★★★</div>
                 <p className="lp-proof-text" style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.75, marginBottom: 16, fontStyle: 'italic' }}>{t.text}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.limeDim, border: '1px solid ' + C.limeBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: C.lime, flexShrink: 0 }}>{t.initials}</div>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.limeDim, border: `1px solid ${C.limeBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: C.lime, flexShrink: 0 }}>{t.initials}</div>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: C.white }}>{t.name}</div>
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{t.role}</div>
@@ -232,7 +395,7 @@ export default function Landing({ navigate }) {
       </section>
 
       {/* CTA */}
-      <section className="lp-cta-pad" style={{ background: C.white, borderTop: '1px solid ' + C.line, textAlign: 'center' }}>
+      <section className="lp-cta-pad" style={{ background: C.white, borderTop: `1px solid ${C.line}`, textAlign: 'center', width: '100%' }}>
         <div style={{ display: 'inline-block', background: C.limeDim, color: '#3d6600', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '5px 12px', borderRadius: 6, marginBottom: 18 }}>Join Free Today</div>
         <h2 className="lp-cta-title" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.ink, marginBottom: 12, lineHeight: 1.05 }}>
           Your time is{' '}<span style={{ color: C.lime, textDecoration: 'underline', textDecorationColor: 'rgba(168,255,62,0.4)' }}>worth more.</span>
@@ -241,10 +404,10 @@ export default function Landing({ navigate }) {
           Join thousands of earners already making money on Taskivo. Free to join. No skills required.
         </p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button className="lp-btn-hero" style={{ background: C.ink, color: C.lime, border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={function () { navigate('auth'); }}>Start Earning Free →</button>
-          <button className="lp-btn-hero" style={{ background: 'none', color: C.slate, border: '1px solid ' + C.line, borderRadius: 10, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={function () { navigate('auth'); }}>Post a Task</button>
+          <button className="lp-btn-hero" style={{ background: C.ink, color: C.lime, border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={function () { navigate('auth'); }}>Start Earning →</button>
+          <button className="lp-btn-hero" style={{ background: 'none', color: C.slate, border: `1px solid ${C.line}`, borderRadius: 10, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={function () { navigate('auth'); }}>Post a Task</button>
         </div>
-        <div className="lp-trust-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div className="lp-trust-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 16 }}>
           {['Free to join', 'Instant payouts', 'No experience needed'].map(function (item) {
             return (
               <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: C.slate }}>
@@ -257,7 +420,7 @@ export default function Landing({ navigate }) {
       </section>
 
       {/* FOOTER */}
-      <footer className="lp-footer-pad" style={{ background: C.ink, color: 'rgba(255,255,255,0.4)' }}>
+      <footer className="lp-footer-pad" style={{ background: C.ink, color: 'rgba(255,255,255,0.4)', width: '100%' }}>
         <div className="lp-footer-grid" style={{ display: 'grid', marginBottom: 36 }}>
           <div className="lp-footer-brand-span">
             <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 17, fontWeight: 800, color: C.white, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
