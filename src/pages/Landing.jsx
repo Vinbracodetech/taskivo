@@ -90,7 +90,16 @@ export default function Landing({ navigate, setAuthMode }) {
   };
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: '#0D0D14', color: '#fff', overflowX: 'hidden', minHeight: '100vh' }}>
+    <div style={{ 
+  fontFamily: "'DM Sans', sans-serif", 
+  background: '#0D0D14', 
+  color: '#fff', 
+  overflowX: 'hidden', 
+  minHeight: '100vh',
+  maxWidth: '480px',
+  margin: '0 auto',
+  width: '100%',
+}}>
 
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
 
