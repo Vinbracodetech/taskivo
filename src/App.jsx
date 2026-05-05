@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from 'react';
 import { supabase } from "./lib/supabase.js";
 import CSS from "./styles/global.js";
 import Sidebar from "./components/Sidebar.jsx";
