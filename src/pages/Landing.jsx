@@ -1,4 +1,7 @@
+import { useState } from "react";
+
 export default function Landing({ navigate, setAuthMode }) {
+  const [activeTab, setActiveTab] = useState("earner");
 
   function goRegister() {
     setAuthMode("register");
@@ -10,257 +13,146 @@ export default function Landing({ navigate, setAuthMode }) {
     navigate("auth");
   }
 
-  return (
-    <div className="landing">
+  function setTabEarner() {
+    setActiveTab("earner");
+  }
 
+  function setTabCreator() {
+    setActiveTab("creator");
+  }
+
+  const earnerSteps = [
+    { icon: "📋", title: "Pick a task", desc: "Browse YouTube videos, articles, or blog tasks that match your interests.", n: "1" },
+    { icon: "✅", title: "Complete it", desc: "Watch, read, or engage — then answer a quick quiz to confirm.", n: "2" },
+    { icon: "💸", title: "Withdraw cash", desc: "Cash out via mobile money, bank transfer, or PayPal when you're ready.", n: "3" }
+  ];
+
+  const creatorSteps = [
+    { icon: "🎯", title: "Post a task", desc: "Upload your YouTube video or article and set the reward points.", n: "1" },
+    { icon: "🧠", title: "Set a quiz", desc: "Add a custom question to verify that earners actually engaged.", n: "2" },
+    { icon: "📈", title: "Get real engagement", desc: "Watch your metrics grow with verified, human interactions.", n: "3" }
+  ];
+
+  const currentSteps = activeTab === "earner" ? earnerSteps : creatorSteps;
+
+  return (
+    <div style={{ paddingBottom: 100 }}>
       {/* ── NAV ── */}
       <nav style={{
         padding: "0 5%",
-        height: 72,
+        height: 80,
         display: "flex",
         alignItems: "center",
-        gap: 16,
-        position: "sticky",
-        top: 0,
-        background: "rgba(255,255,255,.92)",
-        backdropFilter: "blur(12px)",
-        zIndex: 50,
+        justifyContent: "space-between",
         borderBottom: "1px solid var(--line)",
       }}>
-        <span style={{
+        <div style={{
           fontFamily: "var(--font-display)",
-          fontSize: 22,
-          fontWeight: 700,
-          color: "var(--ink)",
-          flex: 1,
+          fontSize: 24,
+          fontWeight: 800,
+          color: "#fff",
+          letterSpacing: "-0.5px"
         }}>
-          ⚡ Taskivo
-        </span>
-        <div style={{ display: "flex", gap: 4 }}>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={function () { navigate("blog"); }}
-          >
-            Blog
-          </button>
+          Taski<span style={{ color: "var(--lime)" }}>vo</span>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn btn-outline btn-sm" onClick={goLogin}>
+        <div style={{ display: "flex", gap: 12 }}>
+          <button className="btn btn-outline" style={{ borderColor: "var(--line)", color: "#fff" }} onClick={goLogin}>
             Log in
           </button>
-          <button className="btn btn-primary btn-sm" onClick={goRegister}>
-            Get Started
+          <button className="btn btn-primary" onClick={goRegister}>
+            Sign up
           </button>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{
-        background: "linear-gradient(180deg, #fff 0%, #F9FFF5 100%)",
-        borderBottom: "1px solid var(--line)",
-      }}>
-        <div className="hero">
-          <div>
-            <div className="hero-eyebrow">⚡ Earn While You Watch</div>
-            <h1 className="hero-title">
-              Real Tasks.<br />
-              Real <span>Rewards</span>.<br />
-              Real Insights.
-            </h1>
-            <p className="hero-sub">
-              Taskivo connects curious viewers with creators who want genuine
-              feedback. Watch videos, answer questions, earn points — and get paid.
-            </p>
-            <div className="hero-actions">
-              <button className="btn btn-primary btn-xl" onClick={goRegister}>
-                Start Earning Free →
-              </button>
-              <button className="btn btn-outline btn-xl" onClick={goRegister}>
-                I'm a Creator
-              </button>
-            </div>
-            <div style={{ display: "flex", gap: 32, marginTop: 36 }}>
-              {[
-                ["50K+", "Active Earners"],
-                ["2.1M", "Points Earned"],
-                ["12K+", "Tasks Completed"],
-              ].map(function (s) {
-                return (
-                  <div key={s[1]}>
-                    <div style={{
-                      fontFamily: "var(--font-display)",
-                      fontSize: 26,
-                      fontWeight: 700,
-                      color: "var(--ink)",
-                    }}>
-                      {s[0]}
-                    </div>
-                    <div style={{ fontSize: 12, color: "var(--slate)" }}>
-                      {s[1]}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* HERO CARD */}
-          <div>
-            <div className="hero-card">
-              <div style={{
-                fontSize: 13,
-                color: "rgba(255,255,255,.6)",
-                marginBottom: 20,
-                fontWeight: 600,
-              }}>
-                📋 Live Tasks Right Now
-              </div>
-              {[
-                { title: "Watch & Review: AI Tools 2025", time: "90s", reward: 250, slots: 47 },
-                { title: "Product Unboxing Feedback", time: "60s", reward: 180, slots: 31 },
-                { title: "Rate This Tutorial Video", time: "120s", reward: 350, slots: 12 },
-              ].map(function (t) {
-                return (
-                  <div className="task-preview" key={t.title}>
-                    <div className="task-preview-title">{t.title}</div>
-                    <div className="task-preview-meta">
-                      <span>⏱ {t.time} watch</span>
-                      <span className="task-preview-reward">+{t.reward.toLocaleString()} pts</span>
-                      <span>{t.slots.toLocaleString()} slots left</span>
-                    </div>
-                    <div className="progress" style={{ marginTop: 8 }}>
-                      <div
-                        className="progress-bar"
-                        style={{ width: (100 - t.slots) + "%" }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-              <button
-                className="btn btn-primary"
-                style={{ width: "100%", marginTop: 8, justifyContent: "center" }}
-                onClick={goRegister}
-              >
-                View All Tasks →
-              </button>
-            </div>
-          </div>
+      <section style={{ padding: "100px 5% 40px", textAlign: "center" }}>
+        <div className="pill-badge">
+          ⚡ EARN REAL CASH ONLINE
         </div>
-      </section>
-
-      {/* ── FEATURES ── */}
-      <section className="features-section" id="features">
-        <div className="section-label">Platform Features</div>
-        <h2 className="section-title">Everything You Need to Earn & Grow</h2>
-        <p className="section-sub">
-          A complete ecosystem where meaningful engagement is rewarded
-          and creators get real data.
+        
+        <h1 className="hero-title">
+          Complete tasks.<br />
+          <span>Get paid.</span>
+        </h1>
+        
+        <p className="hero-sub">
+          Taskivo connects earners who complete short online tasks with creators who want real engagement — YouTube views, article reads, and more.
         </p>
-        <div className="features-grid">
-          {[
-            { icon: "▶", title: "Watch & Earn", desc: "Complete video tasks with enforced watch timers. Points are awarded only after verified engagement — no shortcuts." },
-            { icon: "🧠", title: "Smart Questions", desc: "Answer comprehension questions, rate content, or provide written feedback. Every task validates real watching." },
-            { icon: "💰", title: "Points → Cash", desc: "Accumulate points and withdraw via Paystack or Flutterwave. Transparent rates, admin-approved payouts." },
-            { icon: "🛡️", title: "Anti-Cheat Built In", desc: "Tab-switch detection, randomised questions, and daily limits keep the platform fair for everyone." },
-            { icon: "📊", title: "Creator Analytics", desc: "Creators get real completion stats, feedback scores, and engagement breakdowns — not vanity metrics." },
-            { icon: "🌍", title: "Global Platform", desc: "Available worldwide with country-based point rates. Earn from Nigeria, US, UK, Canada and beyond." },
-          ].map(function (f) {
-            return (
-              <div className="feature-card" key={f.title}>
-                <div className="feature-icon">{f.icon}</div>
-                <div className="feature-title">{f.title}</div>
-                <div className="feature-desc">{f.desc}</div>
-              </div>
-            );
-          })}
+
+        <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 40 }}>
+          <button className="btn btn-primary btn-xl" onClick={goRegister}>
+            Start Earning Free →
+          </button>
+          <button className="btn btn-dark btn-xl" onClick={goRegister}>
+            Post a Task
+          </button>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, color: "var(--slate)", fontSize: 14 }}>
+          <span style={{ fontSize: 20 }}>🇳🇬 🇬🇭 🇰🇪 🇿🇦 🇺🇬</span>
+          <span>Earners from <strong style={{ color: "#fff" }}>50+ countries</strong></span>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
-      <section className="how-section">
-        <div className="section-label" style={{ color: "rgba(168,255,62,.7)" }}>
-          How It Works
+      {/* ── STATS ── */}
+      <section className="stats-grid">
+        <div>
+          <div className="stat-val">50K+</div>
+          <div className="stat-label">Tasks Completed</div>
         </div>
-        <h2 className="section-title">From Zero to Earning in Minutes</h2>
-        <p className="section-sub">
-          A simple flow designed for real engagement — not gaming the system.
+        <div>
+          <div className="stat-val">12K+</div>
+          <div className="stat-label">Active Earners</div>
+        </div>
+        <div>
+          <div className="stat-val">$18K+</div>
+          <div className="stat-label">Paid Out</div>
+        </div>
+        <div>
+          <div className="stat-val">50+</div>
+          <div className="stat-label">Countries</div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS (TWO SIDES) ── */}
+      <section style={{ padding: "60px 5%", textAlign: "center" }}>
+        <div className="pill-badge">HOW IT WORKS</div>
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 48, fontWeight: 800, marginBottom: 16, letterSpacing: "-1px" }}>
+          Two sides. One platform.
+        </h2>
+        <p style={{ color: "var(--slate)", fontSize: 16, marginBottom: 40 }}>
+          Whether you want to earn or grow your brand, Taskivo is built for you.
         </p>
-        <div className="steps-grid">
-          {[
-            { n: "1", title: "Register Free", desc: "Create your account with email or Google. No payment needed to start." },
-            { n: "2", title: "Pick a Task", desc: "Browse available video tasks filtered by topic, reward, and duration." },
-            { n: "3", title: "Watch & Answer", desc: "Watch the full video (timer enforced), then answer questions or give feedback." },
-            { n: "4", title: "Earn & Withdraw", desc: "Points land in your wallet instantly. Request withdrawal when you hit the minimum." },
-          ].map(function (s) {
+
+        <div className="toggle-wrapper">
+          <button 
+            className={activeTab === "earner" ? "toggle-btn active" : "toggle-btn"} 
+            onClick={setTabEarner}
+          >
+            💰 Earner
+          </button>
+          <button 
+            className={activeTab === "creator" ? "toggle-btn active" : "toggle-btn"} 
+            onClick={setTabCreator}
+          >
+            🎯 Creator
+          </button>
+        </div>
+
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          {currentSteps.map(function (step) {
             return (
-              <div style={{ textAlign: "center" }} key={s.n}>
-                <div className="step-num">{s.n}</div>
-                <div className="step-title">{s.title}</div>
-                <div className="step-desc">{s.desc}</div>
+              <div className="step-card" key={step.n}>
+                <div className="step-icon">{step.icon}</div>
+                <div className="step-title">{step.title}</div>
+                <div className="step-desc">{step.desc}</div>
+                <div className="step-watermark">{step.n}</div>
               </div>
             );
           })}
         </div>
       </section>
-
-      {/* ── CTA ── */}
-      <section className="cta-section">
-        <div className="cta-inner">
-          <h2 className="cta-title">Ready to Start Earning?</h2>
-          <p className="cta-sub">
-            Join 50,000+ earners already on Taskivo. Free to join, real rewards, no spam.
-          </p>
-          <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <button className="btn btn-dark btn-xl" onClick={goRegister}>
-              Create Free Account
-            </button>
-            <button
-              className="btn btn-outline btn-xl"
-              style={{ background: "rgba(255,255,255,.5)" }}
-              onClick={goLogin}
-            >
-              I Have an Account
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer className="landing-footer">
-        <div className="footer-grid">
-          <div>
-            <div className="footer-brand">⚡ Taskivo</div>
-            <div style={{ fontSize: 13, lineHeight: 1.7 }}>
-              A global task-based engagement platform connecting
-              earners with creators for meaningful video feedback.
-            </div>
-          </div>
-          {[
-            { title: "Platform", links: ["How it Works", "Browse Tasks", "Creator Hub", "Pricing"] },
-            { title: "Company", links: ["About Us", "Blog", "Careers", "Contact"] },
-            { title: "Legal", links: ["Privacy Policy", "Terms of Service", "Cookie Policy"] },
-          ].map(function (col) {
-            return (
-              <div key={col.title}>
-                <div className="footer-col-title">{col.title}</div>
-                <ul className="footer-col-links">
-                  {col.links.map(function (l) {
-                    return (
-                      <li key={l}>
-                        <a href="#">{l}</a>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })}
-        </div>
-        <div className="footer-bottom">
-          © 2025 Taskivo.online — All rights reserved.
-        </div>
-      </footer>
 
     </div>
   );
