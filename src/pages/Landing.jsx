@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const C = {
   ink: '#0D0D14',
@@ -9,12 +9,14 @@ const C = {
   off: '#F7F8FA',
   slate: '#6B7280',
   line: '#EBEBEB',
+  darkLine: 'rgba(255,255,255,0.08)',
 };
 
 export default function Landing({ navigate, setAuthMode }) {
+  const [openFaq, setOpenFaq] = useState(null);
 
   useEffect(function () {
-    document.title = 'Taskivo — Complete Tasks. Get Paid.';
+    document.title = 'Taskivo — Digital Engagement Infrastructure';
   }, []);
 
   useEffect(function () {
@@ -22,112 +24,52 @@ export default function Landing({ navigate, setAuthMode }) {
     const style = document.createElement('style');
     style.id = 'taskivo-styles';
     style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap');
       @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-      .lp-hero-title { font-size: 56px; letter-spacing: -2px; line-height: 1.06; }
-      .lp-hero-pad { padding: 88px 5% 72px; }
-      .lp-hero-sub { font-size: 16px; margin: 0 auto 36px; }
-      .lp-hero-actions-mb { margin-bottom: 56px; }
-      .lp-btn-hero { padding: 13px 26px; font-size: 14px; }
-      .lp-stat-num { font-size: 26px; letter-spacing: -1px; }
-      .lp-stat-label { font-size: 11px; }
-      .lp-stat-pad { padding: 0 16px; }
-      .lp-section-pad { padding: 80px 5%; }
-      .lp-section-title { font-size: 36px; letter-spacing: -1px; }
-      .lp-section-sub { font-size: 15px; margin-bottom: 36px; }
-      .lp-audience-grid { grid-template-columns: repeat(2, 1fr); }
-      .lp-audience-card-pad { padding: 40px 36px; }
-      .lp-audience-title { font-size: 22px; letter-spacing: -0.5px; }
-      .lp-audience-desc { font-size: 14px; margin-bottom: 20px; }
-      .lp-step-text { font-size: 13px; }
-      .lp-audience-btn { font-size: 13px; padding: 10px 18px; }
-      .lp-features-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
-      .lp-feature-card-pad { padding: 28px 24px; }
-      .lp-feature-name { font-size: 15px; }
-      .lp-feature-desc { font-size: 13px; }
-      .lp-proof-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-      .lp-proof-card-pad { padding: 24px; }
-      .lp-proof-text { font-size: 13px; }
-      .lp-cta-pad { padding: 100px 5%; }
-      .lp-cta-title { font-size: 48px; letter-spacing: -1.5px; }
-      .lp-cta-sub { font-size: 15px; }
-      .lp-trust-row { margin-top: 20px; gap: 20px; }
-      .lp-footer-pad { padding: 52px 5% 28px; }
-      .lp-footer-grid { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 32px; }
-      .lp-footer-brand-span { grid-column: auto; }
+      .heading { font-family: 'Syne', sans-serif; }
+      .body-text { font-family: 'DM Sans', sans-serif; }
 
-      @media (max-width: 600px) {
-        .lp-hero-pad { padding: 44px 4% 40px !important; }
-        .lp-hero-title { font-size: 28px !important; letter-spacing: -0.8px !important; line-height: 1.12 !important; }
-        .lp-hero-sub { font-size: 13px !important; margin: 0 auto 22px !important; }
-        .lp-hero-actions-mb { margin-bottom: 32px !important; }
-        .lp-btn-hero { padding: 10px 16px !important; font-size: 12px !important; }
-        .lp-stat-num { font-size: 15px !important; letter-spacing: -0.3px !important; }
-        .lp-stat-label { font-size: 8px !important; }
-        .lp-stat-pad { padding: 0 4px !important; }
+      .lp-hero-title { font-size: 64px; letter-spacing: -2px; line-height: 1.05; }
+      .lp-hero-pad { padding: 120px 5% 100px; }
+      .lp-hero-sub { font-size: 18px; margin: 0 auto 36px; }
+      
+      .lp-section-pad { padding: 96px 5%; }
+      .lp-section-title { font-size: 40px; letter-spacing: -1.5px; }
+      
+      .lp-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+      .lp-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+      .lp-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+      
+      .lp-footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
 
-        .lp-section-pad { padding: 44px 4% !important; }
-        .lp-section-title { font-size: 20px !important; letter-spacing: -0.3px !important; }
-        .lp-section-sub { font-size: 12px !important; margin-bottom: 20px !important; }
-
-        .lp-audience-grid { grid-template-columns: 1fr !important; }
-        .lp-audience-card-pad { padding: 20px 16px !important; }
-        .lp-audience-title { font-size: 15px !important; letter-spacing: -0.2px !important; }
-        .lp-audience-desc { font-size: 12px !important; margin-bottom: 14px !important; }
-        .lp-step-text { font-size: 12px !important; }
-        .lp-audience-btn { font-size: 12px !important; padding: 9px 14px !important; }
-
-        .lp-features-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
-        .lp-feature-card-pad { padding: 14px 12px !important; }
-        .lp-feature-name { font-size: 12px !important; }
-        .lp-feature-desc { font-size: 11px !important; }
-
-        .lp-proof-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
-        .lp-proof-card-pad { padding: 16px !important; }
-        .lp-proof-text { font-size: 12px !important; }
-
-        .lp-cta-pad { padding: 52px 4% !important; }
-        .lp-cta-title { font-size: 24px !important; letter-spacing: -0.5px !important; }
-        .lp-cta-sub { font-size: 13px !important; }
-        .lp-trust-row { margin-top: 14px !important; gap: 12px !important; }
-
-        .lp-footer-pad { padding: 36px 4% 18px !important; }
-        .lp-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 20px !important; }
+      @media (max-width: 768px) {
+        .lp-hero-title { font-size: 36px !important; letter-spacing: -1px !important; }
+        .lp-hero-pad { padding: 80px 5% 60px !important; }
+        .lp-hero-sub { font-size: 15px !important; margin: 0 auto 24px !important; }
+        
+        .lp-section-pad { padding: 60px 5% !important; }
+        .lp-section-title { font-size: 28px !important; letter-spacing: -1px !important; }
+        
+        .lp-grid-2, .lp-grid-3, .lp-grid-4 { grid-template-columns: 1fr !important; gap: 16px !important; }
+        .lp-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
         .lp-footer-brand-span { grid-column: 1 / -1 !important; }
       }
     `;
     document.head.appendChild(style);
   }, []);
 
-  const features = [
-    { icon: '⏱️', name: 'Timed Watch Sessions', desc: 'Earners must watch for a minimum duration before any action unlocks. Tab-switching pauses the timer.' },
-    { icon: '🧠', name: 'Anti-Cheat Quiz', desc: 'After watching, earners answer a question set by the creator — proving they actually paid attention.' },
-    { icon: '💸', name: 'Real Withdrawals', desc: 'Points convert to cash. Withdraw via PayPal, Paystack, or Flutterwave. Processed within 48 hours.' },
-    { icon: '🌍', name: 'Global Earner Pool', desc: 'Earners from 30+ countries worldwide. Creators get diverse, international engagement.' },
-    { icon: '📊', name: 'Creator Reports', desc: 'See exactly how many people watched, liked, commented, and subscribed — not vanity metrics.' },
-    { icon: '🛡️', name: 'Admin Verified', desc: 'Every task and withdrawal is manually reviewed before going live. Zero tolerance for fraud.' },
+  const pricing = [
+    { name: 'Starter', price: '$10', slots: 50, useCase: 'Best for small campaigns' },
+    { name: 'Growth', price: '$18', slots: 100, useCase: 'Best for growing channels' },
+    { name: 'Pro', price: '$40', slots: 250, useCase: 'Best for agency needs' },
+    { name: 'Scale', price: '$75', slots: 500, useCase: 'Best for massive reach' },
   ];
 
-  const testimonials = [
-    { initials: 'JR', name: 'James R.', role: 'Earner — United States', text: '"I completed 12 tasks in my first week and withdrew straight to PayPal. The timer system makes it feel legitimate."' },
-    { initials: 'AO', name: 'Amaka O.', role: 'Earner — Nigeria', text: '"I\'ve already withdrawn three times via Paystack. The quiz makes it fair — only real viewers get paid."' },
-    { initials: 'FK', name: 'Faith K.', role: 'Earner — Kenya', text: '"Tasks go live every day and the points add up fast. I love that I can do this from my phone."' },
-    { initials: 'MC', name: 'Marcus C.', role: 'Creator — Canada', text: '"I tried other platforms and got bot views. With Taskivo every viewer answered my quiz correctly."' },
-  ];
-
-  const earnerSteps = [
-    'Create a free account in under a minute',
-    'Browse and pick available video tasks',
-    'Watch, engage, and answer the quiz',
-    'Withdraw earnings to your preferred method',
-  ];
-
-  const creatorSteps = [
-    'Register and select Creator account type',
-    'Choose a task package for your video',
-    'Pay securely — task goes live within 24hrs',
-    'Watch real engagement arrive on your video',
+  const faqs = [
+    { q: 'How do rewards work?', a: 'Contributors accumulate reward points based on active task completion, platform engagement, and maintaining activity streaks. Points reflect your overall participation quality.' },
+    { q: 'How do I withdraw?', a: 'Once you accumulate enough reward points to meet the platform threshold, you can request a secure withdrawal to your configured payment method.' },
+    { q: 'Who can use Taskivo?', a: 'Taskivo is built for global businesses seeking genuine digital engagement, and individuals worldwide looking for structured micro-earning opportunities.' },
   ];
 
   function goRegister() {
@@ -140,221 +82,247 @@ export default function Landing({ navigate, setAuthMode }) {
     navigate("auth");
   }
 
+  function toggleFaq(index) {
+    setOpenFaq(openFaq === index ? null : index);
+  }
+
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.off, color: C.ink, minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
+    <div className="body-text" style={{ background: C.off, color: C.ink, minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
       
       {/* HERO */}
-      <div className="lp-hero-pad" style={{ background: C.ink, position: 'relative', overflow: 'hidden' }}>
+      <div className="lp-hero-pad" style={{ background: C.ink, position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${C.darkLine}` }}>
         <div style={{
-          position: 'absolute', top: -120, left: '50%', transform: 'translateX(-50%)',
-          width: 600, height: 400,
-          background: 'radial-gradient(ellipse at center, rgba(168,255,62,0.08) 0%, transparent 65%)',
+          position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)',
+          width: '80%', height: '80%',
+          background: 'radial-gradient(ellipse at center, rgba(168,255,62,0.1) 0%, transparent 70%)',
           pointerEvents: 'none',
         }}></div>
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
+        
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
           <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: 'rgba(168,255,62,0.08)',
-            border: '1px solid rgba(168,255,62,0.18)',
-            color: 'rgba(168,255,62,0.8)',
-            fontSize: 10, fontWeight: 600,
-            letterSpacing: '1.2px', textTransform: 'uppercase',
-            padding: '5px 12px', borderRadius: 100, marginBottom: 22,
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: 'rgba(255,255,255,0.05)',
+            border: `1px solid ${C.darkLine}`,
+            color: C.white, fontSize: 12, fontWeight: 600,
+            padding: '6px 16px', borderRadius: 100, marginBottom: 32,
           }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.lime, animation: 'pulse 2s infinite' }}></span>
-            Live — Tasks available now
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.lime, animation: 'pulse 2s infinite' }}></span>
+            Taskivo Beta Platform
           </div>
-          <h1 className="lp-hero-title" style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontWeight: 800,
-            color: C.white, marginBottom: 14,
-          }}>
-            Complete Tasks.<br />
-            <span style={{ color: C.lime }}>Get Paid.</span><br />
-            Grow Faster.
+          
+          <h1 className="lp-hero-title heading" style={{ color: C.white, marginBottom: 24 }}>
+            Scale your reach.<br />
+            <span style={{ color: C.lime }}>Earn from real engagement.</span>
           </h1>
-          <p className="lp-hero-sub" style={{
-            lineHeight: 1.7, color: 'rgba(255,255,255,0.45)',
-            maxWidth: 400, fontWeight: 400,
-          }}>
-            The platform where earners complete real YouTube tasks and creators get genuine engagement. Simple. Transparent. Global.
+          
+          <p className="lp-hero-sub body-text" style={{ color: 'rgba(255,255,255,0.7)', maxWidth: 540, fontWeight: 400, lineHeight: 1.6 }}>
+            A digital engagement infrastructure connecting businesses with a global network of real contributors.
           </p>
-          <div className="lp-hero-actions-mb" style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="lp-btn-hero" style={{
-              background: C.lime, color: C.ink, border: 'none', borderRadius: 10,
-              fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-            }} onClick={goRegister}>Start Earning Free →</button>
-            <button className="lp-btn-hero" style={{
-              background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.75)',
-              border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10,
-              fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-            }} onClick={goRegister}>I'm a Creator</button>
+
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 44, fontStyle: 'italic', letterSpacing: 0.5 }}>
+            Empowering digital participation and micro-earning opportunities across emerging markets.
+          </p>
+          
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button style={{
+              background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px',
+              fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+            }} onClick={goRegister}>Start as Contributor</button>
+            <button style={{
+              background: 'transparent', color: C.white, border: `1px solid ${C.darkLine}`, borderRadius: 8,
+              padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+            }} onClick={goRegister}>Launch a Campaign</button>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 28 }}>
-            {[
-              { num: '50K+', label: 'Active Earners' },
-              { num: '2.1M', label: 'Points Awarded' },
-              { num: '12K+', label: 'Tasks Done' },
-              { num: '30+', label: 'Countries' },
-            ].map(function (stat, i, arr) {
+        </div>
+      </div>
+
+      {/* VALUE PROP: BUSINESS & CONTRIBUTORS */}
+      <section className="lp-section-pad" style={{ background: C.off }}>
+        <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Two perspectives.<br />One infrastructure.</h2>
+          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>
+            Taskivo abstracts the complexity of digital growth and distributed micro-earnings into a single, seamless platform.
+          </p>
+        </div>
+
+        <div className="lp-grid-2" style={{ maxWidth: 1000, margin: '0 auto' }}>
+          {/* For Businesses */}
+          <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, padding: 40 }}>
+            <div style={{ display: 'inline-block', background: C.ink, color: C.lime, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Businesses</div>
+            <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Drive verifiable digital actions.</h3>
+            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Promote campaigns effortlessly</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Get real engagement from real users</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Predictable and affordable growth</li>
+            </ul>
+            <button style={{ background: C.ink, color: C.white, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegister}>Create Campaign</button>
+          </div>
+
+          {/* For Contributors */}
+          <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, padding: 40 }}>
+            <div style={{ display: 'inline-block', background: C.limeDim, color: '#3d6600', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Contributors</div>
+            <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Turn participation into value.</h3>
+            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Complete simple digital tasks</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Earn dynamic reward points</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Build consistency streaks for bonuses</li>
+            </ul>
+            <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegister}>Join Network</button>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS & WHY TASKIVO */}
+      <section className="lp-section-pad" style={{ background: C.white, borderTop: `1px solid ${C.line}` }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <div className="lp-grid-2" style={{ alignItems: 'center', gap: 60 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>How It Works</div>
+              <h2 className="heading" style={{ fontSize: 32, lineHeight: 1.2, color: C.ink, marginBottom: 24 }}>Streamlined for speed and trust.</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {[
+                  { title: '1. Register & Connect', desc: 'Join as a business to post campaigns, or as a contributor to access the task network.' },
+                  { title: '2. Deploy & Participate', desc: 'Businesses launch verifiable campaigns. Contributors complete actions with built-in proof mechanisms.' },
+                  { title: '3. Grow & Get Rewarded', desc: 'Businesses gain instant visibility. Contributors build streaks and earn platform points.' }
+                ].map(function(step, i) {
+                  return (
+                    <div key={i}>
+                      <div style={{ fontWeight: 700, color: C.ink, fontSize: 16, marginBottom: 4 }}>{step.title}</div>
+                      <div style={{ color: C.slate, fontSize: 14, lineHeight: 1.6 }}>{step.desc}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div style={{ background: C.off, padding: 40, borderRadius: 16, border: `1px solid ${C.line}` }}>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 24 }}>Why Taskivo?</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ background: C.white, padding: 16, borderRadius: 8, border: `1px solid ${C.line}` }}>
+                  <div style={{ fontWeight: 600, color: C.ink, marginBottom: 4 }}>Absolute Transparency</div>
+                  <div style={{ fontSize: 13, color: C.slate }}>Built for clarity. No hidden mechanics.</div>
+                </div>
+                <div style={{ background: C.white, padding: 16, borderRadius: 8, border: `1px solid ${C.line}` }}>
+                  <div style={{ fontWeight: 600, color: C.ink, marginBottom: 4 }}>Real Users, Zero Bots</div>
+                  <div style={{ fontSize: 13, color: C.slate }}>Proof-of-attention layers protect campaigns.</div>
+                </div>
+                <div style={{ background: C.white, padding: 16, borderRadius: 8, border: `1px solid ${C.line}` }}>
+                  <div style={{ fontWeight: 600, color: C.ink, marginBottom: 4 }}>Fair Reward System</div>
+                  <div style={{ fontSize: 13, color: C.slate }}>Earnings reflect genuine activity and engagement.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING (BUSINESSES) */}
+      <section className="lp-section-pad" style={{ background: C.ink, color: C.white }}>
+        <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.lime, marginBottom: 12 }}>Campaign Pricing</div>
+          <h2 className="lp-section-title heading" style={{ marginBottom: 16 }}>Predictable growth packages.</h2>
+          <p style={{ color: 'rgba(255,255,255,0.6)', maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>
+            Purchase secure campaign slots to tap into our distributed contributor network.
+          </p>
+        </div>
+
+        <div className="lp-grid-4" style={{ maxWidth: 1100, margin: '0 auto' }}>
+          {pricing.map(function(plan, i) {
+            return (
+              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.darkLine}`, borderRadius: 16, padding: 32, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: 18, fontWeight: 600, color: C.white, marginBottom: 8 }}>{plan.name}</div>
+                <div className="heading" style={{ fontSize: 36, color: C.lime, marginBottom: 8 }}>{plan.price}</div>
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', paddingBottom: 24, borderBottom: `1px solid ${C.darkLine}`, marginBottom: 24 }}>
+                  {plan.slots.toLocaleString()} Campaign Slots
+                </div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 32, flexGrow: 1 }}>
+                  {plan.useCase}
+                </div>
+                <button style={{ background: C.white, color: C.ink, border: 'none', borderRadius: 6, padding: '10px', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegister}>
+                  Select Package
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* TRUST LAYER & FAQ */}
+      <section className="lp-section-pad" style={{ background: C.off }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <h2 className="heading" style={{ fontSize: 28, color: C.ink, marginBottom: 12 }}>Frequently Asked Questions</h2>
+            <p style={{ color: C.slate, fontSize: 14 }}>Built for transparency and fairness. Rewards are based on activity and platform engagement.</p>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {faqs.map(function(faq, i) {
+              const isOpen = openFaq === i;
               return (
-                <div key={i} className="lp-stat-pad" style={{
-                  flex: 1, textAlign: 'center',
-                  borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                }}>
-                  <div className="lp-stat-num" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.white }}>{stat.num}</div>
-                  <div className="lp-stat-label" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 3, fontWeight: 400 }}>{stat.label}</div>
+                <div key={i} style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 8, overflow: 'hidden' }}>
+                  <button 
+                    onClick={function() { toggleFaq(i); }}
+                    style={{ width: '100%', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 600, color: C.ink, textAlign: 'left' }}
+                  >
+                    {faq.q}
+                    <span style={{ color: C.slate, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding: '0 20px 20px', color: C.slate, fontSize: 14, lineHeight: 1.6 }}>
+                      {faq.a}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
-      </div>
-
-      {/* AUDIENCE */}
-      <section className="lp-section-pad" style={{ background: C.white }}>
-        <div style={{ maxWidth: 480, marginBottom: 28 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: C.lime, marginBottom: 8 }}>Who Is Taskivo For?</div>
-          <h2 className="lp-section-title" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 10 }}>Two sides.<br />One platform.</h2>
-          <p className="lp-section-sub" style={{ color: C.slate, lineHeight: 1.7 }}>
-            Whether you want to earn money completing tasks or grow your YouTube channel with verified engagement — Taskivo was built for you.
-          </p>
-        </div>
-        <div className="lp-audience-grid" style={{
-          display: 'grid', gap: 2,
-          background: C.line, borderRadius: 20, overflow: 'hidden',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)',
-        }}>
-          {[
-            { tag: 'For Earners', title: 'Complete tasks.\nEarn real cash.', desc: 'Watch YouTube videos, complete simple actions, and withdraw real money. No experience needed. Works from any phone.', steps: earnerSteps, btn: 'Start Earning Free →' },
-            { tag: 'For Creators', title: 'Real views.\nReal engagement.', desc: 'Get verified views, likes, and comments from real people. Every earner passes a quiz proving they actually watched.', steps: creatorSteps, btn: 'Post Your First Task →' },
-          ].map(function (card, ci) {
-            return (
-              <div key={ci} className="lp-audience-card-pad" style={{ background: C.white, position: 'relative' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: C.lime }}></div>
-                <span style={{ display: 'inline-block', background: C.limeDim, color: '#4a7a00', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 6, marginBottom: 14 }}>{card.tag}</span>
-                <div className="lp-audience-title" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.ink, marginBottom: 8, whiteSpace: 'pre-line' }}>{card.title}</div>
-                <p className="lp-audience-desc" style={{ color: C.slate, lineHeight: 1.7 }}>{card.desc}</p>
-                <ul style={{ listStyle: 'none', padding: 0, marginBottom: 18 }}>
-                  {card.steps.map(function (step, i) {
-                    return (
-                      <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: C.ink, color: C.lime, fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                        <span className="lp-step-text" style={{ color: '#444', lineHeight: 1.55 }}>{step}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <button className="lp-audience-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: C.ink, color: C.lime, border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegister}>{card.btn}</button>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section className="lp-section-pad" style={{ background: C.off }}>
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: C.lime, marginBottom: 8 }}>Platform Features</div>
-        <h2 className="lp-section-title" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 10 }}>Built for trust.<br />Designed for scale.</h2>
-        <p className="lp-section-sub" style={{ color: C.slate, lineHeight: 1.7, maxWidth: 440 }}>Every feature exists to guarantee genuine engagement — not gaming the system.</p>
-        <div className="lp-features-grid" style={{ display: 'grid' }}>
-          {features.map(function (f, i) {
-            return (
-              <div key={i} className="lp-feature-card-pad" style={{ background: C.white, borderRadius: 14, border: `1px solid ${C.line}` }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: C.limeDim, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, marginBottom: 10 }}>{f.icon}</div>
-                <div className="lp-feature-name" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: C.ink, marginBottom: 5 }}>{f.name}</div>
-                <p className="lp-feature-desc" style={{ color: C.slate, lineHeight: 1.6 }}>{f.desc}</p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* TESTIMONIALS */}
-      <section className="lp-section-pad" style={{ background: C.ink }}>
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(168,255,62,0.5)', marginBottom: 8 }}>What People Say</div>
-        <h2 className="lp-section-title" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.white, lineHeight: 1.1, marginBottom: 10 }}>Trusted worldwide.</h2>
-        <p className="lp-section-sub" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, maxWidth: 440 }}>Real people. Real results. Real money.</p>
-        <div className="lp-proof-grid" style={{ display: 'grid' }}>
-          {testimonials.map(function (t, i) {
-            return (
-              <div key={i} className="lp-proof-card-pad" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14 }}>
-                <div style={{ color: C.lime, fontSize: 11, marginBottom: 10, letterSpacing: 2 }}>★★★★★</div>
-                <p className="lp-proof-text" style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.75, marginBottom: 16, fontStyle: 'italic' }}>{t.text}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.limeDim, border: `1px solid ${C.limeBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: C.lime, flexShrink: 0 }}>{t.initials}</div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: C.white }}>{t.name}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{t.role}</div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="lp-cta-pad" style={{ background: C.white, borderTop: `1px solid ${C.line}`, textAlign: 'center' }}>
-        <div style={{ display: 'inline-block', background: C.limeDim, color: '#3d6600', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 6, marginBottom: 14 }}>FREE TO JOIN</div>
-        <h2 className="lp-cta-title" style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.ink, lineHeight: 1.1, marginBottom: 14 }}>
-          Your next payout is<br />
-          <span style={{ color: C.lime }}>one task away.</span>
-        </h2>
-        <p className="lp-cta-sub" style={{ color: C.slate, lineHeight: 1.7, maxWidth: 400, margin: '0 auto 32px' }}>
-          Join thousands of earners already making money on Taskivo. Create your free account in under 60 seconds.
-        </p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button style={{ background: C.ink, color: C.lime, border: 'none', borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegister}>Start Earning Free →</button>
-          <button style={{ background: C.white, color: C.ink, border: `1px solid ${C.line}`, borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegister}>I'm a Creator</button>
-        </div>
-        <div className="lp-trust-row" style={{ display: 'flex', justifyContent: 'center', color: C.slate, fontSize: 12, fontWeight: 500 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ color: '#4caf50' }}>✓</span> No fees to join</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ color: '#4caf50' }}>✓</span> Instant points</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ color: '#4caf50' }}>✓</span> Withdraw anytime</span>
-        </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="lp-footer-pad" style={{ background: "var(--surface-card)", borderTop: "1px solid var(--line)" }}>
-        <div className="lp-footer-grid" style={{ display: 'grid', marginBottom: 40, padding: "40px 5% 0" }}>
+      <footer style={{ background: C.white, borderTop: `1px solid ${C.line}`, padding: '64px 5% 32px' }}>
+        <div className="lp-footer-grid" style={{ maxWidth: 1100, margin: '0 auto', marginBottom: 48 }}>
           <div className="lp-footer-brand-span">
-            <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: "var(--ink)", fontSize: 20, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: "var(--lime)", display: 'inline-block' }}></span>
+            <div className="heading" style={{ color: C.ink, fontSize: 22, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: C.lime, display: 'inline-block' }}></span>
               Taskivo
             </div>
-            <p style={{ color: "var(--slate)", fontSize: 13, lineHeight: 1.6, maxWidth: 280 }}>
-              The task completion platform connecting earners and creators worldwide.
+            <p style={{ color: C.slate, fontSize: 14, lineHeight: 1.6, maxWidth: 300, marginBottom: 24 }}>
+              A modern digital engagement infrastructure bridging global businesses with a distributed contributor network.
             </p>
+            <div style={{ fontSize: 12, color: C.slate, fontWeight: 500 }}>hello@taskivo.online</div>
           </div>
           
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--slate)", letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Platform</div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("auth"); }}>For Earners</span></li>
-              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("auth"); }}>For Creators</span></li>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>Product</div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("auth"); }}>For Contributors</span></li>
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("auth"); }}>For Businesses</span></li>
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("auth"); }}>Pricing</span></li>
             </ul>
           </div>
 
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--slate)", letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Company</div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("about"); }}>About Us</span></li>
-              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("blog"); }}>Blog</span></li>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>Company</div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("about"); }}>About Us</span></li>
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("blog"); }}>Blog</span></li>
             </ul>
           </div>
 
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--slate)", letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Legal</div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("terms"); }}>Terms of Service</span></li>
-              <li><span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 13 }} onClick={function() { navigate("privacy"); }}>Privacy Policy</span></li>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>Legal</div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("terms"); }}>Terms of Service</span></li>
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("privacy"); }}>Privacy Policy</span></li>
             </ul>
           </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: "1px solid var(--line)", padding: "24px 5%", color: "var(--slate)", fontSize: 12 }}>
-          <div>© 2026 Taskivo. All rights reserved.</div>
-          <div>taskivo.online</div>
+        
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${C.line}`, paddingTop: 24, color: C.slate, fontSize: 13 }}>
+          <div>© {new Date().getFullYear()} Taskivo. All rights reserved. Beta Platform.</div>
+          <div style={{ display: 'flex', gap: 16 }}>
+            <span>Built for transparency.</span>
+          </div>
         </div>
       </footer>
     </div>
