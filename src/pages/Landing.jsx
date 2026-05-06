@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 const C = {
   ink: '#0D0D14',
@@ -14,9 +15,30 @@ const C = {
 
 export default function Landing({ navigate, setAuthMode }) {
   const [openFaq, setOpenFaq] = useState(null);
+  const [claimedSpots, setClaimedSpots] = useState(0);
 
   useEffect(function () {
     document.title = 'Taskivo — Digital Engagement Infrastructure';
+  }, []);
+
+  // Fetch live pilot program claims from Supabase
+  useEffect(function () {
+    async function fetchPilotData() {
+      try {
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'creator')
+          .eq('pilot_claimed', true);
+        
+        if (!error && count !== null) {
+          setClaimedSpots(count);
+        }
+      } catch (err) {
+        console.error("Error fetching pilot data:", err);
+      }
+    }
+    fetchPilotData();
   }, []);
 
   useEffect(function () {
@@ -90,7 +112,7 @@ export default function Landing({ navigate, setAuthMode }) {
     <div className="body-text" style={{ background: C.off, color: C.ink, minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
       
       {/* HERO */}
-      <div className="lp-hero-pad" style={{ background: C.ink, position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${C.darkLine}` }}>
+      <div className="lp-hero-pad" style={{ background: C.ink, position: 'relative', overflow: 'hidden' }}>
         <div style={{
           position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)',
           width: '80%', height: '80%',
@@ -133,6 +155,44 @@ export default function Landing({ navigate, setAuthMode }) {
               padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
             }} onClick={goRegister}>Launch a Campaign</button>
           </div>
+        </div>
+      </div>
+
+      {/* PILOT PROGRAM BANNER (LIVE SUPABASE DATA) */}
+      <div style={{ background: C.ink, borderTop: `1px solid ${C.darkLine}`, borderBottom: `1px solid ${C.darkLine}`, padding: '24px 5%' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+          
+          <div style={{ flex: '1 1 300px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ display: 'inline-block', background: C.limeDim, color: C.lime, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 8px', borderRadius: 4 }}>Live Beta</span>
+              <span className="heading" style={{ color: C.white, fontSize: 18 }}>Early Adopter Grant</span>
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>We are gifting 20 free campaign slots to our first 10 businesses to stress-test the network.</div>
+          </div>
+
+          <div style={{ flex: '1 1 250px', maxWidth: 350, width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: C.white, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+              <span>Grants Claimed</span>
+              <span>{claimedSpots} / 10</span>
+            </div>
+            <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 10, overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min((claimedSpots / 10) * 100, 100)}%`, height: '100%', background: C.lime, transition: 'width 1s ease-in-out' }}></div>
+            </div>
+          </div>
+
+          <button 
+            style={{ 
+              background: claimedSpots >= 10 ? 'rgba(255,255,255,0.1)' : C.lime, 
+              color: claimedSpots >= 10 ? 'rgba(255,255,255,0.4)' : C.ink, 
+              border: 'none', borderRadius: 6, padding: '12px 24px', fontSize: 13, fontWeight: 700, 
+              cursor: claimedSpots >= 10 ? 'not-allowed' : 'pointer',
+              fontFamily: "'DM Sans', sans-serif"
+            }} 
+            onClick={function() { if (claimedSpots < 10) goRegister(); }}
+          >
+            {claimedSpots >= 10 ? 'Cohort Full' : 'Claim Free Slots'}
+          </button>
+
         </div>
       </div>
 
