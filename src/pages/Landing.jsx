@@ -19,8 +19,22 @@ export default function Landing({ navigate, setAuthMode }) {
   const [openFaq, setOpenFaq] = useState(null);
   const [claimedSpots, setClaimedSpots] = useState(0);
 
+  // DATA DEFINITIONS (Fixes the blank page error)
+  const pricing = [
+    { name: 'Starter', price: '$8', slots: 50, isPopular: false },
+    { name: 'Growth', price: '$24', slots: 200, isPopular: true },
+    { name: 'Scale', price: '$48', slots: 500, isPopular: false },
+  ];
+
+  const faqs = [
+    { q: 'How do rewards work?', a: 'Contributors accumulate reward points based on active task completion, platform engagement, and maintaining activity streaks.' },
+    { q: 'How do I withdraw?', a: 'Once you meet the platform threshold (2,000 PTS), you can request a secure withdrawal to your configured payment method.' },
+    { q: 'Who can use Taskivo?', a: 'Global businesses seeking genuine engagement and individuals looking for micro-earning opportunities.' },
+  ];
+
   useEffect(function () {
     document.title = 'Taskivo — Digital Engagement Infrastructure';
+    window.scrollTo(0, 0);
   }, []);
 
   useEffect(function () {
@@ -67,6 +81,10 @@ export default function Landing({ navigate, setAuthMode }) {
   function goRegister() {
     if (setAuthMode) setAuthMode("register");
     navigate("auth");
+  }
+
+  function toggleFaq(index) {
+    setOpenFaq(openFaq === index ? null : index);
   }
 
   return (
@@ -127,7 +145,7 @@ export default function Landing({ navigate, setAuthMode }) {
             <div key={idx} style={{ background: C.card, border: `1px solid ${C.line}`, padding: 32, borderRadius: 16, boxShadow: C.shadow }}>
               <div style={{ fontSize: 32, marginBottom: 20 }}>{item.i}</div>
               <h3 className="heading" style={{ fontSize: 20, color: C.textMain, marginBottom: 12 }}>{item.t}</h3>
-              <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6 }}>{item.item ? item.item.d : item.d}</p>
+              <p style={{ color: C.textMuted, fontSize: 14, lineHeight: 1.6 }}>{item.d}</p>
             </div>
           ))}
         </div>
@@ -141,23 +159,45 @@ export default function Landing({ navigate, setAuthMode }) {
         <div className="lp-grid-3" style={{ maxWidth: 1100, margin: '0 auto' }}>
           {pricing.map((plan, i) => (
             <div key={i} style={{ 
-              background: plan.isPopular ? C.surface : C.surface, 
+              background: C.surface, 
               border: `1px solid ${plan.isPopular ? C.limeText : C.line}`, 
-              borderRadius: 16, padding: '32px', boxShadow: plan.isPopular ? C.shadow : 'none'
+              borderRadius: 16, padding: '32px', boxShadow: plan.isPopular ? C.shadow : 'none',
+              position: 'relative'
             }}>
+              {plan.isPopular && <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: C.lime, color: '#000', fontSize: 10, fontWeight: 800, padding: '4px 12px', borderRadius: 100 }}>POPULAR</div>}
               <div style={{ fontSize: 18, fontWeight: 700, color: C.textMain, marginBottom: 8 }}>{plan.name}</div>
               <div className="heading" style={{ fontSize: 40, color: C.limeText, marginBottom: 16 }}>{plan.price}</div>
-              <button style={{ background: plan.isPopular ? C.lime : C.card, color: plan.isPopular ? '#000' : C.textMain, border: `1px solid ${C.line}`, borderRadius: 8, padding: '12px', width: '100%', fontWeight: 800, cursor: 'pointer' }} onClick={goRegister}>Select</button>
+              <div style={{ fontSize: 14, color: C.textMuted, marginBottom: 24 }}>{plan.slots} Verified Slots</div>
+              <button style={{ background: plan.isPopular ? C.lime : C.card, color: plan.isPopular ? '#000' : C.textMain, border: `1px solid ${C.line}`, borderRadius: 8, padding: '12px', width: '100%', fontWeight: 800, cursor: 'pointer' }} onClick={goRegister}>Select Plan</button>
             </div>
           ))}
         </div>
       </section>
 
-      {/* FOOTER (DEEP DARK) */}
+      {/* SECTION 5: FAQ */}
+      <section className="lp-section-pad" style={{ background: C.surface }}>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
+          <h2 className="heading" style={{ textAlign: 'center', marginBottom: 40, color: C.textMain }}>Common Questions</h2>
+          {faqs.map((faq, i) => (
+            <div key={i} style={{ borderBottom: `1px solid ${C.line}`, padding: '20px 0' }}>
+               <button 
+                  onClick={() => toggleFaq(i)}
+                  style={{ width: '100%', background: 'none', border: 'none', textAlign: 'left', color: C.textMain, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+               >
+                 {faq.q}
+                 <span>{openFaq === i ? '−' : '+'}</span>
+               </button>
+               {openFaq === i && <p style={{ marginTop: 12, color: C.textMuted, lineHeight: 1.6 }}>{faq.a}</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FOOTER */}
       <footer style={{ background: C.surface, padding: '80px 5% 40px', borderTop: `1px solid ${C.line}` }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
-          <div className="heading" style={{ fontSize: 22, color: C.textMain }}>Taskivo</div>
-          <div style={{ color: C.textMuted, fontSize: 13 }}>© 2026 Taskivo. All rights reserved.</div>
+          <div className="heading" style={{ fontSize: 22, color: C.textMain, fontWeight: 800 }}>Taskivo</div>
+          <div style={{ color: C.textMuted, fontSize: 13 }}>© 2026 Taskivo. Built for transparency.</div>
         </div>
       </footer>
     </div>
