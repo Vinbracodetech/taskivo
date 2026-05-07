@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase.js";
 import CSS from "./styles/global.js";
-import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
 
-// Replaced Sidebar with FloatingNav
 import FloatingNav from "./components/FloatingNav.jsx";
 import Toast from "./components/Toast.jsx";
 import useToast from "./components/useToast.js";
@@ -13,9 +11,12 @@ import Auth from "./pages/Auth.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import TaskPlayer from "./pages/TaskPlayer.jsx";
 import Wallet from "./pages/Wallet.jsx";
+
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
 import CreatorTasks from "./pages/CreatorTasks.jsx";
+import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
+
 import { About, Terms, Privacy } from "./pages/StaticPages.jsx";
 import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
 import {
@@ -29,7 +30,7 @@ import {
 function TopNav({ navigate, user, setAuthMode }) {
   return (
     <nav style={{
-      position: "sticky", top: 0, zIndex: 90, // Lower than FloatingNav overlay
+      position: "sticky", top: 0, zIndex: 90,
       display: "flex", alignItems: "center", justifyContent: "space-between",
       height: 72, padding: "0 5%",
       background: "var(--surface)",
@@ -53,7 +54,6 @@ function TopNav({ navigate, user, setAuthMode }) {
             <button className="btn btn-primary btn-sm" onClick={function() { if(setAuthMode) setAuthMode("register"); navigate("auth"); }}>Get Started</button>
           </div>
         ) : (
-          // Display Points for logged-in users instead of a redundant button
           <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px' }}>
             {user.points.toLocaleString()} PTS
           </div>
@@ -203,7 +203,6 @@ export default function App() {
       <style>{CSS}</style>
       <div className="app-shell" style={{ position: 'relative', minHeight: '100vh', background: 'var(--surface)' }}>
 
-        {/* Dynamic padding bottom ensures content isn't hidden behind the floating nav */}
         <div className="main-content" style={{ paddingBottom: user ? 100 : 0 }}>
           
           <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} />
@@ -221,14 +220,15 @@ export default function App() {
             {/* EARNER */}
             {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
             {view === "tasks" && user && <ComingSoon title="Tasks — coming soon" />}
-            {view === "task-player" && user && activeTask && <TaskPlayer task={activeTask} navigate={navigate} user={user} setUser={setUser} showToast={showToast} />}
+            {view.startsWith("player/") && user && <TaskPlayer session={{user}} navigate={navigate} taskId={view.split('/')[1]} />}
             {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
 
             {/* CREATOR */}
             {view === "creator-dashboard" && user && <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />}
-            {view === "create-task" && user && <CreateTask user={user} navigate={navigate} showToast={showToast} />}
-            {view === "creator-tasks" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
-              {view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
+            {view === "create-task" && user && <CreateTask session={{user}} navigate={navigate} />}
+            {view === "creator-tasks" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />}
+            {view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
+
             {/* ADMIN */}
             {view === "admin-dashboard" && user && <AdminOverview navigate={navigate} showToast={showToast} />}
             {view === "admin-users" && user && <AdminUsersComp showToast={showToast} />}
@@ -237,10 +237,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* GLOBAL FLOATING NAV 
-          It only mounts if 'user' exists, handling all internal routing, 
-          theme toggling, and logging out without cluttering the screen.
-        */}
         {user && (
           <FloatingNav 
             user={user} 
