@@ -1,406 +1,298 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase.js";
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
-const TOP_TIER = ["US", "GB", "CA", "AU"];
-
-function getRatePerPoint(code) {
-  if (TOP_TIER.includes(code)) return 0.10 / 60;
-  return 0.03 / 60;
-}
-
-function getSymbol(code) {
-  if (code === "GB") return "£";
-  return "$";
-}
+const C = {
+  ink: '#0D0D14',
+  lime: '#A8FF3E',
+  limeDim: 'rgba(168,255,62,0.12)',
+  white: '#ffffff',
+  slate: '#8B8B9E',
+  line: 'rgba(255,255,255,0.08)',
+  card: 'rgba(255,255,255,0.03)',
+  red: '#ef4444',
+  orange: '#f59e0b'
+};
 
 export default function Wallet({ user, navigate, showToast }) {
+  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState([]);
+  const [activeTab, setActiveTab] = useState('withdraw'); 
+  
+  // Withdrawal Form State
+  const [withdrawPoints, setWithdrawPoints] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('paypal');
+  const [paymentDetails, setPaymentDetails] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  var [profile, setProfile] = useState(user);
-  var [transactions, setTransactions] = useState([]);
-  var [loading, setLoading] = useState(true);
+  // THE NEW, CORRECTED MATH LOGIC
+  const MIN_WITHDRAWAL = 2000; // Equals $1.33
+  const POINTS_PER_DOLLAR = 1500; // 60 points = $0.04
 
-  useEffect(function () {
-    loadData();
-  }, []);
+  useEffect(function() {
+    if (!user) return;
+    fetchHistory();
+  }, [user]);
 
-  async function loadData() {
-    setLoading(true);
+  async function fetchHistory() {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('withdrawals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    var profileResult = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-    if (profileResult.data) setProfile(profileResult.data);
-
-    var earnResult = await supabase
-      .from("completions")
-      .select("*, tasks(title, reward)")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    var withdrawResult = await supabase
-      .from("withdrawals")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    var earned = (earnResult.data || []).map(function (c) {
-      return {
-        id: "e-" + c.id,
-        type: "earn",
-        title: c.tasks ? c.tasks.title : "Task Completed",
-        amount: c.tasks ? c.tasks.reward : 0,
-        date: c.created_at,
-      };
-    });
-
-    var withdrawn = (withdrawResult.data || []).map(function (w) {
-      return {
-        id: "w-" + w.id,
-        type: "withdraw",
-        title: "Withdrawal — " + (w.method || "Request"),
-        amount: -(w.points || 0),
-        date: w.created_at,
-        status: w.status,
-      };
-    });
-
-    var all = earned.concat(withdrawn).sort(function (a, b) {
-      return new Date(b.date) - new Date(a.date);
-    });
-
-    setTransactions(all);
-    setLoading(false);
+      if (error) throw error;
+      setHistory(data || []);
+    } catch (err) {
+      console.error(err);
+      if (showToast) showToast('Failed to load transaction history', 'error');
+    } finally {
+      setLoading(false);
+    }
   }
 
-  var points = profile ? (profile.points || 0) : 0;
-  var userCode = profile ? (profile.country || "OTHER") : "OTHER";
-  var ratePerPoint = getRatePerPoint(userCode);
-  var symbol = getSymbol(userCode);
-  var totalValue = (points * ratePerPoint).toFixed(2);
+  async function handleWithdrawal(e) {
+    e.preventDefault();
+    
+    const pointsToWithdraw = parseInt(withdrawPoints);
 
-  var totalEarned = transactions
-    .filter(function (t) { return t.type === "earn"; })
-    .reduce(function (sum, t) { return sum + t.amount; }, 0);
+    if (!pointsToWithdraw || pointsToWithdraw < MIN_WITHDRAWAL) {
+      if (showToast) showToast(`Minimum withdrawal is ${MIN_WITHDRAWAL} points.`, 'error');
+      return;
+    }
+
+    if (pointsToWithdraw > user.points) {
+      if (showToast) showToast('Insufficient points balance.', 'error');
+      return;
+    }
+
+    if (!paymentDetails.trim()) {
+      if (showToast) showToast('Please enter your payment details.', 'error');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const estimatedValue = pointsToWithdraw / POINTS_PER_DOLLAR;
+
+      // 1. Create the pending withdrawal record
+      const { error: insertError } = await supabase.from('withdrawals').insert([{
+        user_id: user.id,
+        points: pointsToWithdraw,
+        estimated_value: estimatedValue, // Saves actual dollar value in DB
+        payment_method: paymentMethod,
+        payment_details: paymentDetails,
+        status: 'pending'
+      }]);
+
+      if (insertError) throw insertError;
+
+      // 2. Deduct points from the user's profile
+      const { error: updateError } = await supabase.from('profiles')
+        .update({ points: user.points - pointsToWithdraw })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      if (showToast) showToast('Withdrawal request submitted successfully!', 'success');
+      
+      setWithdrawPoints('');
+      setPaymentDetails('');
+      
+      setTimeout(function() {
+        window.location.reload();
+      }, 1500);
+
+    } catch (err) {
+      console.error(err);
+      if (showToast) showToast('Failed to process withdrawal.', 'error');
+      setSubmitting(false);
+    }
+  }
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: "60vh", display: "flex",
-        alignItems: "center", justifyContent: "center",
-      }}>
-        <div style={{
-          width: 36, height: 36,
-          border: "3px solid #E5E7EB",
-          borderTopColor: "#A8FF3E",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite",
-        }} />
+      <div style={{ padding: '60px 5%', textAlign: 'center', color: C.slate, fontFamily: "'DM Sans', sans-serif" }}>
+        Securely loading wallet...
       </div>
     );
   }
 
-  function statCard(borderColor) {
-    return {
-      background: "#fff",
-      border: "1px solid #E5E7EB",
-      borderLeft: "4px solid " + borderColor,
-      borderRadius: 12,
-      padding: "18px 16px",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-    };
-  }
+  const progressPercent = Math.min((user.points / MIN_WITHDRAWAL) * 100, 100);
+  const isEligible = user.points >= MIN_WITHDRAWAL;
+  const currentFiatValue = (user.points / POINTS_PER_DOLLAR).toFixed(2);
+  const requestedFiatValue = withdrawPoints ? (parseInt(withdrawPoints) / POINTS_PER_DOLLAR).toFixed(2) : '0.00';
 
   return (
-    <div style={{
-      padding: "28px 20px",
-      maxWidth: 520,
-      margin: "0 auto",
-      fontFamily: "var(--font-body)",
-    }}>
-
-      {/* ── HEADER ── */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{
-          fontSize: 22, fontWeight: 700,
-          color: "#0A0A0F", marginBottom: 4,
-          letterSpacing: "-0.3px",
-        }}>
-          My Wallet
-        </div>
-        <div style={{ fontSize: 14, color: "#6B7280" }}>
-          Your full earnings history and balance.
+    <div style={{ padding: '40px 5%', maxWidth: 800, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", paddingBottom: 120 }}>
+      
+      {/* HEADER */}
+      <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: C.white, marginBottom: 8, fontWeight: 800 }}>Wallet</h1>
+          <p style={{ color: C.slate, fontSize: 15 }}>Manage your earnings and request payouts.</p>
         </div>
       </div>
 
-      {/* ── BALANCE CARD ── */}
-      <div style={{
-        background: "linear-gradient(135deg, #1A1A2E 0%, #2D2D44 100%)",
-        borderRadius: 16,
-        padding: "24px 22px",
-        marginBottom: 16,
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          position: "absolute", top: -50, right: -50,
-          width: 160, height: 160,
-          background: "radial-gradient(circle, rgba(168,255,62,0.12), transparent 70%)",
-          borderRadius: "50%", pointerEvents: "none",
-        }} />
-
-        <div style={{
-          fontSize: 11, fontWeight: 700,
-          letterSpacing: "1.5px", textTransform: "uppercase",
-          color: "rgba(255,255,255,0.4)", marginBottom: 8,
-        }}>
-          Available Balance
-        </div>
-
-        <div style={{
-          fontSize: 48, fontWeight: 700,
-          color: "#A8FF3E", lineHeight: 1,
-          letterSpacing: "-1.5px",
-          fontFamily: "var(--font-body)",
-          marginBottom: 4,
-        }}>
-          {points.toLocaleString()}
-          <span style={{
-            fontSize: 16,
-            color: "rgba(255,255,255,0.4)",
-            marginLeft: 8, fontWeight: 500,
-          }}>
-            pts
-          </span>
-        </div>
-
-        <div style={{
-          fontSize: 14,
-          color: "rgba(255,255,255,0.55)",
-          marginTop: 8, fontWeight: 500,
-          marginBottom: 20,
-        }}>
-          Worth{" "}
-          <span style={{ color: "#A8FF3E", fontWeight: 700 }}>
-            {symbol}{totalValue}
-          </span>
-        </div>
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            onClick={function () { navigate("withdraw"); }}
-            disabled={points < 2000}
-            style={{
-              flex: 1,
-              padding: "11px 0",
-              background: points >= 2000 ? "#A8FF3E" : "rgba(255,255,255,0.1)",
-              border: "none",
-              borderRadius: 8,
-              color: points >= 2000 ? "#0D0D14" : "rgba(255,255,255,0.3)",
-              fontSize: 14,
-              fontWeight: 700,
-              fontFamily: "var(--font-body)",
-              cursor: points >= 2000 ? "pointer" : "not-allowed",
-            }}
-          >
-            ↑ Withdraw Points
-          </button>
-          <button
-            onClick={function () { navigate("tasks"); }}
-            style={{
-              flex: 1,
-              padding: "11px 0",
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 8,
-              color: "rgba(255,255,255,0.6)",
-              fontSize: 14,
-              fontWeight: 600,
-              fontFamily: "var(--font-body)",
-              cursor: "pointer",
-            }}
-          >
-            Earn More →
-          </button>
-        </div>
-      </div>
-
-      {/* ── STAT CARDS ── */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: 12,
-        marginBottom: 24,
-      }}>
-        <div style={statCard("#22C55E")}>
-          <div style={{
-            fontSize: 10, fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#9CA3AF", marginBottom: 8,
-          }}>
-            Total Earned
+      {/* BALANCE CARD */}
+      <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 32, marginBottom: 40 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24, marginBottom: 32 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.slate, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Available Balance</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: C.lime, lineHeight: 1 }}>{user.points.toLocaleString()}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.slate }}>PTS</div>
+            </div>
+            <div style={{ fontSize: 14, color: C.slate, marginTop: 8 }}>≈ ${currentFiatValue} USD</div>
           </div>
-          <div style={{
-            fontSize: 26, fontWeight: 800,
-            color: "#16A34A",
-            fontFamily: "var(--font-body)",
-          }}>
-            {totalEarned.toLocaleString()}
-            <span style={{ fontSize: 12, color: "#9CA3AF", marginLeft: 4 }}>pts</span>
+          
+          <div style={{ background: isEligible ? C.limeDim : 'rgba(255,255,255,0.05)', border: `1px solid ${isEligible ? 'rgba(168,255,62,0.3)' : C.line}`, borderRadius: 12, padding: '16px 24px', textAlign: 'center', minWidth: 180 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: isEligible ? C.lime : C.slate, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+              {isEligible ? 'Status: Eligible' : 'Status: Locked'}
+            </div>
+            <div style={{ fontSize: 14, color: C.white, fontWeight: 600 }}>
+              {isEligible ? 'Ready for payout' : `${MIN_WITHDRAWAL - user.points} PTS to go`}
+            </div>
           </div>
         </div>
 
-        <div style={statCard("#3B82F6")}>
-          <div style={{
-            fontSize: 10, fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#9CA3AF", marginBottom: 8,
-          }}>
-            Transactions
+        {/* Progress Bar */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: C.slate, marginBottom: 8, fontWeight: 600 }}>
+            <span>Payout Threshold</span>
+            <span>{MIN_WITHDRAWAL.toLocaleString()} PTS (≈ ${(MIN_WITHDRAWAL / POINTS_PER_DOLLAR).toFixed(2)})</span>
           </div>
-          <div style={{
-            fontSize: 26, fontWeight: 800,
-            color: "#0A0A0F",
-            fontFamily: "var(--font-body)",
-          }}>
-            {transactions.length.toLocaleString()}
+          <div style={{ height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ width: `${progressPercent}%`, height: '100%', background: C.lime, borderRadius: 10, transition: 'width 1s ease-in-out' }}></div>
           </div>
         </div>
       </div>
 
-      {/* ── TRANSACTION LIST ── */}
-      <div style={{
-        fontSize: 16, fontWeight: 700,
-        color: "#0A0A0F", marginBottom: 14,
-      }}>
-        Transaction History
+      {/* TABS */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 32, borderBottom: `1px solid ${C.line}` }}>
+        <button 
+          onClick={function() { setActiveTab('withdraw'); }}
+          style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${activeTab === 'withdraw' ? C.lime : 'transparent'}`, color: activeTab === 'withdraw' ? C.white : C.slate, padding: '0 16px 12px', fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+        >
+          Request Payout
+        </button>
+        <button 
+          onClick={function() { setActiveTab('history'); }}
+          style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${activeTab === 'history' ? C.lime : 'transparent'}`, color: activeTab === 'history' ? C.white : C.slate, padding: '0 16px 12px', fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+        >
+          Transaction History
+        </button>
       </div>
 
-      {transactions.length === 0 ? (
-        <div style={{
-          background: "#fff",
-          border: "1px solid #E5E7EB",
-          borderLeft: "4px solid #E5E7EB",
-          borderRadius: 12,
-          padding: "40px 24px",
-          textAlign: "center",
-        }}>
-          <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
-            No transactions yet
-          </div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 16 }}>
-            Complete tasks to see your earnings here.
-          </div>
-          <button
-            onClick={function () { navigate("tasks"); }}
-            style={{
-              background: "#A8FF3E",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 24px",
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#0D0D14",
-              fontFamily: "var(--font-body)",
-              cursor: "pointer",
-            }}
-          >
-            Browse Tasks →
-          </button>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {transactions.map(function (tx) {
-            var isEarn = tx.type === "earn";
-            var date = new Date(tx.date).toLocaleDateString("en-GB", {
-              day: "numeric", month: "short", year: "numeric",
-            });
-            var borderColor = isEarn ? "#22C55E"
-              : tx.status === "approved" ? "#22C55E"
-              : tx.status === "rejected" ? "#EF4444"
-              : "#F59E0B";
-
-            return (
-              <div key={tx.id} style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "14px 16px",
-                background: "#fff",
-                border: "1px solid #E5E7EB",
-                borderLeft: "4px solid " + borderColor,
-                borderRadius: 12,
-              }}>
-                <div style={{
-                  width: 36, height: 36,
-                  borderRadius: "50%",
-                  background: isEarn
-                    ? "rgba(34,197,94,0.1)"
-                    : "rgba(239,68,68,0.08)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 15,
-                  flexShrink: 0,
-                }}>
-                  {isEarn ? "✓" : "↑"}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: 14, fontWeight: 600,
-                    color: "#0A0A0F", marginBottom: 2,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}>
-                    {tx.title}
-                  </div>
-                  <div style={{
-                    fontSize: 11, color: "#9CA3AF",
-                    display: "flex", gap: 8, alignItems: "center",
-                  }}>
-                    {date}
-                    {tx.status && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 700,
-                        padding: "2px 8px", borderRadius: 20,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        background: tx.status === "approved"
-                          ? "rgba(34,197,94,0.1)"
-                          : tx.status === "rejected"
-                          ? "rgba(239,68,68,0.1)"
-                          : "rgba(245,158,11,0.1)",
-                        color: tx.status === "approved" ? "#16A34A"
-                          : tx.status === "rejected" ? "#EF4444"
-                          : "#D97706",
-                      }}>
-                        {tx.status}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{
-                  fontSize: 14, fontWeight: 700,
-                  color: isEarn ? "#16A34A" : "#EF4444",
-                  flexShrink: 0,
-                  fontFamily: "var(--font-body)",
-                }}>
-                  {isEarn ? "+" : ""}{Math.abs(tx.amount).toLocaleString()} pts
-                </div>
+      {/* TAB CONTENT: WITHDRAW */}
+      {activeTab === 'withdraw' && (
+        <form onSubmit={handleWithdrawal} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.line}`, borderRadius: 12, padding: 24 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>1. Points to Withdraw</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ flex: 1, position: 'relative' }}>
+                <input 
+                  type="number" 
+                  value={withdrawPoints} 
+                  onChange={function(e) { setWithdrawPoints(e.target.value); }} 
+                  placeholder={`Min. ${MIN_WITHDRAWAL}`}
+                  min={MIN_WITHDRAWAL}
+                  max={user.points}
+                  disabled={!isEligible}
+                  style={{ width: '100%', padding: '16px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.ink, color: C.white, fontSize: 16, fontFamily: "'DM Sans', sans-serif", outline: 'none', opacity: isEligible ? 1 : 0.5 }}
+                />
               </div>
-            );
-          })}
+              <div style={{ fontSize: 18, color: C.slate, fontWeight: 600 }}>≈ ${requestedFiatValue}</div>
+            </div>
+            {!isEligible && <div style={{ color: C.orange, fontSize: 13, marginTop: 12 }}>You must reach {MIN_WITHDRAWAL} points before you can request a payout.</div>}
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.line}`, borderRadius: 12, padding: 24, opacity: isEligible ? 1 : 0.5, pointerEvents: isEligible ? 'auto' : 'none' }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: C.slate, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>2. Payment Destination</label>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 20 }}>
+              {['paypal', 'crypto', 'bank'].map(function(method) {
+                const isSelected = paymentMethod === method;
+                return (
+                  <div 
+                    key={method}
+                    onClick={function() { setPaymentMethod(method); }}
+                    style={{ 
+                      padding: '12px', textAlign: 'center', border: `1px solid ${isSelected ? C.lime : C.line}`, 
+                      borderRadius: 8, background: isSelected ? C.limeDim : C.ink, color: isSelected ? C.lime : C.slate,
+                      fontSize: 14, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize'
+                    }}
+                  >
+                    {method}
+                  </div>
+                );
+              })}
+            </div>
+
+            <input 
+              type="text" 
+              value={paymentDetails} 
+              onChange={function(e) { setPaymentDetails(e.target.value); }} 
+              placeholder={paymentMethod === 'paypal' ? 'PayPal Email Address' : paymentMethod === 'crypto' ? 'USDT (TRC20) Wallet Address' : 'Bank Name & Account Number'}
+              style={{ width: '100%', padding: '16px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.ink, color: C.white, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={submitting || !isEligible}
+            style={{ 
+              background: (!isEligible || submitting) ? 'rgba(168,255,62,0.2)' : C.lime, 
+              color: (!isEligible || submitting) ? 'rgba(0,0,0,0.5)' : C.ink, 
+              border: 'none', borderRadius: 8, padding: '16px', 
+              fontSize: 15, fontWeight: 800, cursor: (!isEligible || submitting) ? 'not-allowed' : 'pointer', 
+              fontFamily: "'Inter', sans-serif" 
+            }}
+          >
+            {submitting ? 'Processing Request...' : 'Submit Withdrawal Request'}
+          </button>
+        </form>
+      )}
+
+      {/* TAB CONTENT: HISTORY */}
+      {activeTab === 'history' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {history.length === 0 ? (
+            <div style={{ background: C.card, border: `1px dashed ${C.line}`, borderRadius: 12, padding: 40, textAlign: 'center' }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.white, marginBottom: 8 }}>No transactions yet</div>
+              <div style={{ fontSize: 13, color: C.slate }}>Your payout history will appear here.</div>
+            </div>
+          ) : (
+            history.map(function(item) {
+              const date = new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+              
+              let statusColor = C.slate;
+              if (item.status === 'pending') statusColor = C.orange;
+              if (item.status === 'approved') statusColor = C.lime;
+              if (item.status === 'rejected') statusColor = C.red;
+
+              return (
+                <div key={item.id} style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 12, padding: 20, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: C.white, marginBottom: 4 }}>{item.points.toLocaleString()} PTS</div>
+                    <div style={{ fontSize: 13, color: C.slate }}>${Number(item.estimated_value).toFixed(2)} • {item.payment_method.toUpperCase()}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.05)', color: statusColor, fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+                      {item.status}
+                    </div>
+                    <div style={{ fontSize: 12, color: C.slate }}>{date}</div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       )}
 
-      <div style={{ height: 48 }} />
     </div>
   );
 }
