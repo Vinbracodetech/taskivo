@@ -140,15 +140,20 @@ export default function Landing({ navigate, setAuthMode }) {
             Empowering digital participation and micro-earning opportunities across emerging markets.
           </p>
           
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button style={{
-              background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px',
-              fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-            }} onClick={goRegister}>Start as Contributor</button>
-            <button style={{
-              background: 'transparent', color: C.white, border: `1px solid ${C.darkLine}`, borderRadius: 8,
-              padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-            }} onClick={goRegister}>Launch a Campaign</button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button style={{
+                background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px',
+                fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+              }} onClick={goRegister}>Join as Founding Contributor</button>
+              <button style={{
+                background: 'transparent', color: C.white, border: `1px solid ${C.darkLine}`, borderRadius: 8,
+                padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+              }} onClick={goRegister}>Launch a Campaign</button>
+            </div>
+            <div style={{ color: C.lime, fontSize: 12, fontWeight: 600, letterSpacing: 0.5 }}>
+              🔥 Only 50 Founding Contributor spots available for Phase 1.
+            </div>
           </div>
         </div>
       </div>
@@ -199,7 +204,7 @@ export default function Landing({ navigate, setAuthMode }) {
             <div style={{ display: 'inline-block', background: C.ink, color: C.lime, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Businesses</div>
             <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Drive verifiable digital actions.</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Omnichannel reach: YouTube, TikTok, FB, & Web Traffic</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Omnichannel reach: YouTube, TikTok, FB, & SEO Blog Traffic</li>
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Get high-retention engagement from real users</li>
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Predictable and scalable algorithmic growth</li>
             </ul>
@@ -209,8 +214,8 @@ export default function Landing({ navigate, setAuthMode }) {
             <div style={{ display: 'inline-block', background: C.limeDim, color: '#3d6600', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Contributors</div>
             <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Turn participation into value.</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Complete simple multi-platform digital tasks</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Earn dynamic reward points for your attention</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Read articles, engage with blogs, and watch videos</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Earn dynamic reward points for your verified attention</li>
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Build consistency streaks for internal bonuses</li>
             </ul>
             <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegister}>Join Network</button>
@@ -230,7 +235,7 @@ export default function Landing({ navigate, setAuthMode }) {
         <div className="lp-grid-3" style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.darkLine}`, padding: 32, borderRadius: 16 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: C.white, marginBottom: 12 }}>Tab-Switch Detection</div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 1.6 }}>If a contributor switches tabs or minimizes their browser, the watch timer instantly pauses. Guaranteed active screen time, not background noise.</p>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 1.6 }}>If a contributor switches tabs or minimizes their browser, the watch or read timer instantly pauses. Guaranteed active screen time, not background noise.</p>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.darkLine}`, padding: 32, borderRadius: 16 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: C.white, marginBottom: 12 }}>Strict Verification Gates</div>
@@ -238,7 +243,7 @@ export default function Landing({ navigate, setAuthMode }) {
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.darkLine}`, padding: 32, borderRadius: 16 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: C.white, marginBottom: 12 }}>Guaranteed Session Minimums</div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 1.6 }}>Every campaign enforces platform-specific watch durations (e.g., 120s base for YouTube) to ensure algorithmic safety and high-retention metrics.</p>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 1.6 }}>Every campaign enforces platform-specific read/watch durations to ensure algorithmic safety and high-retention metrics for your content.</p>
           </div>
         </div>
       </section>
@@ -249,7 +254,7 @@ export default function Landing({ navigate, setAuthMode }) {
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Campaign Pricing</div>
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Predictable growth packages.</h2>
           <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>
-            Purchase secure campaign slots to tap into our distributed network. Extended watch time available at checkout.
+            Purchase secure campaign slots to tap into our distributed network. Extended time available at checkout.
           </p>
         </div>
         <div className="lp-grid-3" style={{ maxWidth: 1100, margin: '0 auto', alignItems: 'center' }}>
