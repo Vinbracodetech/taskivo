@@ -38,7 +38,7 @@ function TopNav({ navigate, user, setAuthMode }) {
       transition: "background-color 0.3s ease"
     }}>
       <div style={{
-        fontFamily: "'Syne', sans-serif",
+        fontFamily: "'Inter', sans-serif", /* Changed from Syne to Inter */
         fontWeight: 800, color: "var(--ink)", fontSize: 22, letterSpacing: "-0.5px",
         display: "flex", alignItems: "center", gap: 8, cursor: "pointer"
       }} onClick={function() { navigate("landing"); }}>
@@ -46,21 +46,21 @@ function TopNav({ navigate, user, setAuthMode }) {
         Taskivo
       </div>
       
-      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 16, alignItems: "center", fontFamily: "'DM Sans', sans-serif" }}>
         <span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 14, fontWeight: 600 }} onClick={function() { navigate("blog"); }}>Blog</span>
         {!user ? (
           <div style={{ display: "flex", gap: 8 }}>
-            <button style={{ background: "transparent", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }} onClick={function() { if(setAuthMode) setAuthMode("login"); navigate("auth"); }}>Log in</button>
-            <button style={{ background: "var(--lime)", color: "#000", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={function() { if(setAuthMode) setAuthMode("register"); navigate("auth"); }}>Get Started</button>
+            <button style={{ background: "transparent", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif" }} onClick={function() { if(setAuthMode) setAuthMode("login"); navigate("auth"); }}>Log in</button>
+            <button style={{ background: "var(--lime)", color: "#000", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Inter', sans-serif" }} onClick={function() { if(setAuthMode) setAuthMode("register"); navigate("auth"); }}>Get Started</button>
           </div>
         ) : user.role === 'earner' ? (
           /* ONLY EARNERS SEE POINTS */
-          <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px' }}>
+          <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" }}>
             {user.points.toLocaleString()} PTS
           </div>
         ) : (
           /* CREATORS AND ADMINS SEE A CLEAN ROLE BADGE */
-          <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', color: 'var(--slate)', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+          <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', color: 'var(--slate)', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, fontFamily: "'Inter', sans-serif" }}>
             {user.role}
           </div>
         )}
