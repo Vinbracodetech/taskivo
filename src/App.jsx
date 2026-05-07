@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase.js";
 import CSS from "./styles/global.js";
-import Sidebar from "./components/Sidebar.jsx";
+
+// Replaced Sidebar with FloatingNav
+import FloatingNav from "./components/FloatingNav.jsx";
 import Toast from "./components/Toast.jsx";
 import useToast from "./components/useToast.js";
 
@@ -27,7 +29,7 @@ import {
 function TopNav({ navigate, user, setAuthMode }) {
   return (
     <nav style={{
-      position: "sticky", top: 0, zIndex: 99,
+      position: "sticky", top: 0, zIndex: 90, // Lower than FloatingNav overlay
       display: "flex", alignItems: "center", justifyContent: "space-between",
       height: 72, padding: "0 5%",
       background: "var(--surface)",
@@ -51,7 +53,10 @@ function TopNav({ navigate, user, setAuthMode }) {
             <button className="btn btn-primary btn-sm" onClick={function() { if(setAuthMode) setAuthMode("register"); navigate("auth"); }}>Get Started</button>
           </div>
         ) : (
-          <button className="btn btn-outline btn-sm" onClick={function() { navigate(user.role === 'admin' ? 'admin-dashboard' : user.role === 'creator' ? 'creator-dashboard' : 'user-dashboard'); }}>Dashboard</button>
+          // Display Points for logged-in users instead of a redundant button
+          <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px' }}>
+            {user.points.toLocaleString()} PTS
+          </div>
         )}
       </div>
     </nav>
@@ -80,7 +85,6 @@ function ComingSoon({ title }) {
 }
 
 export default function App() {
-  // 1. Read the starting page from the URL hash (if it exists)
   var initialHash = window.location.hash.replace("#", "") || "landing";
   
   var [view, setView] = useState(initialHash);
@@ -92,7 +96,6 @@ export default function App() {
   
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
 
-  // 2. Listen for the user clicking the browser Back/Forward buttons
   useEffect(function() {
     function handleHashChange() {
       var hash = window.location.hash.replace("#", "") || "landing";
@@ -104,14 +107,12 @@ export default function App() {
     };
   }, []);
 
-  // 3. Update navigate to change the URL hash
   function navigate(v) {
     window.location.hash = v;
     setView(v);
     window.scrollTo(0, 0);
   }
 
-  // Theme Logic
   useEffect(function () {
     document.body.className = "theme-" + theme;
     localStorage.setItem("taskivo-theme", theme);
@@ -121,7 +122,6 @@ export default function App() {
     setTheme(theme === "dark" ? "light" : "dark");
   }
 
-  // Auth Logic
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
       var session = result.data.session;
@@ -153,7 +153,6 @@ export default function App() {
 
     if (result.data) {
       setUser(result.data);
-      // If logging in or on landing, send to dashboard. Otherwise, stay on refreshed page.
       if (currentHash === "landing" || currentHash === "auth") {
         routeByRole(result.data.role);
       } else {
@@ -202,13 +201,10 @@ export default function App() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="app-shell">
+      <div className="app-shell" style={{ position: 'relative', minHeight: '100vh', background: 'var(--surface)' }}>
 
-        {user && (
-          <Sidebar user={user} view={view} navigate={navigate} logout={logout} />
-        )}
-
-        <div className="main-content" style={{ marginLeft: user ? "" : 0 }}>
+        {/* Dynamic padding bottom ensures content isn't hidden behind the floating nav */}
+        <div className="main-content" style={{ paddingBottom: user ? 100 : 0 }}>
           
           <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} />
 
@@ -242,11 +238,21 @@ export default function App() {
             {view === "admin-withdrawals" && user && <AdminWithdrawalsComp showToast={showToast} />}
           </div>
         </div>
-      </div>
 
-      <button className="theme-toggle" onClick={toggleTheme}>
-        {theme === "dark" ? "☀️" : "🌙"}
-      </button>
+        {/* GLOBAL FLOATING NAV 
+          It only mounts if 'user' exists, handling all internal routing, 
+          theme toggling, and logging out without cluttering the screen.
+        */}
+        {user && (
+          <FloatingNav 
+            user={user} 
+            navigate={navigate} 
+            logout={logout} 
+            toggleTheme={toggleTheme} 
+            theme={theme} 
+          />
+        )}
+      </div>
 
       <Toast toasts={toasts} />
     </>
