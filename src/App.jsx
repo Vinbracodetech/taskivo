@@ -26,7 +26,7 @@ import {
   AdminWithdrawals as AdminWithdrawalsComp,
 } from "./pages/AdminPanel.jsx";
 
-// ── GLOBAL STICKY HEADER (Built directly into App.jsx) ──
+// ── GLOBAL STICKY HEADER ──
 function TopNav({ navigate, user, setAuthMode }) {
   return (
     <nav style={{
@@ -38,11 +38,11 @@ function TopNav({ navigate, user, setAuthMode }) {
       transition: "background-color 0.3s ease"
     }}>
       <div style={{
-        fontFamily: "'DM Sans', sans-serif",
-        fontWeight: 800, color: "var(--ink)", fontSize: 20, letterSpacing: "-0.5px",
-        display: "flex", alignItems: "center", gap: 6, cursor: "pointer"
+        fontFamily: "'Syne', sans-serif",
+        fontWeight: 800, color: "var(--ink)", fontSize: 22, letterSpacing: "-0.5px",
+        display: "flex", alignItems: "center", gap: 8, cursor: "pointer"
       }} onClick={function() { navigate("landing"); }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--lime)", display: "inline-block" }}></span>
+        <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--lime)", display: "inline-block" }}></span>
         Taskivo
       </div>
       
@@ -50,8 +50,8 @@ function TopNav({ navigate, user, setAuthMode }) {
         <span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 14, fontWeight: 600 }} onClick={function() { navigate("blog"); }}>Blog</span>
         {!user ? (
           <div style={{ display: "flex", gap: 8 }}>
-            <button className="btn btn-outline btn-sm" onClick={function() { if(setAuthMode) setAuthMode("login"); navigate("auth"); }}>Log in</button>
-            <button className="btn btn-primary btn-sm" onClick={function() { if(setAuthMode) setAuthMode("register"); navigate("auth"); }}>Get Started</button>
+            <button style={{ background: "transparent", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }} onClick={function() { if(setAuthMode) setAuthMode("login"); navigate("auth"); }}>Log in</button>
+            <button style={{ background: "var(--lime)", color: "#000", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={function() { if(setAuthMode) setAuthMode("register"); navigate("auth"); }}>Get Started</button>
           </div>
         ) : user.role === 'earner' ? (
           /* ONLY EARNERS SEE POINTS */
@@ -74,17 +74,8 @@ function ComingSoon({ title }) {
     <div className="page animate-slideUp">
       <div style={{ textAlign: "center", padding: "80px 20px" }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🔧</div>
-        <div style={{
-          fontFamily: "var(--font-display)",
-          fontSize: 24,
-          fontWeight: 700,
-          marginBottom: 8
-        }}>
-          {title}
-        </div>
-        <div style={{ color: "var(--slate)", fontSize: 14 }}>
-          This page is being built. Check back soon.
-        </div>
+        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 8 }}>{title}</div>
+        <div style={{ color: "var(--slate)", fontSize: 14 }}>This page is being built. Check back soon.</div>
       </div>
     </div>
   );
@@ -97,7 +88,6 @@ export default function App() {
   var [authMode, setAuthMode] = useState("login");
   var [user, setUser] = useState(null);
   var [loading, setLoading] = useState(true);
-  var [activeTask, setActiveTask] = useState(null);
   var { toasts, show: showToast } = useToast();
   
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
@@ -108,9 +98,7 @@ export default function App() {
       setView(hash);
     }
     window.addEventListener("hashchange", handleHashChange);
-    return function() {
-      window.removeEventListener("hashchange", handleHashChange);
-    };
+    return function() { window.removeEventListener("hashchange", handleHashChange); };
   }, []);
 
   function navigate(v) {
@@ -124,40 +112,29 @@ export default function App() {
     localStorage.setItem("taskivo-theme", theme);
   }, [theme]);
 
-  function toggleTheme() {
-    setTheme(theme === "dark" ? "light" : "dark");
-  }
+  function toggleTheme() { setTheme(theme === "dark" ? "light" : "dark"); }
 
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
       var session = result.data.session;
-      if (session) {
-        loadProfile(session.user);
-      } else {
-        setLoading(false);
-      }
+      if (session) { loadProfile(session.user); } else { setLoading(false); }
     });
 
     var listener = supabase.auth.onAuthStateChange(function (event, session) {
-      if (event === "SIGNED_OUT") {
-        setUser(null);
-        navigate("landing");
-        setLoading(false);
-      }
+      if (event === "SIGNED_OUT") { setUser(null); navigate("landing"); setLoading(false); }
     });
 
-    return function () {
-      listener.data.subscription.unsubscribe();
-    };
+    return function () { listener.data.subscription.unsubscribe(); };
   }, []);
 
+  // 🔥 THE ONBOARDING LOGIC 🔥
   async function loadProfile(authUser) {
     setLoading(true);
     var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
-    
     var currentHash = window.location.hash.replace("#", "") || "landing";
 
     if (result.data) {
+      // Existing User
       setUser(result.data);
       if (currentHash === "landing" || currentHash === "auth") {
         routeByRole(result.data.role);
@@ -165,16 +142,24 @@ export default function App() {
         setView(currentHash);
       }
     } else {
+      // New User - Check what button they clicked on the Landing page
+      var intendedRole = localStorage.getItem('taskivo_role') || "earner";
+      
       var newProfile = {
         id: authUser.id,
         email: authUser.email,
         full_name: authUser.user_metadata ? authUser.user_metadata.full_name || "" : "",
-        role: "earner",
+        role: intendedRole, // Assign Business (creator) or Earner
         points: 0,
       };
+      
       await supabase.from("profiles").insert(newProfile);
+      
+      // Clear the storage so we don't affect future signups
+      localStorage.removeItem('taskivo_role');
+      
       setUser(newProfile);
-      navigate("user-dashboard");
+      routeByRole(intendedRole);
     }
     setLoading(false);
   }
@@ -196,7 +181,7 @@ export default function App() {
         <style>{CSS}</style>
         <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface)" }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, marginBottom: 16 }}>⚡ Taskivo</div>
+            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 700, marginBottom: 16, color: "var(--ink)" }}>⚡ Taskivo</div>
             <div style={{ width: 32, height: 32, border: "3px solid var(--line)", borderTopColor: "var(--lime)", borderRadius: "50%", margin: "0 auto", animation: "spin 1s linear infinite" }} />
           </div>
         </div>
@@ -208,7 +193,6 @@ export default function App() {
     <>
       <style>{CSS}</style>
       <div className="app-shell" style={{ position: 'relative', minHeight: '100vh', background: 'var(--surface)' }}>
-
         <div className="main-content" style={{ paddingBottom: user ? 100 : 0 }}>
           
           <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} />
@@ -243,17 +227,8 @@ export default function App() {
           </div>
         </div>
 
-        {user && (
-          <FloatingNav 
-            user={user} 
-            navigate={navigate} 
-            logout={logout} 
-            toggleTheme={toggleTheme} 
-            theme={theme} 
-          />
-        )}
+        {user && <FloatingNav user={user} navigate={navigate} logout={logout} toggleTheme={toggleTheme} theme={theme} />}
       </div>
-
       <Toast toasts={toasts} />
     </>
   );
