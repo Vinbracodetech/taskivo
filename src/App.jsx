@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase.js";
 import CSS from "./styles/global.js";
+import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
 
 // Replaced Sidebar with FloatingNav
 import FloatingNav from "./components/FloatingNav.jsx";
@@ -226,11 +227,8 @@ export default function App() {
             {/* CREATOR */}
             {view === "creator-dashboard" && user && <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />}
             {view === "create-task" && user && <CreateTask user={user} navigate={navigate} showToast={showToast} />}
-            {view === "creator-tasks" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />}
-            // Remember to import it at the top of App.jsx:
-// import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
-
-{view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
+            {view === "creator-tasks" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />
+              {view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
             {/* ADMIN */}
             {view === "admin-dashboard" && user && <AdminOverview navigate={navigate} showToast={showToast} />}
             {view === "admin-users" && user && <AdminUsersComp showToast={showToast} />}
