@@ -22,8 +22,9 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const { showToast, ToastComponent } = useToast();
   const [loading, setLoading] = useState(true);
   const [task, setTask] = useState(null);
+  
   const [timeLeft, setTimeLeft] = useState(0);
-  const [status, setStatus] = useState('playing'); 
+  const [status, setStatus] = useState('playing'); // playing | paused_tab | quiz | completed | failed
   const [attempts, setAttempts] = useState(3);
   const [userAnswer, setUserAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -40,44 +41,83 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     try {
       const { data, error } = await supabase.from('tasks').select('*').eq('id', taskId).single();
       if (error) throw error;
-      setTask(data); setTimeLeft(data.watch_duration); timeRef.current = data.watch_duration; setLoading(false);
+      setTask(data); 
+      setTimeLeft(data.watch_duration); 
+      timeRef.current = data.watch_duration; 
+      setLoading(false);
     } catch (err) {
       showToast('Failed to load task.', 'error');
       setTimeout(function() { navigate('tasks'); }, 2000);
     }
   }
 
+  // 🔥 BULLETPROOF TIMER & TAB DETECTION 🔥
   useEffect(function() {
     if (loading || !task || statusRef.current === 'quiz' || statusRef.current === 'completed' || statusRef.current === 'failed') return;
+    
     const timer = setInterval(function() {
-      if (document.hidden) return; 
-      if (statusRef.current === 'playing' && timeRef.current > 0) {
-        timeRef.current -= 1; setTimeLeft(timeRef.current);
-      } else if (timeRef.current <= 0 && statusRef.current === 'playing') {
-        setStatus('quiz'); statusRef.current = 'quiz'; clearInterval(timer);
+      // Hard check: If document is hidden, NEVER decrement time.
+      if (document.hidden || statusRef.current !== 'playing') return; 
+      
+      if (timeRef.current > 0) {
+        timeRef.current -= 1; 
+        setTimeLeft(timeRef.current);
+      } else if (timeRef.current <= 0) {
+        setStatus('quiz'); 
+        statusRef.current = 'quiz'; 
+        clearInterval(timer);
       }
     }, 1000);
 
     function handleVisibilityChange() {
       if (statusRef.current === 'quiz' || statusRef.current === 'completed' || statusRef.current === 'failed') return;
-      if (document.hidden) { setStatus('paused_tab'); statusRef.current = 'paused_tab'; } 
-      else { setStatus('playing'); statusRef.current = 'playing'; }
+      if (document.hidden) { 
+        setStatus('paused_tab'); 
+        statusRef.current = 'paused_tab'; 
+      } else { 
+        setStatus('playing'); 
+        statusRef.current = 'playing'; 
+      }
     }
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return function() { clearInterval(timer); document.removeEventListener("visibilitychange", handleVisibilityChange); };
+    return function() { 
+      clearInterval(timer); 
+      document.removeEventListener("visibilitychange", handleVisibilityChange); 
+    };
   }, [loading, task]);
 
+  // 🔥 STRICT 3-STRIKE QUIZ LOGIC 🔥
   async function submitQuiz() {
     if (!userAnswer.trim()) { showToast('Please enter an answer.', 'error'); return; }
     setSubmitting(true);
-    const isCorrect = userAnswer.trim().toLowerCase() === task.quiz_answer.toLowerCase();
+    
+    // Clean string comparison to prevent accidental fails due to spaces/caps
+    const cleanUserAnswer = userAnswer.trim().toLowerCase();
+    const cleanCorrectAnswer = (task.quiz_answer || '').trim().toLowerCase();
+    const isCorrect = cleanUserAnswer === cleanCorrectAnswer;
 
     if (!isCorrect) {
-      const newAttempts = attempts - 1; setAttempts(newAttempts);
-      if (newAttempts <= 0) { setStatus('failed'); statusRef.current = 'failed'; showToast('Task failed. Out of attempts.', 'error'); } 
-      else { showToast(`Incorrect answer. ${newAttempts} attempts left.`, 'error'); setUserAnswer(''); }
-      setSubmitting(false); return;
+      const newAttempts = attempts - 1; 
+      setAttempts(newAttempts);
+      
+      if (newAttempts <= 0) { 
+        setStatus('failed'); 
+        statusRef.current = 'failed'; 
+        showToast('Task locked. You failed the verification.', 'error'); 
+        
+        // 🔒 INSERT FAILED RECORD (points: 0) SO IT LOCKS FOR 24 HOURS
+        await supabase.from('completions').insert([{ 
+          user_id: session.user.id, 
+          task_id: task.id, 
+          points_earned: 0 
+        }]);
+      } else { 
+        showToast(`Incorrect answer. ${newAttempts} attempts left.`, 'error'); 
+        setUserAnswer(''); 
+      }
+      setSubmitting(false); 
+      return;
     }
 
     try {
@@ -89,7 +129,9 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       await supabase.from('profiles').update({ points: userData.points + task.reward_points }).eq('id', session.user.id);
       await supabase.from('tasks').update({ slots_remaining: task.slots_remaining - 1, completed_slots: task.completed_slots + 1 }).eq('id', task.id);
 
-      setStatus('completed'); statusRef.current = 'completed'; showToast('Task verified! Points added.', 'success');
+      setStatus('completed'); 
+      statusRef.current = 'completed'; 
+      showToast('Task verified! Points added.', 'success');
     } catch (err) {
       showToast('Error verifying task.', 'error');
     } finally { setSubmitting(false); }
@@ -101,6 +143,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
   if (loading) return <div style={{ background: C.surface, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ color: C.textMuted }}>Loading Sandbox...</div></div>;
 
+  const showIframe = status === 'playing' || status === 'paused_tab';
+
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.surface, color: C.textMain, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {ToastComponent}
@@ -111,47 +155,71 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {status === 'paused_tab' && <span style={{ color: C.red, fontSize: 12, fontWeight: 700, background: 'rgba(239,68,68,0.1)', padding: '4px 8px', borderRadius: 4 }}>⏸ Focus Lost</span>}
-          <div style={{ background: C.textMain, color: C.textInvert, padding: '8px 16px', borderRadius: 8, fontSize: 16, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{formatTime(timeLeft)}</div>
+          {status === 'playing' || status === 'paused_tab' ? (
+            <div style={{ background: C.textMain, color: C.textInvert, padding: '8px 16px', borderRadius: 8, fontSize: 16, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{formatTime(timeLeft)}</div>
+          ) : null}
         </div>
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: 1000, margin: '0 auto', width: '100%', padding: '24px 5%' }}>
-        <div style={{ flex: 1, background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, overflow: 'hidden', minHeight: 400, position: 'relative', marginBottom: 24, boxShadow: C.shadow }}>
-          {task.platform === 'blog' ? (
-            <iframe src={task.video_id} style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-same-origin allow-scripts" title="SEO Content" />
-          ) : (
-            <iframe src={`https://www.youtube.com/embed/${task.video_id}?autoplay=1&mute=1`} style={{ width: '100%', height: '100%', border: 'none' }} allow="autoplay; encrypted-media" allowFullScreen title="YouTube Task" />
-          )}
+        
+        {/* IFRAME KILL-SWITCH: Only render when playing or paused. Destroys video when quiz starts. */}
+        {showIframe && (
+          <div style={{ flex: 1, background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, overflow: 'hidden', minHeight: 400, position: 'relative', marginBottom: 24, boxShadow: C.shadow }}>
+            {task.platform === 'blog' ? (
+              <iframe src={task.video_id} style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-same-origin allow-scripts" title="SEO Content" />
+            ) : (
+              <iframe src={`https://www.youtube.com/embed/${task.video_id}?autoplay=1&mute=1`} style={{ width: '100%', height: '100%', border: 'none' }} allow="autoplay; encrypted-media" allowFullScreen title="YouTube Task" />
+            )}
 
-          {status === 'paused_tab' && (
-            <div style={{ position: 'absolute', inset: 0, background: C.glass, backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
-              <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
-              <h2 style={{ fontFamily: "'Inter', sans-serif", color: C.textMain, marginBottom: 8 }}>Attention Lost</h2>
-              <p style={{ color: C.textMuted, maxWidth: 300, textAlign: 'center', fontSize: 14 }}>Return focus here to resume the timer.</p>
-            </div>
-          )}
-        </div>
+            {status === 'paused_tab' && (
+              <div style={{ position: 'absolute', inset: 0, background: C.glass, backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
+                <h2 style={{ fontFamily: "'Inter', sans-serif", color: C.textMain, marginBottom: 8 }}>Attention Lost</h2>
+                <p style={{ color: C.textMuted, maxWidth: 300, textAlign: 'center', fontSize: 14 }}>Return focus here to resume the timer.</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {status === 'quiz' && (
-          <div style={{ background: C.card, borderRadius: 16, padding: 32, border: `1px solid ${C.line}`, boxShadow: C.shadow }}>
+          <div className="animate-slideUp" style={{ background: C.card, borderRadius: 16, padding: 40, border: `1px solid ${C.line}`, boxShadow: C.shadow, marginTop: 40 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.limeDim, color: C.limeText, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>✓</div>
-              <h3 style={{ fontFamily: "'Inter', sans-serif", color: C.textMain, fontSize: 20, margin: 0 }}>Human Verification</h3>
+              <h3 style={{ fontFamily: "'Inter', sans-serif", color: C.textMain, fontSize: 24, margin: 0 }}>Human Verification</h3>
             </div>
-            <div style={{ background: C.input, padding: 16, borderRadius: 8, color: C.textMain, fontWeight: 600, fontSize: 16, marginBottom: 24, border: `1px solid ${C.line}` }}>Q: {task.quiz_question}</div>
+            <p style={{ color: C.textMuted, fontSize: 15, marginBottom: 32 }}>Verify your attention to earn {task.reward_points} points.</p>
+            
+            <div style={{ background: C.input, padding: 20, borderRadius: 12, color: C.textMain, fontWeight: 700, fontSize: 16, marginBottom: 24, border: `1px solid ${C.line}` }}>Q: {task.quiz_question}</div>
+            
             <div style={{ display: 'flex', gap: 12 }}>
-              <input type="text" placeholder="Type exact answer here..." value={userAnswer} onChange={function(e) { setUserAnswer(e.target.value); }} style={{ flex: 1, padding: '14px 16px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.input, color: C.textMain, fontSize: 15, outline: 'none' }} />
-              <button onClick={submitQuiz} disabled={submitting} style={{ background: C.lime, color: '#000000', border: 'none', borderRadius: 8, padding: '0 24px', fontSize: 15, fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer' }}>{submitting ? 'Verifying...' : 'Submit Answer'}</button>
+              <input type="text" placeholder="Type exact answer here..." value={userAnswer} onChange={function(e) { setUserAnswer(e.target.value); }} style={{ flex: 1, padding: '16px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.input, color: C.textMain, fontSize: 15, outline: 'none' }} />
+              <button onClick={submitQuiz} disabled={submitting} style={{ background: C.lime, color: '#000000', border: 'none', borderRadius: 8, padding: '0 32px', fontSize: 15, fontWeight: 800, cursor: submitting ? 'not-allowed' : 'pointer' }}>{submitting ? 'Verifying...' : 'Submit Answer'}</button>
+            </div>
+            <div style={{ fontSize: 13, color: attempts < 3 ? C.red : C.textMuted, marginTop: 16, textAlign: 'right', fontWeight: 600 }}>
+              Attempts remaining: {attempts} / 3
             </div>
           </div>
         )}
 
         {status === 'completed' && (
-          <div style={{ background: C.limeDim, border: `1px solid ${C.limeText}`, borderRadius: 16, padding: 32, textAlign: 'center' }}>
-            <h3 style={{ fontFamily: "'Inter', sans-serif", color: C.limeText, fontSize: 22, marginBottom: 8, fontWeight: 800 }}>Task Verified</h3>
-            <button onClick={function() { navigate('tasks'); }} style={{ background: C.lime, color: '#000000', border: 'none', borderRadius: 8, padding: '12px 32px', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 16 }}>Find More Tasks</button>
+          <div className="animate-fadeIn" style={{ background: C.limeDim, border: `1px solid ${C.limeText}`, borderRadius: 16, padding: 48, textAlign: 'center', marginTop: 40 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
+            <h3 style={{ fontFamily: "'Inter', sans-serif", color: C.limeText, fontSize: 28, marginBottom: 8, fontWeight: 800 }}>Task Verified</h3>
+            <p style={{ color: C.limeText, fontSize: 15, opacity: 0.8, marginBottom: 24 }}>+{task.reward_points} points added to wallet.</p>
+            <button onClick={function() { navigate('tasks'); }} style={{ background: C.lime, color: '#000000', border: 'none', borderRadius: 8, padding: '14px 40px', fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>Find More Tasks</button>
           </div>
         )}
+
+        {status === 'failed' && (
+          <div className="animate-fadeIn" style={{ background: 'rgba(239,68,68,0.1)', border: `1px solid ${C.red}`, borderRadius: 16, padding: 48, textAlign: 'center', marginTop: 40 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+            <h3 style={{ fontFamily: "'Inter', sans-serif", color: C.red, fontSize: 24, marginBottom: 8, fontWeight: 800 }}>Verification Failed</h3>
+            <p style={{ color: C.red, fontSize: 15, opacity: 0.8, marginBottom: 24 }}>This task has been securely locked for 24 hours.</p>
+            <button onClick={function() { navigate('tasks'); }} style={{ background: C.textMain, color: C.surface, border: 'none', borderRadius: 8, padding: '14px 40px', fontSize: 15, fontWeight: 800, cursor: 'pointer' }}>Return to Network</button>
+          </div>
+        )}
+
       </div>
     </div>
   );
