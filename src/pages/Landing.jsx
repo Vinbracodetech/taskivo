@@ -101,7 +101,15 @@ export default function Landing({ navigate, setAuthMode }) {
     { q: 'Who can use Taskivo?', a: 'Taskivo is built for global businesses seeking genuine digital engagement across social and web properties, and individuals worldwide looking for structured micro-earning opportunities.' },
   ];
 
-  function goRegister() {
+  // 🔥 THE NEW ONBOARDING FUNNELS 🔥
+  function goRegisterEarner() {
+    localStorage.setItem('taskivo_role', 'earner');
+    if (setAuthMode) setAuthMode("register");
+    navigate("auth");
+  }
+
+  function goRegisterCreator() {
+    localStorage.setItem('taskivo_role', 'creator');
     if (setAuthMode) setAuthMode("register");
     navigate("auth");
   }
@@ -142,14 +150,17 @@ export default function Landing({ navigate, setAuthMode }) {
           
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {/* ROUTES TO EARNER */}
               <button style={{
                 background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px',
                 fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-              }} onClick={goRegister}>Join as Founding Contributor</button>
+              }} onClick={goRegisterEarner}>Join as Founding Contributor</button>
+              
+              {/* ROUTES TO BUSINESS */}
               <button style={{
                 background: 'transparent', color: C.white, border: `1px solid ${C.darkLine}`, borderRadius: 8,
                 padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-              }} onClick={goRegister}>Launch a Campaign</button>
+              }} onClick={goRegisterCreator}>Launch a Campaign</button>
             </div>
             <div style={{ color: C.lime, fontSize: 12, fontWeight: 600, letterSpacing: 0.5 }}>
               🔥 Only 50 Founding Contributor spots available for Phase 1.
@@ -158,7 +169,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </div>
 
-      {/* PILOT PROGRAM BANNER (LIVE SUPABASE DATA) */}
+      {/* PILOT PROGRAM BANNER */}
       <div style={{ background: C.ink, borderTop: `1px solid ${C.darkLine}`, borderBottom: `1px solid ${C.darkLine}`, padding: '24px 5%' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
           <div style={{ flex: '1 1 300px' }}>
@@ -177,6 +188,7 @@ export default function Landing({ navigate, setAuthMode }) {
               <div style={{ width: `${Math.min((claimedSpots / 10) * 100, 100)}%`, height: '100%', background: C.lime, transition: 'width 1s ease-in-out' }}></div>
             </div>
           </div>
+          {/* ROUTES TO BUSINESS */}
           <button 
             style={{ 
               background: claimedSpots >= 10 ? 'rgba(255,255,255,0.1)' : C.lime, 
@@ -184,7 +196,7 @@ export default function Landing({ navigate, setAuthMode }) {
               border: 'none', borderRadius: 6, padding: '12px 24px', fontSize: 13, fontWeight: 700, 
               cursor: claimedSpots >= 10 ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif"
             }} 
-            onClick={function() { if (claimedSpots < 10) goRegister(); }}
+            onClick={function() { if (claimedSpots < 10) goRegisterCreator(); }}
           >
             {claimedSpots >= 10 ? 'Cohort Full' : 'Claim Free Slots'}
           </button>
@@ -208,7 +220,8 @@ export default function Landing({ navigate, setAuthMode }) {
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Get high-retention engagement from real users</li>
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Predictable and scalable algorithmic growth</li>
             </ul>
-            <button style={{ background: C.ink, color: C.white, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegister}>Create Campaign</button>
+            {/* ROUTES TO BUSINESS */}
+            <button style={{ background: C.ink, color: C.white, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterCreator}>Create Campaign</button>
           </div>
           <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, padding: 40 }}>
             <div style={{ display: 'inline-block', background: C.limeDim, color: '#3d6600', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Contributors</div>
@@ -218,7 +231,8 @@ export default function Landing({ navigate, setAuthMode }) {
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Earn dynamic reward points for your verified attention</li>
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Build consistency streaks for internal bonuses</li>
             </ul>
-            <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegister}>Join Network</button>
+            {/* ROUTES TO EARNER */}
+            <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterEarner}>Join Network</button>
           </div>
         </div>
       </section>
@@ -287,7 +301,8 @@ export default function Landing({ navigate, setAuthMode }) {
                     );
                   })}
                 </ul>
-                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegister}>
+                {/* ROUTES TO BUSINESS */}
+                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterCreator}>
                   Select Package
                 </button>
               </div>
@@ -341,9 +356,11 @@ export default function Landing({ navigate, setAuthMode }) {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>Product</div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("auth"); }}>For Contributors</span></li>
-              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("auth"); }}>For Businesses</span></li>
-              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("auth"); }}>Pricing</span></li>
+              {/* ROUTES TO EARNER */}
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={goRegisterEarner}>For Contributors</span></li>
+              {/* ROUTES TO BUSINESS */}
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={goRegisterCreator}>For Businesses</span></li>
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={goRegisterCreator}>Pricing</span></li>
             </ul>
           </div>
           <div>
