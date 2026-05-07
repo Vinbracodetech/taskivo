@@ -1,169 +1,208 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase.js";
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+
+const C = {
+  surface: 'var(--surface)',
+  card: 'var(--surface-card)',
+  input: 'var(--surface-card)',
+  textMain: 'var(--ink)',
+  textMuted: 'var(--slate)',
+  textInvert: 'var(--surface)',
+  line: 'var(--line)',
+  lime: '#A8FF3E',
+  limeText: 'var(--lime)',
+  limeDim: 'var(--lime-dim)',
+  shadow: 'var(--shadow)',
+};
 
 export default function CreatorDashboard({ user, navigate, showToast }) {
+  const [loading, setLoading] = useState(true);
+  const [campaigns, setCampaigns] = useState([]);
+  const [stats, setStats] = useState({
+    totalCampaigns: 0,
+    activeCampaigns: 0,
+    totalEngagements: 0,
+  });
 
-  var [tasks, setTasks] = useState([]);
-  var [totalCompletions, setTotalCompletions] = useState(0);
-  var [loading, setLoading] = useState(true);
+  useEffect(function() {
+    if (!user) return;
+    fetchCreatorData();
+  }, [user]);
 
-  useEffect(function () { loadData(); }, []);
+  async function fetchCreatorData() {
+    try {
+      setLoading(true);
+      // Fetch all campaigns created by this business user
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('creator_id', user.id)
+        .order('created_at', { ascending: false });
 
-  async function loadData() {
-    setLoading(true);
+      if (error) throw error;
 
-    var tasksResult = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("creator_id", user.id)
-      .order("created_at", { ascending: false });
+      const fetchedCampaigns = data || [];
+      
+      // Calculate analytics
+      let activeCount = 0;
+      let engagements = 0;
 
-    var myTasks = tasksResult.data || [];
-    setTasks(myTasks);
+      fetchedCampaigns.forEach(function(camp) {
+        if (camp.status === 'active') activeCount++;
+        engagements += camp.completed_slots || 0;
+      });
 
-    var completions = myTasks.reduce(function (sum, t) {
-      return sum + (t.completed_slots || 0);
-    }, 0);
-    setTotalCompletions(completions);
-    setLoading(false);
+      setStats({
+        totalCampaigns: fetchedCampaigns.length,
+        activeCampaigns: activeCount,
+        totalEngagements: engagements,
+      });
+      
+      setCampaigns(fetchedCampaigns);
+
+    } catch (err) {
+      console.error(err);
+      if (showToast) showToast('Failed to load campaign data', 'error');
+    } finally {
+      setLoading(false);
+    }
   }
-
-  var activeTasks = tasks.filter(function (t) { return t.status === "active"; }).length;
-  var pendingTasks = tasks.filter(function (t) { return t.status === "pending"; }).length;
-  var totalPtsGiven = tasks.reduce(function (sum, t) {
-    return sum + ((t.completed_slots || 0) * (t.reward || 0));
-  }, 0);
-
-  var name = user ? (user.full_name || user.email || "Creator") : "Creator";
 
   if (loading) {
     return (
-      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 36, height: 36, border: "3px solid #E5E7EB", borderTopColor: "#A8FF3E", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+      <div style={{ padding: '60px 5%', textAlign: 'center', color: C.textMuted, fontFamily: "'DM Sans', sans-serif" }}>
+        Loading Business Analytics...
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "36px 32px", maxWidth: 1100, fontFamily: "var(--font-body)" }}>
-
+    <div style={{ padding: '40px 5%', maxWidth: 1000, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", paddingBottom: 120 }}>
+      
       {/* HEADER */}
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 30, fontWeight: 700, color: "#0A0A0F", marginBottom: 6, letterSpacing: "-0.5px" }}>
-          Creator Hub 👋
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20, marginBottom: 40 }}>
+        <div>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: C.textMain, marginBottom: 8, fontWeight: 800 }}>
+            Business Overview
+          </h1>
+          <p style={{ color: C.textMuted, fontSize: 15 }}>Monitor your campaign performance and verified engagements.</p>
         </div>
-        <div style={{ fontSize: 15, color: "#6B7280" }}>
-          Welcome back, {name.split(" ")[0]}. Here's your campaign overview.
-        </div>
-      </div>
-
-      {/* QUICK ACTIONS */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 32, flexWrap: "wrap" }}>
-        <button className="btn btn-primary btn-lg" onClick={function () { navigate("create-task"); }}>
-          + Post New Task
-        </button>
-        <button className="btn btn-outline btn-lg" onClick={function () { navigate("creator-tasks"); }}>
-          View My Tasks
-        </button>
-        <button className="btn btn-outline btn-lg" onClick={function () { navigate("creator-analytics"); }}>
-          Analytics →
+        <button 
+          onClick={function() { navigate('create-task'); }}
+          style={{ background: C.limeText, color: '#ffffff', border: 'none', borderRadius: 8, padding: '12px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'center', gap: 8 }}
+        >
+          <span>🚀</span> Launch Campaign
         </button>
       </div>
 
-      {/* STATS */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 36 }}>
-        {[
-          { label: "Active Tasks", value: activeTasks, icon: "✅", bg: "rgba(34,197,94,0.1)" },
-          { label: "Pending Approval", value: pendingTasks, icon: "⏳", bg: "rgba(245,158,11,0.1)" },
-          { label: "Total Completions", value: totalCompletions, icon: "🎯", bg: "rgba(168,255,62,0.12)" },
-          { label: "Points Distributed", value: totalPtsGiven.toLocaleString(), icon: "💰", bg: "rgba(99,102,241,0.1)" },
-        ].map(function (s) {
-          return (
-            <div key={s.label}
-              onMouseEnter={function (e) {
-                e.currentTarget.style.boxShadow = "0 8px 32px rgba(245,158,11,0.15), 0 0 0 1.5px rgba(245,158,11,0.2)";
-                e.currentTarget.style.transform = "translateY(-3px)";
-              }}
-              onMouseLeave={function (e) {
-                e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
-                e.currentTarget.style.transform = "translateY(0)";
-              }}
-              style={{
-                background: "#fff", border: "1px solid #E5E7EB",
-                borderRadius: 18, padding: "22px 20px",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                transition: "all 0.22s ease", cursor: "default",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9CA3AF" }}>
-                  {s.label}
-                </div>
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17 }}>
-                  {s.icon}
-                </div>
-              </div>
-              <div style={{ fontFamily: "var(--font-heading)", fontSize: 32, fontWeight: 800, color: "#0A0A0F", lineHeight: 1, marginBottom: 4 }}>
-                {s.value}
-              </div>
+      {/* STATS GRID */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20, marginBottom: 40 }}>
+        
+        {/* Total Engagements */}
+        <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 24, boxShadow: C.shadow }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Total Verified Engagements</div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 40, fontWeight: 800, color: C.limeText, lineHeight: 1 }}>
+            {stats.totalEngagements.toLocaleString()}
+          </div>
+          <div style={{ fontSize: 13, color: C.textMuted, marginTop: 8 }}>Across all omnichannel campaigns</div>
+        </div>
+
+        {/* Active Campaigns */}
+        <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 24, boxShadow: C.shadow }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Active Campaigns</div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 40, fontWeight: 800, color: C.textMain, lineHeight: 1 }}>
+            {stats.activeCampaigns}
+          </div>
+          <div style={{ fontSize: 13, color: C.textMuted, marginTop: 8 }}>Currently delivering traffic</div>
+        </div>
+
+        {/* Total Campaigns */}
+        <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 24, boxShadow: C.shadow }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Lifetime Campaigns</div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 40, fontWeight: 800, color: C.textMain, lineHeight: 1 }}>
+            {stats.totalCampaigns}
+          </div>
+          <div style={{ fontSize: 13, color: C.textMuted, marginTop: 8 }}>Historical campaign data</div>
+        </div>
+      </div>
+
+      {/* RECENT CAMPAIGNS */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: C.textMain, margin: 0, fontWeight: 700 }}>Your Campaigns</h2>
+        </div>
+
+        {campaigns.length === 0 ? (
+          <div style={{ background: C.card, border: `1px dashed ${C.line}`, borderRadius: 12, padding: 48, textAlign: 'center', boxShadow: C.shadow }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.textMain, marginBottom: 8 }}>No campaigns launched yet</div>
+            <div style={{ fontSize: 14, color: C.textMuted, maxWidth: 400, margin: '0 auto 24px' }}>
+              Create your first campaign to drive verified human traffic to your videos or SEO blog articles.
             </div>
-          );
-        })}
-      </div>
+            <button 
+              onClick={function() { navigate('create-task'); }}
+              style={{ background: C.input, color: C.textMain, border: `1px solid ${C.line}`, borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Draft First Campaign
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {campaigns.map(function(camp) {
+              const progress = Math.min(((camp.completed_slots || 0) / camp.slots) * 100, 100);
+              const isComplete = progress >= 100;
+              const isPending = camp.status === 'pending_payment';
+              
+              let statusBadgeBg = C.input;
+              let statusBadgeColor = C.textMuted;
+              let statusText = 'Pending';
 
-      {/* RECENT TASKS */}
-      <div style={{ fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 700, color: "#0A0A0F", marginBottom: 16 }}>
-        Recent Tasks
-      </div>
+              if (camp.status === 'active') {
+                statusBadgeBg = C.limeDim;
+                statusBadgeColor = C.limeText;
+                statusText = 'Active';
+              } else if (isComplete || camp.status === 'completed') {
+                statusBadgeBg = 'rgba(255,255,255,0.05)';
+                statusBadgeColor = C.textMuted;
+                statusText = 'Completed';
+              }
 
-      {tasks.length === 0 ? (
-        <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "48px 24px", textAlign: "center" }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No tasks yet</div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 20 }}>Post your first task to start getting feedback.</div>
-          <button className="btn btn-primary" onClick={function () { navigate("create-task"); }}>+ Post New Task</button>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {tasks.slice(0, 5).map(function (task) {
-            var filled = task.completed_slots || 0;
-            var total = task.total_slots || 1;
-            var pct = Math.round((filled / total) * 100);
-            return (
-              <div key={task.id} style={{
-                background: "#fff", border: "1px solid #E5E7EB",
-                borderRadius: 14, padding: "18px 20px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontFamily: "var(--font-heading)", fontSize: 14, fontWeight: 700, color: "#0A0A0F", marginBottom: 4 }}>
-                      {task.title}
+              return (
+                <div key={camp.id} style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 24, display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center', justifyContent: 'space-between', boxShadow: C.shadow }}>
+                  
+                  {/* Title & Status */}
+                  <div style={{ flex: '1 1 250px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: C.textMain }}>{camp.title}</div>
+                      <div style={{ background: statusBadgeBg, color: statusBadgeColor, fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: 1 }}>
+                        {statusText}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 12, color: "#9CA3AF" }}>
-                      {task.reward} pts/task · {total} slots · {task.category || "General"}
+                    <div style={{ display: 'flex', gap: 12, fontSize: 13, color: C.textMuted, fontWeight: 500 }}>
+                      <span style={{ textTransform: 'capitalize' }}>{camp.platform === 'blog' ? 'SEO Traffic' : camp.platform}</span>
+                      <span>•</span>
+                      <span>{camp.watch_duration}s Read/Watch time</span>
                     </div>
                   </div>
-                  <span className={"badge " + (
-                    task.status === "active" ? "badge-green" :
-                    task.status === "pending" ? "badge-yellow" : "badge-red"
-                  )}>
-                    {task.status}
-                  </span>
+
+                  {/* Progress Bar Area */}
+                  <div style={{ flex: '1 1 200px', minWidth: 200 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, color: C.textMuted, marginBottom: 8 }}>
+                      <span>Engagement Delivery</span>
+                      <span style={{ color: C.textMain }}>{camp.completed_slots || 0} / {camp.slots}</span>
+                    </div>
+                    <div style={{ height: 8, background: C.input, borderRadius: 10, overflow: 'hidden' }}>
+                      <div style={{ width: `${progress}%`, height: '100%', background: isComplete ? C.textMuted : C.limeText, borderRadius: 10, transition: 'width 1s ease-in-out' }}></div>
+                    </div>
+                  </div>
+
                 </div>
-                <div style={{ height: 4, background: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: pct + "%", background: "#A8FF3E", borderRadius: 99 }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 11, color: "#9CA3AF" }}>
-                  <span>{filled}/{total} completed</span>
-                  <span>{pct}%</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      <div style={{ height: 48 }} />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
     </div>
   );
-                   }
+}
