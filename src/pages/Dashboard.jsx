@@ -73,7 +73,7 @@ export default function Dashboard({ user, navigate, showToast }) {
   }
 
   // Calculate progress toward a hypothetical minimum withdrawal (e.g., 1000 points)
-  const minWithdrawal = 1000;
+  const minWithdrawal = 2000;
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
 
   return (
