@@ -11,6 +11,7 @@ import Auth from "./pages/Auth.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import TaskPlayer from "./pages/TaskPlayer.jsx";
 import Wallet from "./pages/Wallet.jsx";
+import Tasks from "./pages/Tasks.jsx";
 
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
@@ -209,7 +210,7 @@ export default function App() {
 
             {/* EARNER */}
             {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
-            {view === "tasks" && user && <ComingSoon title="Tasks — coming soon" />}
+            {view === "tasks" && user && <Tasks session={{user}} navigate={navigate} />}
             {view.startsWith("player/") && user && <TaskPlayer session={{user}} navigate={navigate} taskId={view.split('/')[1]} />}
             {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
 
