@@ -212,7 +212,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   };
 
   var logoTextStyle = {
-    fontFamily: "'Syne', sans-serif",
+    fontFamily: "'Inter', sans-serif",
     fontSize: 26,
     fontWeight: 800,
     color: "#fff",
@@ -230,12 +230,12 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   };
 
   var headlineStyle = {
-    fontFamily: "'Syne', sans-serif",
+    fontFamily: "'Inter', sans-serif",
     fontSize: 42,
     fontWeight: 800,
     color: "#fff",
     lineHeight: 1.1,
-    letterSpacing: "-1px",
+    letterSpacing: "-1.5px",
     marginBottom: 20,
   };
 
@@ -260,11 +260,11 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   ];
 
   var cardTitleStyle = {
-    fontFamily: "'Syne', sans-serif",
+    fontFamily: "'Inter', sans-serif",
     fontSize: 26,
     fontWeight: 800,
     color: "#fff",
-    letterSpacing: "-0.5px",
+    letterSpacing: "-1px",
     marginBottom: 6,
   };
 
@@ -347,7 +347,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     color: "#0D0D14",
     fontSize: 15,
     fontWeight: 800,
-    fontFamily: "'Syne', sans-serif",
+    fontFamily: "'Inter', sans-serif",
     cursor: loading ? "not-allowed" : "pointer",
     letterSpacing: "0.2px",
     transition: "all 0.2s",
@@ -577,7 +577,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           {statData.map(function (s) {
             return (
               <div key={s.label}>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "#A8FF3E" }}>{s.num}</div>
+                <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 800, color: "#A8FF3E" }}>{s.num}</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{s.label}</div>
               </div>
             );
