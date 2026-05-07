@@ -35,6 +35,7 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
   const IconTasks = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>;
   const IconWallet = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>;
   const IconProfile = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+  const IconAnalytics = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
   const IconMoon = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
   const IconSun = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
   const IconLogout = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
@@ -77,6 +78,7 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
 
   return (
     <>
+      {/* 1. THE FLOATING PILL */}
       <div style={{
         position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)',
         display: 'flex', alignItems: 'center', gap: 4, padding: '8px',
@@ -84,23 +86,38 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
         border: `1px solid ${C.line}`, borderRadius: 100, zIndex: 9990,
         boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
       }}>
+        {/* Universal Home Button */}
         <PillButton icon={IconHome} onClick={function() { 
           if (user.role === 'admin') handleNavigate('admin-dashboard');
           else if (user.role === 'creator') handleNavigate('creator-dashboard');
           else handleNavigate('user-dashboard');
         }} />
-        <PillButton icon={IconTasks} onClick={function() { handleNavigate('tasks'); }} />
-        <PillButton icon={IconWallet} onClick={function() { handleNavigate('wallet'); }} />
+        
+        {/* Role-Based Nav Buttons */}
+        {user.role === 'earner' ? (
+          <>
+            <PillButton icon={IconTasks} onClick={function() { handleNavigate('tasks'); }} />
+            <PillButton icon={IconWallet} onClick={function() { handleNavigate('wallet'); }} />
+          </>
+        ) : (
+          <>
+            <PillButton icon={<span style={{fontSize: 16}}>🚀</span>} onClick={function() { handleNavigate('create-task'); }} />
+            <PillButton icon={IconAnalytics} onClick={function() { handleNavigate('creator-analytics'); }} />
+          </>
+        )}
+
         <div style={{ width: 1, height: 24, background: C.line, margin: '0 4px' }} />
         <PillButton icon={IconProfile} onClick={openMenu} isProfile={true} />
       </div>
 
+      {/* 2. THE CLICK-OUT OVERLAY */}
       <div onClick={closeMenu} style={{
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
         zIndex: 9995, opacity: menuOpen ? 1 : 0, pointerEvents: menuOpen ? 'auto' : 'none',
         transition: 'opacity 0.3s ease'
       }} />
 
+      {/* 3. THE BOTTOM SHEET (QUARTER SCREEN MENU) */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999,
         background: C.surface, borderTop: `1px solid ${C.line}`,
@@ -117,24 +134,36 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
           </div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 700, color: C.textMain, marginBottom: 4, textTransform: 'capitalize' }}>
-              {user.role} Profile
+              {user.role === 'creator' ? 'Business Profile' : user.role + ' Profile'}
             </div>
             <div style={{ fontSize: 14, color: C.textMuted }}>{user.email}</div>
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
+          
           <MenuItem icon={IconHome} label="Dashboard" onClick={function() { 
             if (user.role === 'admin') handleNavigate('admin-dashboard');
             else if (user.role === 'creator') handleNavigate('creator-dashboard');
             else handleNavigate('user-dashboard');
           }} />
-          <MenuItem icon={IconTasks} label="Task Network" onClick={function() { handleNavigate('tasks'); }} />
-          <MenuItem icon={IconWallet} label="Wallet & Withdrawals" onClick={function() { handleNavigate('wallet'); }} />
+
+          {/* Role-Based Menu List Items */}
+          {user.role === 'earner' && (
+            <>
+              <MenuItem icon={IconTasks} label="Task Network" onClick={function() { handleNavigate('tasks'); }} />
+              <MenuItem icon={IconWallet} label="Wallet & Withdrawals" onClick={function() { handleNavigate('wallet'); }} />
+            </>
+          )}
+
           {(user.role === 'creator' || user.role === 'admin') && (
-            <MenuItem icon={<span style={{fontSize: 18}}>🚀</span>} label="Launch Campaign" onClick={function() { handleNavigate('create-task'); }} />
+            <>
+              <MenuItem icon={<span style={{fontSize: 18}}>🚀</span>} label="Launch Campaign" onClick={function() { handleNavigate('create-task'); }} />
+              <MenuItem icon={IconAnalytics} label="Campaign Analytics" onClick={function() { handleNavigate('creator-analytics'); }} />
+            </>
           )}
           
+          {/* Universal Settings */}
           <button onClick={toggleTheme} style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
             background: 'transparent', border: 'none', padding: '16px 0',
