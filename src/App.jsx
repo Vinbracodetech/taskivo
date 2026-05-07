@@ -26,7 +26,7 @@ import {
   AdminWithdrawals as AdminWithdrawalsComp,
 } from "./pages/AdminPanel.jsx";
 
-// ── GLOBAL STICKY HEADER ──
+// ── GLOBAL STICKY HEADER (Built directly into App.jsx) ──
 function TopNav({ navigate, user, setAuthMode }) {
   return (
     <nav style={{
@@ -53,9 +53,15 @@ function TopNav({ navigate, user, setAuthMode }) {
             <button className="btn btn-outline btn-sm" onClick={function() { if(setAuthMode) setAuthMode("login"); navigate("auth"); }}>Log in</button>
             <button className="btn btn-primary btn-sm" onClick={function() { if(setAuthMode) setAuthMode("register"); navigate("auth"); }}>Get Started</button>
           </div>
-        ) : (
+        ) : user.role === 'earner' ? (
+          /* ONLY EARNERS SEE POINTS */
           <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px' }}>
             {user.points.toLocaleString()} PTS
+          </div>
+        ) : (
+          /* CREATORS AND ADMINS SEE A CLEAN ROLE BADGE */
+          <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', color: 'var(--slate)', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+            {user.role}
           </div>
         )}
       </div>
