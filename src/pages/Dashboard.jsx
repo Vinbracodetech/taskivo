@@ -1,509 +1,220 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase.js";
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
-async function detectCountry() {
-  try {
-    var res = await fetch("https://ipapi.co/json/");
-    var data = await res.json();
-    return {
-      code: data.country_code || "OTHER",
-      name: data.country_name || "Global",
-    };
-  } catch (e) {
-    return { code: "OTHER", name: "Global" };
-  }
-}
-
-const COUNTRY_FLAGS = {
-  NG: "🇳🇬", US: "🇺🇸", GB: "🇬🇧", CA: "🇨🇦",
-  AU: "🇦🇺", GH: "🇬🇭", KE: "🇰🇪", ZA: "🇿🇦",
+const C = {
+  ink: '#0D0D14',
+  lime: '#A8FF3E',
+  limeDim: 'rgba(168,255,62,0.12)',
+  white: '#ffffff',
+  slate: '#8B8B9E',
+  line: 'rgba(255,255,255,0.08)',
+  card: 'rgba(255,255,255,0.03)',
 };
 
 export default function Dashboard({ user, navigate, showToast }) {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ completions: 0 });
+  const [featuredTasks, setFeaturedTasks] = useState([]);
+  const [referralCopied, setReferralCopied] = useState(false);
 
-  var [profile, setProfile] = useState(user);
-  var [tasks, setTasks] = useState([]);
-  var [completions, setCompletions] = useState([]);
-  var [loading, setLoading] = useState(true);
+  useEffect(function() {
+    if (!user) return;
+    fetchDashboardData();
+  }, [user]);
 
-  useEffect(function () {
-    loadData();
-  }, []);
+  async function fetchDashboardData() {
+    try {
+      setLoading(true);
 
-  async function loadData() {
-    setLoading(true);
+      // 1. Get total completed tasks for this user
+      const { count, error: countError } = await supabase
+        .from('completions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
 
-    var profileResult = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+      if (countError) throw countError;
 
-    var currentProfile = profileResult.data || user;
+      // 2. Fetch up to 3 active tasks for the "Quick Earn" section
+      const { data: tasks, error: tasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('status', 'active')
+        .limit(3);
 
-    if (!currentProfile.country) {
-      var location = await detectCountry();
-      await supabase
-        .from("profiles")
-        .update({ country: location.code, country_name: location.name })
-        .eq("id", user.id);
-      currentProfile.country = location.code;
-      currentProfile.country_name = location.name;
+      if (tasksError) throw tasksError;
+
+      setStats({ completions: count || 0 });
+      setFeaturedTasks(tasks || []);
+
+    } catch (err) {
+      console.error(err);
+      if (showToast) showToast('Failed to sync dashboard data', 'error');
+    } finally {
+      setLoading(false);
     }
-
-    setProfile(currentProfile);
-
-    var completionsResult = await supabase
-      .from("completions")
-      .select("*, tasks(title, reward)")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(5);
-    if (completionsResult.data) setCompletions(completionsResult.data);
-
-    var tasksResult = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("status", "active")
-      .limit(4);
-    if (tasksResult.data) setTasks(tasksResult.data);
-
-    setLoading(false);
   }
 
-  var points = profile ? (profile.points || 0) : 0;
-  var name = profile ? (profile.full_name || profile.email || "Earner") : "Earner";
-  var countryCode = profile ? (profile.country || "OTHER") : "OTHER";
-  var countryName = profile ? (profile.country_name || "Global") : "Global";
-  var flag = COUNTRY_FLAGS[countryCode] || "🌍";
+  function copyReferralLink() {
+    const link = `https://taskivo.online/auth?ref=${user.id}`;
+    navigator.clipboard.writeText(link);
+    setReferralCopied(true);
+    if (showToast) showToast('Invite link copied!', 'success');
+    setTimeout(function() {
+      setReferralCopied(false);
+    }, 3000);
+  }
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{
-            width: 36, height: 36,
-            border: "3px solid #E5E7EB",
-            borderTopColor: "#A8FF3E",
-            borderRadius: "50%",
-            margin: "0 auto 16px",
-            animation: "spin 1s linear infinite",
-          }} />
-          <div style={{ fontSize: 14, color: "#6B7280" }}>Loading...</div>
-        </div>
+      <div style={{ padding: '60px 5%', textAlign: 'center', color: C.slate, fontFamily: "'DM Sans', sans-serif" }}>
+        Syncing your profile...
       </div>
     );
   }
 
-  // ── shared card style ──
-  function statCard(borderColor) {
-    return {
-      background: "#fff",
-      border: "1px solid #E5E7EB",
-      borderLeft: "4px solid " + borderColor,
-      borderRadius: 12,
-      padding: "20px 18px",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-    };
-  }
+  // Calculate progress toward a hypothetical minimum withdrawal (e.g., 1000 points)
+  const minWithdrawal = 1000;
+  const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
 
   return (
-    <div style={{
-      padding: "28px 20px",
-      maxWidth: 720,
-      margin: "0 auto",
-      fontFamily: "var(--font-body)",
-    }}>
-
-      {/* ── GREETING ── */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{
-          fontSize: 22,
-          fontWeight: 700,
-          color: "#0A0A0F",
-          marginBottom: 4,
-          letterSpacing: "-0.3px",
-        }}>
-          Welcome back, {name.split(" ")[0]} 👋
-        </div>
-        <div style={{ fontSize: 14, color: "#6B7280" }}>
-          Here's your earnings overview for today.
-        </div>
+    <div style={{ padding: '40px 5%', maxWidth: 1000, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" }}>
+      
+      {/* HEADER SECTION */}
+      <div style={{ marginBottom: 40 }}>
+        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: C.white, marginBottom: 8, fontWeight: 800 }}>
+          Welcome back, <span style={{ textTransform: 'capitalize' }}>{user.full_name?.split(' ')[0] || 'Earner'}</span>.
+        </h1>
+        <p style={{ color: C.slate, fontSize: 15 }}>
+          Track your verified engagement and network growth.
+        </p>
       </div>
 
-      {/* ── BALANCE CARD ── */}
-      <div style={{
-        background: "linear-gradient(135deg, #1A1A2E 0%, #2D2D44 100%)",
-        borderRadius: 16,
-        padding: "28px 24px",
-        marginBottom: 20,
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          position: "absolute", top: -60, right: -60,
-          width: 200, height: 200,
-          background: "radial-gradient(circle, rgba(168,255,62,0.12), transparent 70%)",
-          borderRadius: "50%", pointerEvents: "none",
-        }} />
-
-        <div style={{
-          fontSize: 11, fontWeight: 700,
-          letterSpacing: "1.5px",
-          textTransform: "uppercase",
-          color: "rgba(255,255,255,0.4)",
-          marginBottom: 10,
-        }}>
-          Total Points Balance
-        </div>
-
-        <div style={{
-          fontSize: 52, fontWeight: 700,
-          color: "#A8FF3E", lineHeight: 1,
-          letterSpacing: "-1.5px", marginBottom: 6,
-          fontFamily: "var(--font-body)",
-        }}>
-          {points.toLocaleString()}
-        </div>
-
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>
-          Withdraw from <strong style={{ color: "rgba(255,255,255,0.6)" }}>2,000 pts</strong> minimum
-        </div>
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            onClick={function () { navigate("tasks"); }}
-            style={{
-              flex: 1,
-              padding: "11px 0",
-              background: "#A8FF3E",
-              border: "none",
-              borderRadius: 8,
-              color: "#0D0D14",
-              fontSize: 14,
-              fontWeight: 700,
-              fontFamily: "var(--font-body)",
-              cursor: "pointer",
-            }}
+      {/* STATS GRID */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 40 }}>
+        
+        {/* Points Card */}
+        <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.slate, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>Available Balance</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: C.lime, lineHeight: 1 }}>{user.points.toLocaleString()}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.slate }}>PTS</div>
+          </div>
+          <button 
+            onClick={function() { navigate('wallet'); }}
+            style={{ marginTop: 24, background: 'rgba(255,255,255,0.05)', color: C.white, border: `1px solid ${C.line}`, borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
           >
-            Browse Tasks →
+            Manage Wallet →
           </button>
-          <button
-            onClick={function () { navigate("withdraw"); }}
-            style={{
-              flex: 1,
-              padding: "11px 0",
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 8,
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 600,
-              fontFamily: "var(--font-body)",
-              cursor: "pointer",
-            }}
+        </div>
+
+        {/* Completion & Progress Card */}
+        <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 24, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.slate, textTransform: 'uppercase', letterSpacing: 1 }}>Verified Tasks</div>
+              <div style={{ background: 'rgba(255,255,255,0.1)', color: C.white, fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 100 }}>
+                {stats.completions} Lifetime
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', fontSize: 13, color: C.slate }}>
+              <span>Progress to next payout</span>
+              <span style={{ color: C.white, fontWeight: 600 }}>{user.points} / {minWithdrawal}</span>
+            </div>
+            
+            {/* Progress Bar */}
+            <div style={{ height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden' }}>
+              <div style={{ width: `${progressPercent}%`, height: '100%', background: C.lime, borderRadius: 10, transition: 'width 1s ease-in-out' }}></div>
+            </div>
+          </div>
+          
+          <button 
+            onClick={function() { navigate('tasks'); }}
+            style={{ marginTop: 24, background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
           >
-            ↑ Withdraw
+            Find More Tasks
           </button>
         </div>
       </div>
 
-      {/* ── STAT CARDS ── */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
-        gap: 12,
-        marginBottom: 28,
-      }}>
-
-        {/* Tasks Completed */}
-        <div style={statCard("#A8FF3E")}>
-          <div style={{
-            fontSize: 10, fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#9CA3AF",
-            marginBottom: 10,
-          }}>
-            Tasks Completed
+      {/* VIRAL LOOP / REFERRAL BANNER */}
+      <div style={{ background: 'linear-gradient(135deg, rgba(168,255,62,0.1) 0%, rgba(13,13,20,0) 100%)', border: `1px solid ${C.limeDim}`, borderRadius: 16, padding: 24, marginBottom: 40, display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ flex: '1 1 300px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: C.lime, color: C.ink, fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+            <span style={{ fontSize: 12 }}>🔥</span> Hot Bonus
           </div>
-          <div style={{
-            fontSize: 32, fontWeight: 800,
-            color: "#0A0A0F", lineHeight: 1,
-            marginBottom: 4,
-            fontFamily: "var(--font-body)",
-          }}>
-            {completions.length.toLocaleString()}
-          </div>
-          <div style={{ fontSize: 11, color: "#9CA3AF" }}>All time</div>
+          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, color: C.white, marginBottom: 8 }}>Earn 50 Points Per Invite</h2>
+          <p style={{ color: C.slate, fontSize: 14, lineHeight: 1.6, maxWidth: 450, margin: 0 }}>
+            Share your unique invite link. When your friend registers and successfully completes their first verified task, you instantly receive 50 points.
+          </p>
         </div>
-
-        {/* Available Tasks */}
-        <div style={statCard("#3B82F6")}>
-          <div style={{
-            fontSize: 10, fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#9CA3AF",
-            marginBottom: 10,
-          }}>
-            Available Tasks
-          </div>
-          <div style={{
-            fontSize: 32, fontWeight: 800,
-            color: "#0A0A0F", lineHeight: 1,
-            marginBottom: 4,
-            fontFamily: "var(--font-body)",
-          }}>
-            {tasks.length.toLocaleString()}
-          </div>
-          <div style={{ fontSize: 11, color: "#9CA3AF" }}>Ready to start</div>
-        </div>
-
-        {/* Region */}
-        <div style={statCard("#F59E0B")}>
-          <div style={{
-            fontSize: 10, fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#9CA3AF",
-            marginBottom: 10,
-          }}>
-            Your Region
-          </div>
-          <div style={{
-            fontSize: 22, fontWeight: 800,
-            color: "#0A0A0F", lineHeight: 1,
-            marginBottom: 4,
-            fontFamily: "var(--font-body)",
-          }}>
-            {flag} {countryCode}
-          </div>
-          <div style={{ fontSize: 11, color: "#9CA3AF" }}>{countryName}</div>
-        </div>
-
-      </div>
-
-      {/* ── AVAILABLE TASKS ── */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 14,
-      }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#0A0A0F" }}>
-          Available Tasks
-        </div>
-        <button
-          onClick={function () { navigate("tasks"); }}
-          style={{
-            background: "none", border: "none",
-            color: "#6B7280", fontSize: 13,
-            fontFamily: "var(--font-body)",
-            cursor: "pointer", fontWeight: 600,
+        <button 
+          onClick={copyReferralLink}
+          style={{ 
+            background: referralCopied ? 'rgba(255,255,255,0.1)' : C.white, 
+            color: referralCopied ? C.white : C.ink, 
+            border: 'none', borderRadius: 8, padding: '14px 24px', 
+            fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif",
+            whiteSpace: 'nowrap'
           }}
         >
-          See All →
+          {referralCopied ? 'Link Copied ✓' : 'Copy Invite Link'}
         </button>
       </div>
 
-      {tasks.length === 0 ? (
-        <div style={{
-          background: "#fff",
-          border: "1px solid #E5E7EB",
-          borderRadius: 12,
-          padding: "40px 24px",
-          textAlign: "center",
-          marginBottom: 28,
-        }}>
-          <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>No tasks yet</div>
-          <div style={{ fontSize: 13, color: "#6B7280" }}>
-            Creators are posting tasks. Check back soon.
-          </div>
+      {/* QUICK START / FEATURED TASKS */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: C.white, margin: 0 }}>Start Earning Now</h2>
+          <span 
+            onClick={function() { navigate('tasks'); }}
+            style={{ color: C.lime, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+          >
+            View all →
+          </span>
         </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
-          {tasks.map(function (task) {
-            var filled = task.completed_slots || 0;
-            var total = task.total_slots || 1;
-            var pct = Math.round((filled / total) * 100);
-            return (
-              <div key={task.id} style={{
-                background: "#fff",
-                border: "1px solid #E5E7EB",
-                borderLeft: "4px solid #A8FF3E",
-                borderRadius: 12,
-                padding: "16px 18px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-              }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: 14, fontWeight: 700,
-                    color: "#0A0A0F", marginBottom: 4,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}>
-                    {task.title}
-                  </div>
-                  <div style={{ display: "flex", gap: 10, fontSize: 11, color: "#9CA3AF" }}>
-                    <span>⏱ {task.required_time || 60}s</span>
-                    <span>👥 {total - filled} slots left</span>
-                  </div>
-                  <div style={{
-                    height: 3, background: "#F3F4F6",
-                    borderRadius: 99, overflow: "hidden", marginTop: 10,
-                  }}>
-                    <div style={{
-                      height: "100%", width: pct + "%",
-                      background: "#A8FF3E", borderRadius: 99,
-                    }} />
-                  </div>
-                </div>
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{
-                    fontSize: 18, fontWeight: 800,
-                    color: "#7ACC20", marginBottom: 6,
-                    fontFamily: "var(--font-body)",
-                  }}>
-                    {(task.reward || 0).toLocaleString()} pts
-                  </div>
-                  <button
-                    onClick={function () { navigate("tasks"); }}
-                    style={{
-                      background: "#A8FF3E",
-                      border: "none",
-                      borderRadius: 6,
-                      padding: "6px 14px",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "#0D0D14",
-                      fontFamily: "var(--font-body)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Start →
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
-      {/* ── RECENT ACTIVITY ── */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 14,
-      }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: "#0A0A0F" }}>
-          Recent Activity
-        </div>
-        <button
-          onClick={function () { navigate("wallet"); }}
-          style={{
-            background: "none", border: "none",
-            color: "#6B7280", fontSize: 13,
-            fontFamily: "var(--font-body)",
-            cursor: "pointer", fontWeight: 600,
-          }}
-        >
-          View All →
-        </button>
+        {featuredTasks.length === 0 ? (
+          <div style={{ background: C.card, border: `1px dashed ${C.line}`, borderRadius: 12, padding: 40, textAlign: 'center' }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.white, marginBottom: 8 }}>No active tasks available</div>
+            <div style={{ fontSize: 13, color: C.slate }}>Check back shortly. Our businesses are preparing new campaigns.</div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
+            {featuredTasks.map(function(task) {
+              const isBlog = task.platform === 'blog';
+              return (
+                <div key={task.id} style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 8, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                      {isBlog ? '📄' : '▶️'}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.white, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
+                        {task.title}
+                      </div>
+                      <div style={{ fontSize: 12, color: C.slate, fontWeight: 500 }}>
+                        {task.watch_duration}s Verification
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: 16, borderTop: `1px solid ${C.line}` }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: C.lime }}>+{task.reward_points} PTS</div>
+                    <button 
+                      onClick={function() { navigate(`player/${task.id}`); }}
+                      style={{ background: 'transparent', color: C.white, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Begin Task →
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {completions.length === 0 ? (
-        <div style={{
-          background: "#fff",
-          border: "1px solid #E5E7EB",
-          borderRadius: 12,
-          padding: "40px 24px",
-          textAlign: "center",
-        }}>
-          <div style={{ fontSize: 36, marginBottom: 10 }}>🎯</div>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>No activity yet</div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 16 }}>
-            Complete your first task to start earning.
-          </div>
-          <button
-            onClick={function () { navigate("tasks"); }}
-            style={{
-              background: "#A8FF3E",
-              border: "none",
-              borderRadius: 8,
-              padding: "10px 24px",
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#0D0D14",
-              fontFamily: "var(--font-body)",
-              cursor: "pointer",
-            }}
-          >
-            Browse Tasks →
-          </button>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {completions.map(function (c) {
-            var reward = c.tasks ? c.tasks.reward : 0;
-            var title = c.tasks ? c.tasks.title : "Task Completed";
-            var date = new Date(c.created_at).toLocaleDateString("en-GB", {
-              day: "numeric", month: "short", year: "numeric",
-            });
-            return (
-              <div key={c.id} style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "14px 16px",
-                background: "#fff",
-                border: "1px solid #E5E7EB",
-                borderLeft: "4px solid #22C55E",
-                borderRadius: 12,
-              }}>
-                <div style={{
-                  width: 34, height: 34,
-                  borderRadius: "50%",
-                  background: "rgba(34,197,94,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 15,
-                  flexShrink: 0,
-                }}>
-                  ✓
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#0A0A0F" }}>
-                    {title}
-                  </div>
-                  <div style={{ fontSize: 11, color: "#9CA3AF" }}>{date}</div>
-                </div>
-                <div style={{
-                  fontSize: 14, fontWeight: 700,
-                  color: "#16A34A",
-                  fontFamily: "var(--font-body)",
-                }}>
-                  +{(reward || 0).toLocaleString()} pts
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div style={{ height: 48 }} />
     </div>
   );
 }
