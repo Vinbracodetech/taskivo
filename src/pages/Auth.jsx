@@ -9,10 +9,46 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mounted, setMounted] = useState(false);
   var [form, setForm] = useState({ name: "", email: "", password: "" });
 
+  // ── ON MOUNT: ANIMATIONS & REFERRAL TRACKING ──
   useEffect(function () {
     var t = setTimeout(function () { setMounted(true); }, 50);
+    
+    // Capture referral ID from URL and store in local storage
+    if (typeof window !== "undefined") {
+      var params = new URLSearchParams(window.location.search);
+      var refId = params.get("ref");
+      if (refId) {
+        localStorage.setItem("taskivo_ref", refId);
+      }
+    }
+
     return function () { clearTimeout(t); };
   }, []);
+
+  // ── AUTH LISTENER: PROCESS GOOGLE LOGIN REFERRALS ──
+  useEffect(function () {
+    var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
+      if (event === 'SIGNED_IN' && session) {
+        var storedRef = localStorage.getItem("taskivo_ref");
+        if (storedRef) {
+          // Attach referral only if they don't already have one
+          await supabase.from("profiles")
+            .update({ referred_by: storedRef })
+            .eq("id", session.user.id)
+            .is("referred_by", null);
+            
+          localStorage.removeItem("taskivo_ref");
+        }
+        if (loadProfile) await loadProfile(session.user);
+      }
+    });
+    
+    return function () { 
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe(); 
+      }
+    };
+  }, [loadProfile]);
 
   function handleChange(e) {
     setForm(function (prev) {
@@ -74,20 +110,25 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       password: form.password,
       options: { data: { full_name: form.name, role: role } },
     });
+    
     if (result.error) {
       setError(result.error.message);
       setLoading(false);
       return;
     }
+    
     if (result.data && result.data.user) {
-      await supabase.from("profiles").upsert({
-        id: result.data.user.id,
+      var storedRef = localStorage.getItem("taskivo_ref");
+      // The DB trigger handles the insert. We just run an update to append missing data.
+      await supabase.from("profiles").update({
         email: form.email,
-        full_name: form.name,
         role: role,
-        points: 0,
-      });
+        referred_by: storedRef || null
+      }).eq("id", result.data.user.id);
+      
+      if (storedRef) localStorage.removeItem("taskivo_ref");
     }
+    
     setLoading(false);
     setMode("confirm");
   }
@@ -121,7 +162,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     background: "#0D0D14",
     position: "relative",
     overflow: "hidden",
-    fontFamily: "var(--font-body)",
+    fontFamily: "'DM Sans', sans-serif",
   };
 
   var leftStyle = {
@@ -167,10 +208,11 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     gap: 10,
     marginBottom: 48,
     textDecoration: "none",
+    cursor: "pointer"
   };
 
   var logoTextStyle = {
-    fontFamily: "var(--font-display)",
+    fontFamily: "'Syne', sans-serif",
     fontSize: 26,
     fontWeight: 800,
     color: "#fff",
@@ -178,7 +220,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   };
 
   var logoBadgeStyle = {
-    background: "var(--lime)",
+    background: "#A8FF3E",
     color: "#0D0D14",
     fontSize: 13,
     fontWeight: 800,
@@ -188,7 +230,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   };
 
   var headlineStyle = {
-    fontFamily: "var(--font-display)",
+    fontFamily: "'Syne', sans-serif",
     fontSize: 42,
     fontWeight: 800,
     color: "#fff",
@@ -199,26 +241,26 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
 
   var subStyle = {
     fontSize: 16,
-    color: "rgba(255,255,255,0.45)",
+    color: "rgba(255,255,255,0.6)",
     lineHeight: 1.7,
-    maxWidth: 320,
+    maxWidth: 360,
     marginBottom: 48,
   };
 
   var featuresData = [
-    { icon: "⚡", label: "Instant payouts", desc: "Same-day withdrawals" },
-    { icon: "🌍", label: "Global platform", desc: "190+ countries supported" },
-    { icon: "🛡️", label: "Fair & secure", desc: "Anti-cheat verified tasks" },
+    { icon: "🛡️", label: "Proof of Attention", desc: "Strict anti-cheat verification" },
+    { icon: "🌍", label: "Omnichannel Reach", desc: "YouTube, TikTok, & SEO Blogs" },
+    { icon: "📈", label: "Dynamic Rewards", desc: "Earn points based on genuine activity" },
   ];
 
   var statData = [
-    { num: "50K+", label: "Earners" },
-    { num: "$2M+", label: "Paid out" },
-    { num: "4.9★", label: "Rating" },
+    { num: "Beta", label: "Phase 1" },
+    { num: "2.0", label: "Infrastructure" },
+    { num: "100%", label: "Verified" },
   ];
 
   var cardTitleStyle = {
-    fontFamily: "var(--font-display)",
+    fontFamily: "'Syne', sans-serif",
     fontSize: 26,
     fontWeight: 800,
     color: "#fff",
@@ -245,7 +287,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     color: "#fff",
     fontSize: 14,
     fontWeight: 600,
-    fontFamily: "var(--font-body)",
+    fontFamily: "'DM Sans', sans-serif",
     cursor: "pointer",
     transition: "all 0.2s",
     marginBottom: 20,
@@ -289,7 +331,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     borderRadius: 12,
     color: "#fff",
     fontSize: 15,
-    fontFamily: "var(--font-body)",
+    fontFamily: "'DM Sans', sans-serif",
     outline: "none",
     boxSizing: "border-box",
     transition: "border-color 0.2s",
@@ -299,13 +341,13 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var submitBtnStyle = {
     width: "100%",
     padding: "14px",
-    background: loading ? "rgba(168,255,62,0.5)" : "var(--lime)",
+    background: loading ? "rgba(168,255,62,0.5)" : "#A8FF3E",
     border: "none",
     borderRadius: 12,
     color: "#0D0D14",
     fontSize: 15,
     fontWeight: 800,
-    fontFamily: "var(--font-display)",
+    fontFamily: "'Syne', sans-serif",
     cursor: loading ? "not-allowed" : "pointer",
     letterSpacing: "0.2px",
     transition: "all 0.2s",
@@ -324,7 +366,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   };
 
   var switchLinkStyle = {
-    color: "var(--lime)",
+    color: "#A8FF3E",
     fontWeight: 700,
     cursor: "pointer",
     textDecoration: "none",
@@ -347,10 +389,10 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       borderRadius: 10,
       border: "none",
       cursor: "pointer",
-      fontFamily: "var(--font-body)",
+      fontFamily: "'DM Sans', sans-serif",
       fontWeight: 700,
       fontSize: 13,
-      background: active ? "var(--lime)" : "transparent",
+      background: active ? "#A8FF3E" : "transparent",
       color: active ? "#0D0D14" : "rgba(255,255,255,0.4)",
       transition: "all 0.2s",
     };
@@ -374,7 +416,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           <div style={{ ...cardTitleStyle, marginBottom: 10 }}>Check your inbox</div>
           <div style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", lineHeight: 1.7, marginBottom: 28 }}>
             We sent a confirmation link to{" "}
-            <span style={{ color: "var(--lime)", fontWeight: 700 }}>{form.email}</span>.
+            <span style={{ color: "#A8FF3E", fontWeight: 700 }}>{form.email}</span>.
             Click it to activate your account.
           </div>
           <button
@@ -402,14 +444,17 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
         justifyContent: "center",
         padding: "32px 20px",
         position: "relative",
-        fontFamily: "var(--font-body)",
+        fontFamily: "'DM Sans', sans-serif",
       }}>
         <div style={gridStyle} />
         <div style={overlayStyle} />
 
         {/* Logo */}
         <div style={{ zIndex: 1, marginBottom: 32, textAlign: "center" }}>
-          <div style={{ ...logoTextStyle, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <div 
+            onClick={function() { if(navigate) navigate(''); }}
+            style={{ ...logoTextStyle, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: 'pointer' }}
+          >
             ⚡ Taskivo
             <span style={logoBadgeStyle}>BETA</span>
           </div>
@@ -421,7 +466,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
             {mode === "login" ? "Welcome back" : "Join Taskivo"}
           </div>
           <div style={{ ...cardSubStyle, marginBottom: 24 }}>
-            {mode === "login" ? "Sign in to your account" : "Start earning today"}
+            {mode === "login" ? "Sign in to your account" : "Start participating today"}
           </div>
 
           {/* Role tabs */}
@@ -437,7 +482,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
               {["earner", "creator"].map(function (r) {
                 return (
                   <button key={r} onClick={function () { setRole(r); }} style={roleTabStyle(role === r)}>
-                    {r === "earner" ? "🎯 Earner" : "✦ Creator"}
+                    {r === "earner" ? "🎯 Contributor" : "✦ Business"}
                   </button>
                 );
               })}
@@ -514,17 +559,17 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
 
       {/* LEFT */}
       <div style={leftStyle}>
-        <div style={logoStyle}>
+        <div style={logoStyle} onClick={function() { if(navigate) navigate(''); }}>
           <span style={logoTextStyle}>⚡ Taskivo</span>
           <span style={logoBadgeStyle}>BETA</span>
         </div>
 
         <div style={headlineStyle}>
-          Earn real money<br />
-          <span style={{ color: "var(--lime)" }}>watching videos.</span>
+          Scale your reach.<br />
+          <span style={{ color: "#A8FF3E" }}>Earn from real engagement.</span>
         </div>
         <div style={subStyle}>
-          Complete tasks from global creators, earn points, and withdraw cash — from anywhere in the world.
+          An omnichannel infrastructure connecting businesses with a global network of verified contributors.
         </div>
 
         {/* Stats row */}
@@ -532,8 +577,8 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           {statData.map(function (s) {
             return (
               <div key={s.label}>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, color: "var(--lime)" }}>{s.num}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{s.label}</div>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "#A8FF3E" }}>{s.num}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{s.label}</div>
               </div>
             );
           })}
@@ -560,7 +605,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
                 </div>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{f.label}</div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{f.desc}</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>{f.desc}</div>
                 </div>
               </div>
             );
@@ -575,7 +620,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
             {mode === "login" ? "Welcome back" : "Create account"}
           </div>
           <div style={{ ...cardSubStyle, marginBottom: 28 }}>
-            {mode === "login" ? "Sign in to continue earning" : "Join thousands of earners worldwide"}
+            {mode === "login" ? "Sign in to access the platform" : "Join the global engagement network"}
           </div>
 
           {mode === "register" && (
@@ -590,7 +635,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
               {["earner", "creator"].map(function (r) {
                 return (
                   <button key={r} onClick={function () { setRole(r); }} style={roleTabStyle(role === r)}>
-                    {r === "earner" ? "🎯 Earner" : "✦ Creator"}
+                    {r === "earner" ? "🎯 Contributor" : "✦ Business"}
                   </button>
                 );
               })}
