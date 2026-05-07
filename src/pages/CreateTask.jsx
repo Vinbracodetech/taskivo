@@ -1,345 +1,213 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import useToast from '../components/useToast';
 
-const CATEGORIES = ['Technology', 'Entertainment', 'Education', 'Business', 'Health', 'Food & Cooking', 'Social Media', 'E-commerce'];
+const C = {
+  ink: '#0D0D14',
+  lime: '#A8FF3E',
+  limeDim: 'rgba(168,255,62,0.12)',
+  white: '#ffffff',
+  off: '#F7F8FA',
+  slate: '#6B7280',
+  line: '#EBEBEB',
+  darkLine: 'rgba(255,255,255,0.08)',
+};
 
-export default function CreateTask({ navigate, showToast, user }) {
-  const [form, setForm] = useState({
+export default function CreateTask({ session, navigate }) {
+  const { showToast, ToastComponent } = useToast();
+  
+  const [loading, setLoading] = useState(false);
+  const [platform, setPlatform] = useState('youtube');
+  const [packageTier, setPackageTier] = useState('starter');
+  
+  const [formData, setFormData] = useState({
     title: '',
     description: '',
-    video_id: '',
+    link: '', // Maps to video_id in DB
     channel_name: '',
-    category: 'Entertainment',
-    reward_points: '',
-    slots: '',
-    watch_duration: '60',
+    watch_duration: 120, // Default 120s
     quiz_question: '',
-    quiz_answer: '',
-    subscribe_bonus: '0',
+    quiz_answer: ''
   });
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
 
-  function handleChange(e) {
-    var name = e.target.name;
-    var value = e.target.value;
-    setForm(function (prev) { return { ...prev, [name]: value }; });
-    setErrors(function (prev) { return { ...prev, [name]: '' }; });
-  }
-
-  function extractVideoId(input) {
-    var trimmed = input.trim();
-    var match = trimmed.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-    if (match) return match[1];
-    if (trimmed.length === 11) return trimmed;
-    return trimmed;
-  }
-
-  function validate() {
-    var e = {};
-    if (!form.title.trim()) e.title = 'Title is required';
-    if (!form.description.trim()) e.description = 'Description is required';
-    if (!form.video_id.trim()) e.video_id = 'YouTube URL or video ID is required';
-    if (!form.channel_name.trim()) e.channel_name = 'Channel name is required';
-    if (!form.reward_points || parseInt(form.reward_points) < 10) e.reward_points = 'Minimum reward is 10 points';
-    if (!form.slots || parseInt(form.slots) < 1) e.slots = 'At least 1 slot required';
-    if (!form.watch_duration || parseInt(form.watch_duration) < 10) e.watch_duration = 'Minimum 10 seconds';
-    if (!form.quiz_question.trim()) e.quiz_question = 'Quiz question is required';
-    if (!form.quiz_answer.trim()) e.quiz_answer = 'Quiz answer is required';
-    return e;
-  }
-
-  async function handleSubmit() {
-    var e = validate();
-    if (Object.keys(e).length > 0) {
-      setErrors(e);
-      showToast('Please fix the errors below', 'error');
-      return;
-    }
-    setLoading(true);
-
-    var videoId = extractVideoId(form.video_id);
-    var slotsCount = parseInt(form.slots);
-
-    var result = await supabase.from('tasks').insert({
-      creator_id: user.id,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      video_id: videoId,
-      channel_name: form.channel_name.trim(),
-      category: form.category,
-      reward_points: parseInt(form.reward_points),
-      slots: slotsCount,
-      slots_remaining: slotsCount,
-      completed_slots: 0,
-      watch_duration: parseInt(form.watch_duration),
-      quiz_question: form.quiz_question.trim(),
-      quiz_answer: form.quiz_answer.trim(),
-      subscribe_bonus: parseInt(form.subscribe_bonus) || 0,
-      status: 'pending',
-      platform: 'youtube',
-    });
-
-    setLoading(false);
-
-    if (result.error) {
-      showToast('Task creation failed: ' + result.error.message, 'error');
-      return;
-    }
-
-    showToast('Task submitted for review! 🎉', 'success');
-    navigate('creator-tasks');
-  }
-
-  const s = {
-    page: {
-      minHeight: '100vh',
-      background: '#F7F8FA',
-      fontFamily: "'DM Sans', sans-serif",
-      paddingBottom: '100px'
-    },
-    header: {
-      background: '#0D0D14',
-      padding: '16px 20px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px'
-    },
-    backBtn: {
-      background: 'none',
-      border: 'none',
-      color: '#A8FF3E',
-      fontSize: '22px',
-      cursor: 'pointer',
-      padding: '0'
-    },
-    headerTitle: {
-      color: '#fff',
-      fontSize: '16px',
-      fontWeight: 700,
-      margin: 0,
-      fontFamily: "'Syne', sans-serif"
-    },
-    body: {
-      padding: '20px 16px'
-    },
-    card: {
-      background: '#fff',
-      borderRadius: '14px',
-      padding: '20px',
-      marginBottom: '16px',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
-    },
-    sectionTitle: {
-      fontSize: '13px',
-      fontWeight: 700,
-      color: '#888',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px',
-      marginBottom: '14px'
-    },
-    label: {
-      fontSize: '13px',
-      fontWeight: 600,
-      color: '#0D0D14',
-      marginBottom: '6px',
-      display: 'block'
-    },
-    input: {
-      width: '100%',
-      padding: '11px 14px',
-      borderRadius: '10px',
-      border: '1.5px solid #E8E8E8',
-      fontSize: '14px',
-      fontFamily: "'DM Sans', sans-serif",
-      boxSizing: 'border-box',
-      outline: 'none',
-      marginBottom: '4px',
-      background: '#FAFAFA'
-    },
-    textarea: {
-      width: '100%',
-      padding: '11px 14px',
-      borderRadius: '10px',
-      border: '1.5px solid #E8E8E8',
-      fontSize: '14px',
-      fontFamily: "'DM Sans', sans-serif",
-      boxSizing: 'border-box',
-      outline: 'none',
-      marginBottom: '4px',
-      background: '#FAFAFA',
-      resize: 'vertical',
-      minHeight: '80px'
-    },
-    select: {
-      width: '100%',
-      padding: '11px 14px',
-      borderRadius: '10px',
-      border: '1.5px solid #E8E8E8',
-      fontSize: '14px',
-      fontFamily: "'DM Sans', sans-serif",
-      boxSizing: 'border-box',
-      outline: 'none',
-      marginBottom: '4px',
-      background: '#FAFAFA'
-    },
-    hint: {
-      fontSize: '11px',
-      color: '#aaa',
-      marginBottom: '12px'
-    },
-    error: {
-      fontSize: '11px',
-      color: '#e74c3c',
-      marginBottom: '12px'
-    },
-    group: {
-      marginBottom: '14px'
-    },
-    row: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '12px'
-    },
-    submitBtn: {
-      width: '100%',
-      padding: '16px',
-      background: '#A8FF3E',
-      color: '#0D0D14',
-      border: 'none',
-      borderRadius: '14px',
-      fontWeight: 800,
-      fontSize: '16px',
-      cursor: loading ? 'not-allowed' : 'pointer',
-      fontFamily: "'Syne', sans-serif",
-      opacity: loading ? 0.7 : 1
-    },
-    budgetBox: {
-      background: 'rgba(168,255,62,0.08)',
-      border: '1px solid rgba(168,255,62,0.3)',
-      borderRadius: '10px',
-      padding: '12px 14px',
-      fontSize: '13px',
-      color: '#5A8A00',
-      fontWeight: 600,
-      marginBottom: '16px'
-    }
+  const packages = {
+    starter: { slots: 50, price: 8 },
+    growth: { slots: 200, price: 24 },
+    scale: { slots: 500, price: 48 }
   };
 
+  function handleInputChange(e) {
+    const { name, value } = e.target;
+    setFormData(function(prev) {
+      return { ...prev, [name]: value };
+    });
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!session || !session.user) {
+      showToast('You must be logged in to create a campaign', 'error');
+      return;
+    }
+
+    if (!formData.title || !formData.link || !formData.quiz_question || !formData.quiz_answer) {
+      showToast('Please fill out all verification fields', 'error');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const selectedPackage = packages[packageTier];
+      
+      const { error } = await supabase.from('tasks').insert([{
+        creator_id: session.user.id,
+        platform: platform,
+        category: platform === 'blog' ? 'seo_traffic' : 'video_engagement',
+        title: formData.title,
+        description: formData.description,
+        video_id: formData.link, // Storing URLs or IDs here
+        channel_name: formData.channel_name,
+        watch_duration: parseInt(formData.watch_duration),
+        quiz_question: formData.quiz_question,
+        quiz_answer: formData.quiz_answer,
+        slots: selectedPackage.slots,
+        slots_remaining: selectedPackage.slots,
+        completed_slots: 0,
+        reward_points: 10, // Base points allocated internally
+        status: 'pending_payment' // Admin approves after payment
+      }]);
+
+      if (error) throw error;
+
+      showToast('Campaign draft created securely', 'success');
+      setTimeout(function() {
+        navigate('dashboard');
+      }, 2000);
+
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to create campaign', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div style={s.page}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.off, color: C.ink, minHeight: '100vh', padding: '40px 5%' }}>
+      {ToastComponent}
+      <div style={{ maxWidth: 680, margin: '0 auto' }}>
+        
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, color: C.ink, marginBottom: 8 }}>Launch Campaign</h1>
+          <p style={{ color: C.slate, fontSize: 14 }}>Deploy a verified engagement layer to our global contributor network.</p>
+        </div>
 
-      {/* Header */}
-      <div style={s.header}>
-        <button style={s.backBtn} onClick={function () { navigate('creator-dashboard'); }}>←</button>
-        <p style={s.headerTitle}>Post a New Task</p>
-      </div>
-
-      <div style={s.body}>
-
-        {/* Basic Info */}
-        <div style={s.card}>
-          <p style={s.sectionTitle}>Basic Info</p>
-
-          <div style={s.group}>
-            <label style={s.label}>Task Title</label>
-            <input style={s.input} name="title" placeholder="e.g. Watch & Like Our New Music Video" value={form.title} onChange={handleChange} />
-            {errors.title && <p style={s.error}>{errors.title}</p>}
-          </div>
-
-          <div style={s.group}>
-            <label style={s.label}>Description</label>
-            <textarea style={s.textarea} name="description" placeholder="Tell earners what to do..." value={form.description} onChange={handleChange} />
-            {errors.description && <p style={s.error}>{errors.description}</p>}
-          </div>
-
-          <div style={s.group}>
-            <label style={s.label}>Category</label>
-            <select style={s.select} name="category" value={form.category} onChange={handleChange}>
-              {CATEGORIES.map(function (c) {
-                return <option key={c} value={c}>{c}</option>;
+        <form onSubmit={handleSubmit} style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
+          
+          {/* STEP 1: PLATFORM */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>1. Select Platform</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
+              {['youtube', 'blog', 'tiktok', 'facebook'].map(function(plat) {
+                const isSelected = platform === plat;
+                return (
+                  <div 
+                    key={plat}
+                    onClick={function() { setPlatform(plat); }}
+                    style={{ 
+                      padding: '12px', textAlign: 'center', border: `1px solid ${isSelected ? C.ink : C.line}`, 
+                      borderRadius: 8, background: isSelected ? C.ink : C.white, color: isSelected ? C.white : C.slate,
+                      fontSize: 14, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize'
+                    }}
+                  >
+                    {plat === 'blog' ? 'SEO Blog' : plat}
+                  </div>
+                );
               })}
-            </select>
-          </div>
-        </div>
-
-        {/* Video Info */}
-        <div style={s.card}>
-          <p style={s.sectionTitle}>YouTube Video</p>
-
-          <div style={s.group}>
-            <label style={s.label}>YouTube URL or Video ID</label>
-            <input style={s.input} name="video_id" placeholder="https://youtube.com/watch?v=... or just the ID" value={form.video_id} onChange={handleChange} />
-            <p style={s.hint}>Paste the full YouTube link — we'll extract the ID automatically</p>
-            {errors.video_id && <p style={s.error}>{errors.video_id}</p>}
-          </div>
-
-          <div style={s.group}>
-            <label style={s.label}>Channel Name</label>
-            <input style={s.input} name="channel_name" placeholder="e.g. TechWithTim" value={form.channel_name} onChange={handleChange} />
-            {errors.channel_name && <p style={s.error}>{errors.channel_name}</p>}
-          </div>
-
-          <div style={s.group}>
-            <label style={s.label}>Required Watch Time (seconds)</label>
-            <input style={s.input} type="number" name="watch_duration" placeholder="e.g. 60" value={form.watch_duration} onChange={handleChange} min="10" />
-            <p style={s.hint}>How long must earners watch before steps unlock?</p>
-            {errors.watch_duration && <p style={s.error}>{errors.watch_duration}</p>}
-          </div>
-        </div>
-
-        {/* Rewards */}
-        <div style={s.card}>
-          <p style={s.sectionTitle}>Rewards & Slots</p>
-
-          <div style={s.row}>
-            <div style={s.group}>
-              <label style={s.label}>Points Per Completion</label>
-              <input style={s.input} type="number" name="reward_points" placeholder="e.g. 200" value={form.reward_points} onChange={handleChange} min="10" />
-              {errors.reward_points && <p style={s.error}>{errors.reward_points}</p>}
-            </div>
-            <div style={s.group}>
-              <label style={s.label}>Total Slots</label>
-              <input style={s.input} type="number" name="slots" placeholder="e.g. 100" value={form.slots} onChange={handleChange} min="1" />
-              {errors.slots && <p style={s.error}>{errors.slots}</p>}
             </div>
           </div>
 
-          <div style={s.group}>
-            <label style={s.label}>Subscribe Bonus Points (optional)</label>
-            <input style={s.input} type="number" name="subscribe_bonus" placeholder="e.g. 50" value={form.subscribe_bonus} onChange={handleChange} min="0" />
-            <p style={s.hint}>Extra points if earner subscribes to your channel. Set 0 to disable.</p>
-          </div>
-
-          {form.reward_points && form.slots && (
-            <div style={s.budgetBox}>
-              💡 Total budget if all slots filled: <strong>{(parseInt(form.reward_points) * parseInt(form.slots)).toLocaleString()} points</strong>
+          {/* STEP 2: PACKAGE */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>2. Engagement Package</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+              {Object.keys(packages).map(function(tier) {
+                const isSelected = packageTier === tier;
+                const details = packages[tier];
+                return (
+                  <div 
+                    key={tier}
+                    onClick={function() { setPackageTier(tier); }}
+                    style={{ 
+                      padding: '16px', border: `1px solid ${isSelected ? C.lime : C.line}`, 
+                      borderRadius: 8, background: isSelected ? C.limeDim : C.white, cursor: 'pointer',
+                      position: 'relative', overflow: 'hidden'
+                    }}
+                  >
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.ink, textTransform: 'capitalize', marginBottom: 4 }}>{tier}</div>
+                    <div style={{ fontSize: 13, color: C.slate }}>{details.slots.toLocaleString()} Units • ${details.price.toLocaleString()}</div>
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
-
-        {/* Quiz */}
-        <div style={s.card}>
-          <p style={s.sectionTitle}>Anti-Cheat Quiz</p>
-
-          <div style={s.group}>
-            <label style={s.label}>Quiz Question</label>
-            <input style={s.input} name="quiz_question" placeholder="e.g. What product was shown in the video?" value={form.quiz_question} onChange={handleChange} />
-            {errors.quiz_question && <p style={s.error}>{errors.quiz_question}</p>}
           </div>
 
-          <div style={s.group}>
-            <label style={s.label}>Correct Answer</label>
-            <input style={s.input} name="quiz_answer" placeholder="e.g. AirPods Pro" value={form.quiz_answer} onChange={handleChange} />
-            <p style={s.hint}>Earners must type this exactly to claim points</p>
-            {errors.quiz_answer && <p style={s.error}>{errors.quiz_answer}</p>}
+          {/* STEP 3: CAMPAIGN DETAILS */}
+          <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.slate, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>3. Campaign Details</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <input 
+                type="text" name="title" value={formData.title} onChange={handleInputChange} placeholder="Campaign Title (e.g. 'Read: Top 10 Tech Trends')"
+                style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.off, fontSize: 14, fontFamily: "'DM Sans', sans-serif" }}
+              />
+              <input 
+                type="text" name="link" value={formData.link} onChange={handleInputChange} placeholder={platform === 'blog' ? 'Full Website URL (https://...)' : 'Video ID or URL'}
+                style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.off, fontSize: 14, fontFamily: "'DM Sans', sans-serif" }}
+              />
+              <input 
+                type="text" name="channel_name" value={formData.channel_name} onChange={handleInputChange} placeholder="Brand or Channel Name"
+                style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.off, fontSize: 14, fontFamily: "'DM Sans', sans-serif" }}
+              />
+              <input 
+                type="number" name="watch_duration" value={formData.watch_duration} onChange={handleInputChange} placeholder="Required Base Time (Seconds)"
+                style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.off, fontSize: 14, fontFamily: "'DM Sans', sans-serif" }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Submit */}
-        <button style={s.submitBtn} onClick={handleSubmit} disabled={loading}>
-          {loading ? 'Submitting...' : 'Submit Task for Review →'}
-        </button>
+          {/* STEP 4: STRICT VERIFICATION */}
+          <div style={{ padding: 20, background: 'rgba(255,200,0,0.05)', border: '1px solid rgba(255,200,0,0.2)', borderRadius: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#b38600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>
+              <span>🛡️</span> Strict Anti-Cheat Verification
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <input 
+                type="text" name="quiz_question" value={formData.quiz_question} onChange={handleInputChange} placeholder="Verification Question (e.g., 'What is the second heading?')"
+                style={{ width: '100%', padding: '14px', borderRadius: 8, border: '1px solid rgba(255,200,0,0.2)', background: C.white, fontSize: 14, fontFamily: "'DM Sans', sans-serif" }}
+              />
+              <input 
+                type="text" name="quiz_answer" value={formData.quiz_answer} onChange={handleInputChange} placeholder="Exact Answer (One or two words recommended)"
+                style={{ width: '100%', padding: '14px', borderRadius: 8, border: '1px solid rgba(255,200,0,0.2)', background: C.white, fontSize: 14, fontFamily: "'DM Sans', sans-serif" }}
+              />
+              <p style={{ fontSize: 12, color: '#b38600', margin: 0, lineHeight: 1.5 }}>
+                Contributors will only receive points if they provide the exact answer above. Capitalization is ignored, but spelling must match perfectly.
+              </p>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            style={{ 
+              background: C.ink, color: C.lime, border: 'none', borderRadius: 8, padding: '16px', 
+              fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', 
+              fontFamily: "'DM Sans', sans-serif", marginTop: 8 
+            }}
+          >
+            {loading ? 'Securing Campaign...' : 'Draft Campaign ($0.00 Beta)'}
+          </button>
+        </form>
 
       </div>
     </div>
