@@ -3,7 +3,15 @@ import { supabase } from "../lib/supabase.js";
 
 export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mode, setMode] = useState(authMode || "login");
-  var [role, setRole] = useState("earner");
+  
+  // 🔥 Read the intended role from Landing page immediately 🔥
+  var [role, setRole] = useState(function() {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem('taskivo_role') || "earner";
+    }
+    return "earner";
+  });
+
   var [loading, setLoading] = useState(false);
   var [error, setError] = useState("");
   var [mounted, setMounted] = useState(false);
@@ -54,6 +62,14 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     setForm(function (prev) {
       return { ...prev, [e.target.name]: e.target.value };
     });
+  }
+
+  // 🔥 Update role in state and storage if they manually switch tabs 🔥
+  function handleRoleChange(newRole) {
+    setRole(newRole);
+    if (typeof window !== "undefined") {
+      localStorage.setItem('taskivo_role', newRole);
+    }
   }
 
   async function handleGoogle() {
@@ -127,6 +143,9 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       }).eq("id", result.data.user.id);
       
       if (storedRef) localStorage.removeItem("taskivo_ref");
+      
+      // Clear the role storage after successful registration
+      localStorage.removeItem("taskivo_role"); 
     }
     
     setLoading(false);
@@ -481,7 +500,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
             }}>
               {["earner", "creator"].map(function (r) {
                 return (
-                  <button key={r} onClick={function () { setRole(r); }} style={roleTabStyle(role === r)}>
+                  <button key={r} onClick={function () { handleRoleChange(r); }} style={roleTabStyle(role === r)}>
                     {r === "earner" ? "🎯 Contributor" : "✦ Business"}
                   </button>
                 );
@@ -634,7 +653,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
             }}>
               {["earner", "creator"].map(function (r) {
                 return (
-                  <button key={r} onClick={function () { setRole(r); }} style={roleTabStyle(role === r)}>
+                  <button key={r} onClick={function () { handleRoleChange(r); }} style={roleTabStyle(role === r)}>
                     {r === "earner" ? "🎯 Contributor" : "✦ Business"}
                   </button>
                 );
