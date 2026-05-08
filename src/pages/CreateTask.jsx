@@ -25,11 +25,16 @@ export default function CreateTask({ session, navigate }) {
     setSubmitting(true);
 
     try {
+      // Platform-specific URL parsers
       let finalVideoId = url;
       if (platform === 'youtube') {
         const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
         if (match) finalVideoId = match[1];
+      } else if (platform === 'tiktok') {
+        const match = url.match(/\/video\/(\d+)/);
+        if (match) finalVideoId = match[1];
       }
+      // Facebook and Blog keep the raw URL because their embeds require the full href
 
       const { error } = await supabase.from('tasks').insert([{
         user_id: session.user.id,
@@ -47,7 +52,7 @@ export default function CreateTask({ session, navigate }) {
       }]);
 
       if (error) throw error;
-      showToast('Campaign drafted!', 'success');
+      showToast('Campaign drafted successfully!', 'success');
       navigate('creator-tasks');
     } catch (err) {
       showToast(err.message, 'error');
@@ -78,6 +83,8 @@ export default function CreateTask({ session, navigate }) {
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Platform</label>
                   <select value={platform} onChange={(e) => setPlatform(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.input, color: C.textMain, outline: 'none' }}>
                     <option value="youtube">YouTube Video</option>
+                    <option value="tiktok">TikTok Video</option>
+                    <option value="facebook">Facebook Video</option>
                     <option value="blog">SEO Blog Article</option>
                   </select>
                 </div>
@@ -94,7 +101,7 @@ export default function CreateTask({ session, navigate }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Required Watch Time (Secs)</label>
-                <input required type="number" min="30" value={duration} onChange={(e) => setDuration(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.input, color: C.textMain, outline: 'none' }} />
+                <input required type="number" min="15" value={duration} onChange={(e) => setDuration(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.input, color: C.textMain, outline: 'none' }} />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Slots to Allocate</label>
@@ -104,7 +111,11 @@ export default function CreateTask({ session, navigate }) {
           </div>
 
           <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 32, boxShadow: C.shadow }}>
-            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: C.textMain, marginBottom: 24, fontWeight: 700 }}>3. Anti-Cheat Verification</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+              <span style={{ fontSize: 20 }}>🧠</span>
+              <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: C.textMain, margin: 0, fontWeight: 700 }}>3. Anti-Cheat Verification</h3>
+            </div>
+            
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Contextual Question</label>
