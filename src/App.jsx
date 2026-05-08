@@ -55,12 +55,10 @@ function TopNav({ navigate, user, setAuthMode }) {
             <button style={{ background: "var(--lime)", color: "#000", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Inter', sans-serif" }} onClick={function() { if(setAuthMode) setAuthMode("register"); navigate("auth"); }}>Get Started</button>
           </div>
         ) : user.role === 'earner' ? (
-          /* ONLY EARNERS SEE POINTS */
           <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" }}>
             {user.points.toLocaleString()} PTS
           </div>
         ) : (
-          /* CREATORS AND ADMINS SEE A CLEAN ROLE BADGE */
           <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', color: 'var(--slate)', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, fontFamily: "'Inter', sans-serif" }}>
             {user.role}
           </div>
@@ -83,9 +81,11 @@ function ComingSoon({ title }) {
 }
 
 export default function App() {
-  var initialHash = window.location.hash.replace("#", "") || "landing";
+  // 🔥 FIX 1: Strip # and / to prevent blank pages, then remove ?ref= for the view state
+  var rawHash = window.location.hash.replace(/^#\/?/, "");
+  var cleanHash = rawHash.split("?")[0] || "landing";
   
-  var [view, setView] = useState(initialHash);
+  var [view, setView] = useState(cleanHash);
   var [authMode, setAuthMode] = useState("login");
   var [user, setUser] = useState(null);
   var [loading, setLoading] = useState(true);
@@ -93,17 +93,15 @@ export default function App() {
   
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
 
-  // 🔥 THE BULLETPROOF REFERRAL CATCHER 🔥
+  // 🔥 FIX 2: THE BULLETPROOF REFERRAL CATCHER 🔥
   useEffect(function() {
     if (typeof window !== "undefined") {
       var refId = null;
 
-      // 1. Check standard URL parameters
       var standardParams = new URLSearchParams(window.location.search);
       if (standardParams.has("ref")) {
         refId = standardParams.get("ref");
       } 
-      // 2. Check hash parameters
       else if (window.location.hash.includes("?")) {
         var hashString = window.location.hash.split("?")[1];
         var hashParams = new URLSearchParams(hashString);
@@ -112,17 +110,16 @@ export default function App() {
         }
       }
 
-      // If we caught one, lock it into localStorage
       if (refId) {
         localStorage.setItem("taskivo_ref", refId);
       }
     }
   }, []);
 
+  // 🔥 FIX 3: Router URL Cleaning 🔥
   useEffect(function() {
     function handleHashChange() {
-      var hash = window.location.hash.replace("#", "") || "landing";
-      // Prevent ?ref= parameters from confusing the router
+      var hash = window.location.hash.replace(/^#\/?/, "") || "landing";
       if (hash.includes("?")) {
           hash = hash.split("?")[0];
       }
@@ -158,16 +155,14 @@ export default function App() {
     return function () { listener.data.subscription.unsubscribe(); };
   }, []);
 
-  // 🔥 THE MASTER ONBOARDING & SHIELD LOGIC 🔥
   async function loadProfile(authUser) {
     setLoading(true);
     var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
-    var currentHash = window.location.hash.replace("#", "") || "landing";
+    
+    var currentHash = window.location.hash.replace(/^#\/?/, "") || "landing";
     if (currentHash.includes("?")) currentHash = currentHash.split("?")[0];
 
     if (result.data) {
-      
-      // 🔥 BLOCK SUSPENDED USERS INSTANTLY 🔥
       if (result.data.role === 'suspended') {
         await supabase.auth.signOut();
         showToast("Your account has been suspended by an administrator.", "error");
@@ -177,7 +172,6 @@ export default function App() {
         return;
       }
 
-      // Existing Valid User
       setUser(result.data);
       if (currentHash === "landing" || currentHash === "auth") {
         routeByRole(result.data.role);
@@ -185,9 +179,8 @@ export default function App() {
         setView(currentHash);
       }
     } else {
-      // New User Registration Routing
       var intendedRole = localStorage.getItem('taskivo_role') || "earner";
-      var grantRequested = localStorage.getItem('taskivo_grant') === 'true'; // Check for Free Trial
+      var grantRequested = localStorage.getItem('taskivo_grant') === 'true';
       
       var newProfile = {
         id: authUser.id,
@@ -195,12 +188,11 @@ export default function App() {
         full_name: authUser.user_metadata ? authUser.user_metadata.full_name || "" : "",
         role: intendedRole, 
         points: 0,
-        pilot_claimed: grantRequested // Grants them the 20 free slots if true
+        pilot_claimed: grantRequested
       };
       
       await supabase.from("profiles").insert(newProfile);
       
-      // Clear the storage so we don't pollute future actions
       localStorage.removeItem('taskivo_role');
       localStorage.removeItem('taskivo_grant');
       
@@ -244,7 +236,6 @@ export default function App() {
           <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} />
 
           <div className="animate-fadeIn" key={view}>
-            {/* PUBLIC */}
             {view === "landing" && <Landing navigate={navigate} setAuthMode={setAuthMode} />}
             {view === "auth" && <Auth authMode={authMode} setAuthMode={setAuthMode} navigate={navigate} loadProfile={loadProfile} />}
             {view === "about" && <About />}
@@ -253,19 +244,16 @@ export default function App() {
             {view === "blog" && <BlogIndex navigate={navigate} />}
             {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} />}
 
-            {/* EARNER */}
             {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
             {view === "tasks" && user && <Tasks session={{user}} navigate={navigate} />}
             {view.startsWith("player/") && user && <TaskPlayer session={{user}} navigate={navigate} taskId={view.split('/')[1]} />}
             {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
 
-            {/* CREATOR */}
             {view === "creator-dashboard" && user && <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />}
             {view === "create-task" && user && <CreateTask session={{user}} navigate={navigate} />}
             {view === "creator-tasks" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />}
             {view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
 
-            {/* ADMIN */}
             {view === "admin-dashboard" && user && <AdminOverview navigate={navigate} showToast={showToast} />}
             {view === "admin-users" && user && <AdminUsersComp showToast={showToast} currentUser={user} />}
             {view === "admin-tasks" && user && <AdminTasksComp showToast={showToast} />}
