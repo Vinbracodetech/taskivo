@@ -93,9 +93,39 @@ export default function App() {
   
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
 
+  // 🔥 THE BULLETPROOF REFERRAL CATCHER 🔥
+  useEffect(function() {
+    if (typeof window !== "undefined") {
+      var refId = null;
+
+      // 1. Check standard URL parameters
+      var standardParams = new URLSearchParams(window.location.search);
+      if (standardParams.has("ref")) {
+        refId = standardParams.get("ref");
+      } 
+      // 2. Check hash parameters
+      else if (window.location.hash.includes("?")) {
+        var hashString = window.location.hash.split("?")[1];
+        var hashParams = new URLSearchParams(hashString);
+        if (hashParams.has("ref")) {
+          refId = hashParams.get("ref");
+        }
+      }
+
+      // If we caught one, lock it into localStorage
+      if (refId) {
+        localStorage.setItem("taskivo_ref", refId);
+      }
+    }
+  }, []);
+
   useEffect(function() {
     function handleHashChange() {
       var hash = window.location.hash.replace("#", "") || "landing";
+      // Prevent ?ref= parameters from confusing the router
+      if (hash.includes("?")) {
+          hash = hash.split("?")[0];
+      }
       setView(hash);
     }
     window.addEventListener("hashchange", handleHashChange);
@@ -133,6 +163,7 @@ export default function App() {
     setLoading(true);
     var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
     var currentHash = window.location.hash.replace("#", "") || "landing";
+    if (currentHash.includes("?")) currentHash = currentHash.split("?")[0];
 
     if (result.data) {
       
