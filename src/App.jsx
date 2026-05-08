@@ -9,7 +9,7 @@ import useToast from "./components/useToast.js";
 import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
-import Tasks from "./pages/Tasks.jsx"; // 🔥 Fully live Tasks Feed imported
+import Tasks from "./pages/Tasks.jsx";
 import TaskPlayer from "./pages/TaskPlayer.jsx";
 import Wallet from "./pages/Wallet.jsx";
 
@@ -156,6 +156,7 @@ export default function App() {
     } else {
       // New User Registration Routing
       var intendedRole = localStorage.getItem('taskivo_role') || "earner";
+      var grantRequested = localStorage.getItem('taskivo_grant') === 'true'; // Check for Free Trial
       
       var newProfile = {
         id: authUser.id,
@@ -163,12 +164,14 @@ export default function App() {
         full_name: authUser.user_metadata ? authUser.user_metadata.full_name || "" : "",
         role: intendedRole, 
         points: 0,
+        pilot_claimed: grantRequested // Grants them the 20 free slots if true
       };
       
       await supabase.from("profiles").insert(newProfile);
       
       // Clear the storage so we don't pollute future actions
       localStorage.removeItem('taskivo_role');
+      localStorage.removeItem('taskivo_grant');
       
       setUser(newProfile);
       routeByRole(intendedRole); 
