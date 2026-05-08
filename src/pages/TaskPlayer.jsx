@@ -3,19 +3,10 @@ import { supabase } from '../lib/supabase';
 import useToast from '../components/useToast';
 
 const C = {
-  surface: 'var(--surface)',
-  card: 'var(--surface-card)',
-  input: 'var(--surface-card)',
-  glass: 'var(--glass)',
-  textMain: 'var(--ink)',
-  textMuted: 'var(--slate)',
-  textInvert: 'var(--surface)',
-  line: 'var(--line)',
-  lime: '#A8FF3E',
-  limeText: 'var(--lime)',
-  limeDim: 'var(--lime-dim)',
-  shadow: 'var(--shadow)',
-  red: '#ef4444',
+  surface: 'var(--surface)', card: 'var(--surface-card)', input: 'var(--surface-card)', glass: 'var(--glass)',
+  textMain: 'var(--ink)', textMuted: 'var(--slate)', textInvert: 'var(--surface)',
+  line: 'var(--line)', lime: '#A8FF3E', limeText: 'var(--lime)', limeDim: 'var(--lime-dim)',
+  shadow: 'var(--shadow)', red: '#ef4444',
 };
 
 export default function TaskPlayer({ session, navigate, taskId }) {
@@ -51,12 +42,11 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
   }
 
-  // 🔥 BULLETPROOF TIMER & TAB DETECTION 🔥
+  // BULLETPROOF TIMER & TAB DETECTION
   useEffect(function() {
     if (loading || !task || statusRef.current === 'quiz' || statusRef.current === 'completed' || statusRef.current === 'failed') return;
     
     const timer = setInterval(function() {
-      // Hard check: If document is hidden, NEVER decrement time.
       if (document.hidden || statusRef.current !== 'playing') return; 
       
       if (timeRef.current > 0) {
@@ -87,12 +77,11 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     };
   }, [loading, task]);
 
-  // 🔥 STRICT 3-STRIKE QUIZ LOGIC 🔥
+  // STRICT 3-STRIKE QUIZ LOGIC
   async function submitQuiz() {
     if (!userAnswer.trim()) { showToast('Please enter an answer.', 'error'); return; }
     setSubmitting(true);
     
-    // Clean string comparison to prevent accidental fails due to spaces/caps
     const cleanUserAnswer = userAnswer.trim().toLowerCase();
     const cleanCorrectAnswer = (task.quiz_answer || '').trim().toLowerCase();
     const isCorrect = cleanUserAnswer === cleanCorrectAnswer;
@@ -106,11 +95,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         statusRef.current = 'failed'; 
         showToast('Task locked. You failed the verification.', 'error'); 
         
-        // 🔒 INSERT FAILED RECORD (points: 0) SO IT LOCKS FOR 24 HOURS
         await supabase.from('completions').insert([{ 
-          user_id: session.user.id, 
-          task_id: task.id, 
-          points_earned: 0 
+          user_id: session.user.id, task_id: task.id, points_earned: 0 
         }]);
       } else { 
         showToast(`Incorrect answer. ${newAttempts} attempts left.`, 'error'); 
@@ -125,7 +111,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       if (existing) { setStatus('completed'); showToast('You already completed this task recently.', 'error'); setSubmitting(false); return; }
 
       await supabase.from('completions').insert([{ user_id: session.user.id, task_id: task.id, points_earned: task.reward_points }]);
-      const { data: userData } = await supabase.from('profiles').select('points, referred_by').eq('id', session.user.id).single();
+      const { data: userData } = await supabase.from('profiles').select('points').eq('id', session.user.id).single();
       await supabase.from('profiles').update({ points: userData.points + task.reward_points }).eq('id', session.user.id);
       await supabase.from('tasks').update({ slots_remaining: task.slots_remaining - 1, completed_slots: task.completed_slots + 1 }).eq('id', task.id);
 
@@ -139,6 +125,15 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
   function formatTime(seconds) {
     const m = Math.floor(seconds / 60); const s = seconds % 60; return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  // --- Dynamic Embed Builder ---
+  let embedSrc = '';
+  if (task) {
+    if (task.platform === 'youtube') embedSrc = `https://www.youtube.com/embed/${task.video_id}?autoplay=1&mute=1`;
+    else if (task.platform === 'tiktok') embedSrc = `https://www.tiktok.com/embed/v2/${task.video_id}`;
+    else if (task.platform === 'facebook') embedSrc = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(task.video_id)}&show_text=0&autoplay=1&mute=1`;
+    else embedSrc = task.video_id; // Blog
   }
 
   if (loading) return <div style={{ background: C.surface, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ color: C.textMuted }}>Loading Sandbox...</div></div>;
@@ -163,14 +158,17 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: 1000, margin: '0 auto', width: '100%', padding: '24px 5%' }}>
         
-        {/* IFRAME KILL-SWITCH: Only render when playing or paused. Destroys video when quiz starts. */}
+        {/* IFRAME KILL-SWITCH */}
         {showIframe && (
           <div style={{ flex: 1, background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, overflow: 'hidden', minHeight: 400, position: 'relative', marginBottom: 24, boxShadow: C.shadow }}>
-            {task.platform === 'blog' ? (
-              <iframe src={task.video_id} style={{ width: '100%', height: '100%', border: 'none' }} sandbox="allow-same-origin allow-scripts" title="SEO Content" />
-            ) : (
-              <iframe src={`https://www.youtube.com/embed/${task.video_id}?autoplay=1&mute=1`} style={{ width: '100%', height: '100%', border: 'none' }} allow="autoplay; encrypted-media" allowFullScreen title="YouTube Task" />
-            )}
+            <iframe 
+              src={embedSrc} 
+              style={{ width: '100%', height: '100%', border: 'none' }} 
+              sandbox="allow-same-origin allow-scripts allow-popups" 
+              allow="autoplay; encrypted-media" 
+              allowFullScreen 
+              title="Task Content" 
+            />
 
             {status === 'paused_tab' && (
               <div style={{ position: 'absolute', inset: 0, background: C.glass, backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
