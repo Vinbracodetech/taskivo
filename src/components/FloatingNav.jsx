@@ -2,16 +2,9 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 const C = {
-  surface: 'var(--surface)',
-  card: 'var(--surface-card)',
-  glass: 'var(--glass)',
-  textMain: 'var(--ink)',
-  textMuted: 'var(--slate)',
-  line: 'var(--line)',
-  lime: '#A8FF3E',
-  limeText: 'var(--lime)',
-  limeDim: 'var(--lime-dim)',
-  red: '#ef4444',
+  surface: 'var(--surface)', card: 'var(--surface-card)', glass: 'var(--glass)',
+  textMain: 'var(--ink)', textMuted: 'var(--slate)', line: 'var(--line)',
+  lime: '#A8FF3E', limeText: 'var(--lime)', limeDim: 'var(--lime-dim)', red: '#ef4444',
 };
 
 export default function FloatingNav({ user, navigate, logout, toggleTheme, theme }) {
@@ -32,21 +25,21 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
     if (logout) logout();
   }
 
+  // 🔥 INSTANT WIPE & LOGOUT 🔥
   async function requestAccountDeletion() {
     closeMenu();
-    const confirmed = window.confirm("Are you sure you want to permanently delete your account? This cannot be undone.");
+    const confirmed = window.confirm("Are you sure you want to permanently wipe your data? This will instantly delete your profile and log you out. This cannot be undone.");
     if (confirmed) {
       try {
-        // Flag the user for deletion in the database for the Admin to see
-        await supabase.from('profiles').update({ deletion_requested: true }).eq('id', user.id);
-        alert("Verification Link Sent: Please check your email to permanently delete your account.");
+        await supabase.from('profiles').delete().eq('id', user.id);
+        alert("Your account data has been wiped.");
+        if (logout) logout();
       } catch (err) {
-        alert("There was an error processing your request. Please try again.");
+        alert("There was an error deleting your data.");
       }
     }
   }
 
-  // --- SVG Icons ---
   const IconHome = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>;
   const IconTasks = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>;
   const IconWallet = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>;
@@ -65,11 +58,8 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
         onClick={onClick}
         style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-          background: isProfile ? C.card : 'transparent',
-          border: isProfile ? `1px solid ${C.line}` : 'none', 
-          borderRadius: 12, padding: '8px 16px',
-          color: isProfile ? C.limeText : C.textMuted, cursor: 'pointer', fontFamily: "'Inter', sans-serif",
-          transition: 'all 0.2s ease'
+          background: isProfile ? C.card : 'transparent', border: isProfile ? `1px solid ${C.line}` : 'none', 
+          borderRadius: 12, padding: '8px 16px', color: isProfile ? C.limeText : C.textMuted, cursor: 'pointer', transition: 'all 0.2s ease'
         }}
       >
         {icon}
@@ -82,141 +72,47 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
       <button 
         onClick={onClick}
         style={{
-          display: 'flex', alignItems: 'center', gap: 16, width: '100%',
-          background: 'transparent', border: 'none', padding: '16px 0',
-          color: isDestructive ? C.red : C.textMain, cursor: 'pointer',
-          fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 500,
-          borderBottom: `1px solid ${C.line}`
+          display: 'flex', alignItems: 'center', gap: 16, width: '100%', background: 'transparent', border: 'none', padding: '16px 0',
+          color: isDestructive ? C.red : C.textMain, cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 500, borderBottom: `1px solid ${C.line}`
         }}
       >
-        {icon}
-        {label}
+        {icon} {label}
       </button>
     );
   }
 
   return (
     <>
-      {/* 1. THE FLOATING PILL */}
-      <div style={{
-        position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)',
-        display: 'flex', alignItems: 'center', gap: 4, padding: '8px',
-        background: C.glass, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-        border: `1px solid ${C.line}`, borderRadius: 100, zIndex: 9990,
-        boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
-      }}>
-        {/* Universal Home Button */}
-        <PillButton icon={IconHome} onClick={function() { 
-          if (user.role === 'admin') handleNavigate('admin-dashboard');
-          else if (user.role === 'creator') handleNavigate('creator-dashboard');
-          else handleNavigate('user-dashboard');
-        }} />
-        
-        {/* EARNER Quick Actions */}
-        {user.role === 'earner' && (
-          <>
-            <PillButton icon={IconTasks} onClick={function() { handleNavigate('tasks'); }} />
-            <PillButton icon={IconWallet} onClick={function() { handleNavigate('wallet'); }} />
-          </>
-        )}
-
-        {/* CREATOR Quick Actions */}
-        {user.role === 'creator' && (
-          <>
-            <PillButton icon={<span style={{fontSize: 16}}>🚀</span>} onClick={function() { handleNavigate('create-task'); }} />
-            <PillButton icon={IconAnalytics} onClick={function() { handleNavigate('creator-analytics'); }} />
-          </>
-        )}
-
-        {/* ADMIN Quick Actions */}
-        {user.role === 'admin' && (
-          <>
-            <PillButton icon={IconUsers} onClick={function() { handleNavigate('admin-users'); }} />
-            <PillButton icon={IconAdminList} onClick={function() { handleNavigate('admin-tasks'); }} />
-          </>
-        )}
-
+      <div style={{ position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4, padding: '8px', background: C.glass, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.line}`, borderRadius: 100, zIndex: 9990, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+        <PillButton icon={IconHome} onClick={function() { if (user.role === 'admin') handleNavigate('admin-dashboard'); else if (user.role === 'creator') handleNavigate('creator-dashboard'); else handleNavigate('user-dashboard'); }} />
+        {user.role === 'earner' && (<><PillButton icon={IconTasks} onClick={() => handleNavigate('tasks')} /><PillButton icon={IconWallet} onClick={() => handleNavigate('wallet')} /></>)}
+        {user.role === 'creator' && (<><PillButton icon={<span style={{fontSize: 16}}>🚀</span>} onClick={() => handleNavigate('create-task')} /><PillButton icon={IconAnalytics} onClick={() => handleNavigate('creator-analytics')} /></>)}
+        {user.role === 'admin' && (<><PillButton icon={IconUsers} onClick={() => handleNavigate('admin-users')} /><PillButton icon={IconAdminList} onClick={() => handleNavigate('admin-tasks')} /></>)}
         <div style={{ width: 1, height: 24, background: C.line, margin: '0 4px' }} />
         <PillButton icon={IconProfile} onClick={openMenu} isProfile={true} />
       </div>
 
-      {/* 2. THE CLICK-OUT OVERLAY */}
-      <div onClick={closeMenu} style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-        zIndex: 9995, opacity: menuOpen ? 1 : 0, pointerEvents: menuOpen ? 'auto' : 'none',
-        transition: 'opacity 0.3s ease'
-      }} />
+      <div onClick={closeMenu} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9995, opacity: menuOpen ? 1 : 0, pointerEvents: menuOpen ? 'auto' : 'none', transition: 'opacity 0.3s ease' }} />
 
-      {/* 3. THE BOTTOM SHEET (QUARTER SCREEN MENU) */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999,
-        background: C.surface, borderTop: `1px solid ${C.line}`,
-        borderTopLeftRadius: 32, borderTopRightRadius: 32,
-        padding: '32px 5% 48px', margin: '0 auto', maxWidth: 800,
-        transform: menuOpen ? 'translateY(0)' : 'translateY(100%)',
-        transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-        boxShadow: '0 -20px 40px rgba(0,0,0,0.2)', fontFamily: "'Inter', sans-serif"
-      }}>
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999, background: C.surface, borderTop: `1px solid ${C.line}`, borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: '32px 5% 48px', margin: '0 auto', maxWidth: 800, transform: menuOpen ? 'translateY(0)' : 'translateY(100%)', transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 -20px 40px rgba(0,0,0,0.2)', fontFamily: "'Inter', sans-serif" }}>
         <div style={{ width: 48, height: 4, background: C.line, borderRadius: 100, margin: '0 auto 32px' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', background: C.limeDim, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.limeText, fontSize: 18, fontWeight: 800, border: `1px solid ${C.line}` }}>
-            {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
-          </div>
+          <div style={{ width: 48, height: 48, borderRadius: '50%', background: C.limeDim, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.limeText, fontSize: 18, fontWeight: 800, border: `1px solid ${C.line}` }}>{user.email ? user.email.charAt(0).toUpperCase() : 'U'}</div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: C.textMain, marginBottom: 4, textTransform: 'capitalize' }}>
-              {user.role === 'creator' ? 'Business Profile' : user.role + ' Profile'}
-            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: C.textMain, marginBottom: 4, textTransform: 'capitalize' }}>{user.role === 'creator' ? 'Business Profile' : user.role + ' Profile'}</div>
             <div style={{ fontSize: 14, color: C.textMuted }}>{user.email}</div>
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <MenuItem icon={IconHome} label="Dashboard" onClick={function() { if (user.role === 'admin') handleNavigate('admin-dashboard'); else if (user.role === 'creator') handleNavigate('creator-dashboard'); else handleNavigate('user-dashboard'); }} />
+          {user.role === 'earner' && (<><MenuItem icon={IconTasks} label="Task Network" onClick={() => handleNavigate('tasks')} /><MenuItem icon={IconWallet} label="Wallet & Withdrawals" onClick={() => handleNavigate('wallet')} /></>)}
+          {user.role === 'creator' && (<><MenuItem icon={<span style={{fontSize: 18}}>🚀</span>} label="Launch Campaign" onClick={() => handleNavigate('create-task')} /><MenuItem icon={IconAnalytics} label="Campaign Analytics" onClick={() => handleNavigate('creator-analytics')} /></>)}
+          {user.role === 'admin' && (<><MenuItem icon={IconUsers} label="Manage Users" onClick={() => handleNavigate('admin-users')} /><MenuItem icon={IconAdminList} label="Review Network Tasks" onClick={() => handleNavigate('admin-tasks')} /><MenuItem icon={IconWallet} label="Process Withdrawals" onClick={() => handleNavigate('admin-withdrawals')} /></>)}
           
-          <MenuItem icon={IconHome} label="Dashboard" onClick={function() { 
-            if (user.role === 'admin') handleNavigate('admin-dashboard');
-            else if (user.role === 'creator') handleNavigate('creator-dashboard');
-            else handleNavigate('user-dashboard');
-          }} />
-
-          {/* EARNER Menu */}
-          {user.role === 'earner' && (
-            <>
-              <MenuItem icon={IconTasks} label="Task Network" onClick={function() { handleNavigate('tasks'); }} />
-              <MenuItem icon={IconWallet} label="Wallet & Withdrawals" onClick={function() { handleNavigate('wallet'); }} />
-            </>
-          )}
-
-          {/* CREATOR Menu */}
-          {user.role === 'creator' && (
-            <>
-              <MenuItem icon={<span style={{fontSize: 18}}>🚀</span>} label="Launch Campaign" onClick={function() { handleNavigate('create-task'); }} />
-              <MenuItem icon={IconAnalytics} label="Campaign Analytics" onClick={function() { handleNavigate('creator-analytics'); }} />
-            </>
-          )}
-
-          {/* ADMIN Menu */}
-          {user.role === 'admin' && (
-            <>
-              <MenuItem icon={IconUsers} label="Manage Users" onClick={function() { handleNavigate('admin-users'); }} />
-              <MenuItem icon={IconAdminList} label="Review Network Tasks" onClick={function() { handleNavigate('admin-tasks'); }} />
-              <MenuItem icon={IconWallet} label="Process Withdrawals" onClick={function() { handleNavigate('admin-withdrawals'); }} />
-            </>
-          )}
-          
-          {/* Universal Settings */}
-          <button onClick={toggleTheme} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
-            background: 'transparent', border: 'none', padding: '16px 0',
-            color: C.textMain, cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 500,
-            borderBottom: `1px solid ${C.line}`
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              {theme === 'dark' ? IconMoon : IconSun}
-              Theme
-            </div>
-            <span style={{ fontSize: 12, color: C.textMuted, background: C.card, border: `1px solid ${C.line}`, padding: '4px 8px', borderRadius: 6, textTransform: 'capitalize' }}>
-              {theme}
-            </span>
+          <button onClick={toggleTheme} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'transparent', border: 'none', padding: '16px 0', color: C.textMain, cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 500, borderBottom: `1px solid ${C.line}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>{theme === 'dark' ? IconMoon : IconSun} Theme</div>
+            <span style={{ fontSize: 12, color: C.textMuted, background: C.card, border: `1px solid ${C.line}`, padding: '4px 8px', borderRadius: 6, textTransform: 'capitalize' }}>{theme}</span>
           </button>
           
           <MenuItem icon={IconTrash} label="Delete Account" onClick={requestAccountDeletion} isDestructive={true} />
