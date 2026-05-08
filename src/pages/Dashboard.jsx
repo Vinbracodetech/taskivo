@@ -40,12 +40,13 @@ export default function Dashboard({ user, navigate, showToast }) {
   }
 
   function copyReferralLink() {
-    // 🔥 ADDED THE '#' FOR REACT HASH ROUTING 🔥
-    navigator.clipboard.writeText(`https://taskivo.online/#/auth?ref=${user.id}`);
+    // 🔥 FIX 4: Flawless Hash Routing Link without extra slash 🔥
+    navigator.clipboard.writeText(`https://taskivo.online/#auth?ref=${user.id}`);
     setReferralCopied(true);
     if (showToast) showToast('Invite link copied!', 'success');
     setTimeout(function() { setReferralCopied(false); }, 3000);
   }
+
   if (loading) return <div style={{ padding: '60px 5%', textAlign: 'center', color: C.textMuted }}>Syncing profile...</div>;
 
   const minWithdrawal = 2000;
