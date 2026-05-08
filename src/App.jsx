@@ -9,9 +9,9 @@ import useToast from "./components/useToast.js";
 import Landing from "./pages/Landing.jsx";
 import Auth from "./pages/Auth.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Tasks from "./pages/Tasks.jsx"; // 🔥 Fully live Tasks Feed imported
 import TaskPlayer from "./pages/TaskPlayer.jsx";
 import Wallet from "./pages/Wallet.jsx";
-import Tasks from "./pages/Tasks.jsx";
 
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
@@ -39,7 +39,7 @@ function TopNav({ navigate, user, setAuthMode }) {
       transition: "background-color 0.3s ease"
     }}>
       <div style={{
-        fontFamily: "'Inter', sans-serif", /* Changed from Syne to Inter */
+        fontFamily: "'Inter', sans-serif",
         fontWeight: 800, color: "var(--ink)", fontSize: 22, letterSpacing: "-0.5px",
         display: "flex", alignItems: "center", gap: 8, cursor: "pointer"
       }} onClick={function() { navigate("landing"); }}>
@@ -75,7 +75,7 @@ function ComingSoon({ title }) {
     <div className="page animate-slideUp">
       <div style={{ textAlign: "center", padding: "80px 20px" }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🔧</div>
-        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 8 }}>{title}</div>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 8 }}>{title}</div>
         <div style={{ color: "var(--slate)", fontSize: 14 }}>This page is being built. Check back soon.</div>
       </div>
     </div>
@@ -128,14 +128,25 @@ export default function App() {
     return function () { listener.data.subscription.unsubscribe(); };
   }, []);
 
-  // 🔥 THE ONBOARDING LOGIC 🔥
+  // 🔥 THE MASTER ONBOARDING & SHIELD LOGIC 🔥
   async function loadProfile(authUser) {
     setLoading(true);
     var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
     var currentHash = window.location.hash.replace("#", "") || "landing";
 
     if (result.data) {
-      // Existing User
+      
+      // 🔥 BLOCK SUSPENDED USERS INSTANTLY 🔥
+      if (result.data.role === 'suspended') {
+        await supabase.auth.signOut();
+        showToast("Your account has been suspended by an administrator.", "error");
+        setUser(null);
+        navigate("landing");
+        setLoading(false);
+        return;
+      }
+
+      // Existing Valid User
       setUser(result.data);
       if (currentHash === "landing" || currentHash === "auth") {
         routeByRole(result.data.role);
@@ -143,24 +154,24 @@ export default function App() {
         setView(currentHash);
       }
     } else {
-      // New User - Check what button they clicked on the Landing page
+      // New User Registration Routing
       var intendedRole = localStorage.getItem('taskivo_role') || "earner";
       
       var newProfile = {
         id: authUser.id,
         email: authUser.email,
         full_name: authUser.user_metadata ? authUser.user_metadata.full_name || "" : "",
-        role: intendedRole, // Assign Business (creator) or Earner
+        role: intendedRole, 
         points: 0,
       };
       
       await supabase.from("profiles").insert(newProfile);
       
-      // Clear the storage so we don't affect future signups
+      // Clear the storage so we don't pollute future actions
       localStorage.removeItem('taskivo_role');
       
       setUser(newProfile);
-      routeByRole(intendedRole);
+      routeByRole(intendedRole); 
     }
     setLoading(false);
   }
@@ -182,7 +193,7 @@ export default function App() {
         <style>{CSS}</style>
         <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface)" }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 700, marginBottom: 16, color: "var(--ink)" }}>⚡ Taskivo</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, fontWeight: 800, marginBottom: 16, color: "var(--ink)" }}>⚡ Taskivo</div>
             <div style={{ width: 32, height: 32, border: "3px solid var(--line)", borderTopColor: "var(--lime)", borderRadius: "50%", margin: "0 auto", animation: "spin 1s linear infinite" }} />
           </div>
         </div>
@@ -222,7 +233,7 @@ export default function App() {
 
             {/* ADMIN */}
             {view === "admin-dashboard" && user && <AdminOverview navigate={navigate} showToast={showToast} />}
-            {view === "admin-users" && user && <AdminUsersComp showToast={showToast} />}
+            {view === "admin-users" && user && <AdminUsersComp showToast={showToast} currentUser={user} />}
             {view === "admin-tasks" && user && <AdminTasksComp showToast={showToast} />}
             {view === "admin-withdrawals" && user && <AdminWithdrawalsComp showToast={showToast} />}
           </div>
