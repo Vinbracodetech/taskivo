@@ -114,6 +114,14 @@ export default function Landing({ navigate, setAuthMode }) {
     navigate("auth");
   }
 
+  // 🔥 THE FREE TRIAL TAGGER 🔥
+  function claimFreeGrant() {
+    localStorage.setItem('taskivo_role', 'creator');
+    localStorage.setItem('taskivo_grant', 'true');
+    if (setAuthMode) setAuthMode("register");
+    navigate("auth");
+  }
+
   function toggleFaq(index) {
     setOpenFaq(openFaq === index ? null : index);
   }
@@ -169,7 +177,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </div>
 
-      {/* PILOT PROGRAM BANNER */}
+      {/* PILOT PROGRAM BANNER (LIVE SUPABASE DATA) */}
       <div style={{ background: C.ink, borderTop: `1px solid ${C.darkLine}`, borderBottom: `1px solid ${C.darkLine}`, padding: '24px 5%' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
           <div style={{ flex: '1 1 300px' }}>
@@ -188,7 +196,7 @@ export default function Landing({ navigate, setAuthMode }) {
               <div style={{ width: `${Math.min((claimedSpots / 10) * 100, 100)}%`, height: '100%', background: C.lime, transition: 'width 1s ease-in-out' }}></div>
             </div>
           </div>
-          {/* ROUTES TO BUSINESS */}
+          {/* 🔥 ROUTES TO FREE GRANT 🔥 */}
           <button 
             style={{ 
               background: claimedSpots >= 10 ? 'rgba(255,255,255,0.1)' : C.lime, 
@@ -196,7 +204,7 @@ export default function Landing({ navigate, setAuthMode }) {
               border: 'none', borderRadius: 6, padding: '12px 24px', fontSize: 13, fontWeight: 700, 
               cursor: claimedSpots >= 10 ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif"
             }} 
-            onClick={function() { if (claimedSpots < 10) goRegisterCreator(); }}
+            onClick={function() { if (claimedSpots < 10) claimFreeGrant(); }}
           >
             {claimedSpots >= 10 ? 'Cohort Full' : 'Claim Free Slots'}
           </button>
