@@ -1,185 +1,144 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import useToast from '../components/useToast';
 
-const C = {
-  surface: 'var(--surface)', card: 'var(--surface-card)', input: 'var(--surface-card)',
-  textMain: 'var(--ink)', textMuted: 'var(--slate)', line: 'var(--line)',
-  lime: '#A8FF3E', limeText: 'var(--lime)', limeDim: 'var(--lime-dim)',
-  shadow: 'var(--shadow)', red: '#ef4444',
-};
+export default function CreateTask({ session, navigate, showToast }) {
+  const user = session?.user;
+  const [loading, setLoading] = useState(false);
+  
+  const [form, setForm] = useState({
+    title: '',
+    platform: 'youtube',
+    url: '',
+    watch_duration: 30,
+    package: 'starter'
+  });
 
-export default function CreateTask({ session, navigate }) {
-  const { showToast, ToastComponent } = useToast();
-  const [submitting, setSubmitting] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
+  const packages = {
+    trial: { label: 'Pilot Protocol', views: 20, price: 'Free', desc: 'Test the network with 20 verified engagements.' },
+    starter: { label: 'Starter Tier', views: 100, price: '$10', desc: 'Ideal for initial algorithmic traction.' },
+    growth: { label: 'Growth Tier', views: 500, price: '$40', desc: 'Standard deployment for steady engagement.' },
+    scale: { label: 'Scale Tier', views: 2000, price: '$140', desc: 'Maximum velocity for major campaigns.' }
+  };
 
-  // Form State
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [title, setTitle] = useState('');
-  const [platform, setPlatform] = useState('youtube');
-  const [url, setUrl] = useState('');
-  const [quizQ, setQuizQ] = useState('');
-  const [quizA, setQuizA] = useState('');
-
-  useEffect(() => {
-    async function fetchProfile() {
-      const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-      setUserProfile(data);
-    }
-    fetchProfile();
-  }, [session]);
-
-  const packages = [
-    { id: 'starter', name: 'Starter', price: 8, slots: 50 },
-    { id: 'growth', name: 'Growth', price: 24, slots: 200, isPopular: true },
-    { id: 'scale', name: 'Scale', price: 48, slots: 500 }
-  ];
+  function handleInput(e) {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!selectedPlan) {
-      showToast('Please select a pricing package first.', 'error');
+    if (!form.title || !form.url) {
+      if (showToast) showToast('Please complete all required fields.', 'error');
       return;
     }
-    setSubmitting(true);
 
     try {
-      let finalVideoId = url;
-      if (platform === 'youtube') {
-        const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
-        if (match) finalVideoId = match[1];
-      } else if (platform === 'tiktok') {
-        const match = url.match(/\/video\/(\d+)/);
-        if (match) finalVideoId = match[1];
-      }
-
-      const isFree = selectedPlan.price === 0;
-
-      const { error } = await supabase.from('tasks').insert([{
-        user_id: session.user.id,
-        title: title,
-        platform: platform,
-        video_id: finalVideoId,
-        watch_duration: 60, // Standardized for anti-cheat
-        slots: selectedPlan.slots,
-        slots_remaining: selectedPlan.slots,
-        completed_slots: 0,
-        reward_points: 50, // Standard payout for earners
-        quiz_question: quizQ,
-        quiz_answer: quizA,
-        status: isFree ? 'pending_approval' : 'pending_payment' // Paid plans wait for payment, Free plans wait for Admin approval
-      }]);
+      setLoading(true);
+      const selectedPackage = packages[form.package];
+      
+      const { error } = await supabase.from('tasks').insert({
+        creator_id: user.id,
+        title: form.title,
+        platform: form.platform,
+        url: form.url,
+        watch_duration: parseInt(form.watch_duration, 10),
+        target_views: selectedPackage.views,
+        current_views: 0,
+        status: 'active',
+        reward_points: 50 // Standardized backend payout, hidden from Creator UI
+      });
 
       if (error) throw error;
+
+      if (showToast) showToast('Campaign successfully deployed.', 'success');
+      navigate('creator-dashboard');
       
-      // If they used the free grant, update their profile so they can't use it again
-      if (isFree) {
-        await supabase.from('profiles').update({ pilot_claimed: false }).eq('id', session.user.id);
-      }
-
-      showToast(isFree ? 'Trial Submitted for Approval!' : 'Campaign saved! Pending Payment.', 'success');
-      navigate('creator-tasks');
-
     } catch (err) {
-      console.error(err);
-      alert(`Database Error: ${err.message || 'Check console for details.'}`);
-      setSubmitting(false); // 🔥 Resets the button so it stops spinning!
+      if (showToast) showToast('Deployment failed. Please try again.', 'error');
+    } finally {
+      setLoading(false);
     }
   }
 
+  // ── ENTERPRISE B2B STYLES ──
+  const S = {
+    page: { padding: '40px 5%', maxWidth: 900, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
+    glassCard: { background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, backdropFilter: 'blur(20px)', padding: 40 },
+    label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.4)', marginBottom: 12, display: 'block', fontFamily: "'Inter', sans-serif" },
+    input: { width: '100%', padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s', marginBottom: 24 },
+    select: { width: '100%', padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', appearance: 'none', marginBottom: 24 },
+    btnPrimary: { width: '100%', background: '#fff', border: 'none', color: '#000', borderRadius: 12, padding: '18px', fontSize: 14, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 16 },
+    packageCard: (isActive) => ({
+      padding: 20, borderRadius: 16, cursor: 'pointer', transition: 'all 0.2s',
+      background: isActive ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)',
+      border: `1px solid ${isActive ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.05)'}`,
+      boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.2)' : 'none'
+    })
+  };
+
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.surface, color: C.textMain, minHeight: '100vh', padding: '40px 5% 120px' }}>
-      {ToastComponent}
-      <div style={{ maxWidth: 800, margin: '0 auto' }}>
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: C.textMain, marginBottom: 8, fontWeight: 800 }}>Launch Campaign</h1>
-          <p style={{ color: C.textMuted, fontSize: 15 }}>Select a package and deploy your content to the network.</p>
+    <div style={S.page}>
+      <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 600, height: 400, background: 'radial-gradient(ellipse, rgba(255,255,255,0.02) 0%, transparent 60%)', pointerEvents: 'none', zIndex: 0 }} />
+
+      <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative', zIndex: 1 }}>
+        <div>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: '#fff', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Campaign Deployment</h1>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, fontWeight: 400, margin: 0 }}>Configure and launch your engagement architecture.</p>
         </div>
+        <button onClick={() => navigate('creator-dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>← Dashboard</button>
+      </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ ...S.glassCard, position: 'relative', zIndex: 1 }}>
+        <form onSubmit={handleSubmit}>
           
-          {/* STEP 1: PRICING PACKAGES */}
-          <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 32, boxShadow: C.shadow }}>
-            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: C.textMain, marginBottom: 24, fontWeight: 700 }}>1. Select Package</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-              
-              {/* Conditional Free Trial Card */}
-              {userProfile?.pilot_claimed && (
-                <div 
-                  onClick={() => setSelectedPlan({ id: 'grant', name: 'Beta Grant', price: 0, slots: 20 })}
-                  style={{ background: selectedPlan?.id === 'grant' ? C.limeDim : C.input, border: `2px solid ${selectedPlan?.id === 'grant' ? C.limeText : C.line}`, borderRadius: 12, padding: 24, cursor: 'pointer', position: 'relative', transition: 'all 0.2s' }}
-                >
-                  <div style={{ position: 'absolute', top: -10, left: 16, background: C.lime, color: '#000', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4 }}>FREE TRIAL</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: C.textMain, marginBottom: 4 }}>Early Adopter</div>
-                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: C.textMain, fontWeight: 800, marginBottom: 8 }}>$0</div>
-                  <div style={{ fontSize: 13, color: C.textMuted }}>20 Verified Slots</div>
-                </div>
-              )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+            <div>
+              <span style={S.label}>Internal Campaign Designation</span>
+              <input style={S.input} type="text" name="title" placeholder="e.g., Q3 Product Launch Video" value={form.title} onChange={handleInput} required />
+            </div>
+            
+            <div>
+              <span style={S.label}>Target Platform</span>
+              <select style={S.select} name="platform" value={form.platform} onChange={handleInput}>
+                <option value="youtube">YouTube (Video Engagement)</option>
+                <option value="tiktok">TikTok (Short-Form Attention)</option>
+                <option value="blog">SEO Blog (Read Time Verification)</option>
+              </select>
+            </div>
+          </div>
 
-              {/* Paid Packages */}
-              {packages.map(pkg => (
-                <div 
-                  key={pkg.id} onClick={() => setSelectedPlan(pkg)}
-                  style={{ background: selectedPlan?.id === pkg.id ? C.limeDim : C.input, border: `2px solid ${selectedPlan?.id === pkg.id ? C.limeText : C.line}`, borderRadius: 12, padding: 24, cursor: 'pointer', transition: 'all 0.2s' }}
-                >
-                  <div style={{ fontSize: 16, fontWeight: 700, color: C.textMain, marginBottom: 4 }}>{pkg.name}</div>
-                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: C.textMain, fontWeight: 800, marginBottom: 8 }}>${pkg.price}</div>
-                  <div style={{ fontSize: 13, color: C.textMuted }}>{pkg.slots} Verified Slots</div>
+          <div>
+            <span style={S.label}>Asset URL</span>
+            <input style={S.input} type="url" name="url" placeholder="https://..." value={form.url} onChange={handleInput} required />
+          </div>
+
+          <div>
+            <span style={S.label}>Verification Duration (Seconds)</span>
+            <select style={S.select} name="watch_duration" value={form.watch_duration} onChange={handleInput}>
+              <option value="30">30 Seconds (Standard Check)</option>
+              <option value="60">60 Seconds (Deep Engagement)</option>
+              <option value="120">120 Seconds (High Retention)</option>
+            </select>
+          </div>
+
+          <div style={{ marginTop: 16, marginBottom: 32 }}>
+            <span style={{ ...S.label, marginBottom: 16 }}>Select Engagement Allocation</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+              {Object.entries(packages).map(([key, pkg]) => (
+                <div key={key} onClick={() => setForm(prev => ({ ...prev, package: key }))} style={S.packageCard(form.package === key)}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{pkg.label}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 100 }}>{pkg.price}</div>
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginBottom: 8, fontFamily: "'Inter', sans-serif", letterSpacing: '-0.5px' }}>{pkg.views} <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>VERIFICATIONS</span></div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{pkg.desc}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* STEP 2: CAMPAIGN DETAILS */}
-          <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 32, boxShadow: C.shadow, opacity: selectedPlan ? 1 : 0.5, pointerEvents: selectedPlan ? 'auto' : 'none' }}>
-            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: C.textMain, marginBottom: 24, fontWeight: 700 }}>2. Campaign Details</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Campaign Title</label>
-                <input required type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Tech Review Video" style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.input, color: C.textMain, outline: 'none' }} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Platform</label>
-                  <select value={platform} onChange={(e) => setPlatform(e.target.value)} style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.input, color: C.textMain, outline: 'none' }}>
-                    <option value="youtube">YouTube Video</option>
-                    <option value="tiktok">TikTok Video</option>
-                    <option value="facebook">Facebook Video</option>
-                    <option value="blog">SEO Blog Article</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Content Link</label>
-                  <input required type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Paste URL here" style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.input, color: C.textMain, outline: 'none' }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* STEP 3: VERIFICATION */}
-          <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 32, boxShadow: C.shadow, opacity: selectedPlan ? 1 : 0.5, pointerEvents: selectedPlan ? 'auto' : 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-              <span style={{ fontSize: 20 }}>🧠</span>
-              <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: C.textMain, margin: 0, fontWeight: 700 }}>3. Anti-Cheat Verification</h3>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Contextual Question</label>
-                <input required type="text" value={quizQ} onChange={(e) => setQuizQ(e.target.value)} placeholder="e.g., What color was the car at 0:45?" style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.input, color: C.textMain, outline: 'none' }} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Exact Answer (1-2 words)</label>
-                <input required type="text" value={quizA} onChange={(e) => setQuizA(e.target.value)} placeholder="e.g., Blue" style={{ width: '100%', padding: '14px', borderRadius: 8, border: `1px solid ${C.line}`, background: C.input, color: C.textMain, outline: 'none' }} />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'right', marginTop: 8 }}>
-            <button type="submit" disabled={submitting || !selectedPlan} style={{ background: selectedPlan ? C.lime : C.input, color: selectedPlan ? '#000' : C.textMuted, border: 'none', borderRadius: 8, padding: '16px 40px', fontSize: 15, fontWeight: 800, cursor: (submitting || !selectedPlan) ? 'not-allowed' : 'pointer' }}>
-              {!selectedPlan ? 'Select a Package' : submitting ? 'Processing...' : `Checkout: $${selectedPlan.price}`}
-            </button>
-          </div>
+          <button type="submit" disabled={loading} style={{ ...S.btnPrimary, opacity: loading ? 0.5 : 1 }}>
+            {loading ? 'Processing Deployment...' : 'Authorize & Deploy Campaign'}
+          </button>
         </form>
       </div>
     </div>
