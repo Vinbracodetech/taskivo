@@ -1,162 +1,124 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import useToast from '../components/useToast';
-
-const C = {
-  surface: 'var(--surface)',
-  card: 'var(--surface-card)',
-  input: 'var(--surface-card)',
-  textMain: 'var(--ink)',
-  textMuted: 'var(--slate)',
-  line: 'var(--line)',
-  lime: '#A8FF3E',
-  limeText: 'var(--lime)',
-  limeDim: 'var(--lime-dim)',
-  shadow: 'var(--shadow)',
-  red: '#ef4444',
-};
 
 export default function Tasks({ session, navigate }) {
-  const { showToast, ToastComponent } = useToast();
+  const user = session?.user;
   const [loading, setLoading] = useState(true);
-  const [availableTasks, setAvailableTasks] = useState([]);
-  const [cooldownTasks, setCooldownTasks] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [quotas, setQuotas] = useState({ videos: 0, blogs: 0 });
+  const [lockout, setLockout] = useState(false);
 
-  useEffect(function () {
-    if (!session || !session.user) { navigate('auth'); return; }
-    fetchTasksAndCompletions();
-  }, [session]);
+  useEffect(function() {
+    if (!user) return;
+    fetchMarketplace();
+  }, [user]);
 
-  async function fetchTasksAndCompletions() {
+  async function fetchMarketplace() {
     try {
       setLoading(true);
-      // Fetch all active campaigns
-      const { data: allTasks } = await supabase.from('tasks').select('*').eq('status', 'active');
       
-      // Fetch user's history
-      const { data: completions } = await supabase.from('completions').select('task_id, completed_at, points_earned').eq('user_id', session.user.id);
+      // 1. Check for 24h Lockout
+      const lockoutTime = localStorage.getItem(`taskivo_lockout_${user.id}`);
+      if (lockoutTime && new Date().getTime() < parseInt(lockoutTime, 10)) {
+        setLockout(true);
+      }
 
-      const now = new Date();
-      const available = [];
-      const cooldown = [];
-      
-      let videoCompletionsLast24h = 0;
-      let blogCompletionsLast24h = 0;
+      // 2. Fetch today's completions to enforce quotas
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { data: history } = await supabase
+        .from('completions')
+        .select('platform')
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString());
 
-      (allTasks || []).forEach(function (task) {
-        const isBlog = task.platform === 'blog';
-        const userHistory = (completions || []).find(function(c) { return c.task_id === task.id; });
-        
-        if (userHistory) {
-          const completedDate = new Date(userHistory.completed_at);
-          const hoursSinceCompletion = (now - completedDate) / (1000 * 60 * 60);
-          
-          if (hoursSinceCompletion < 24) {
-            task.hoursLeft = Math.ceil(24 - hoursSinceCompletion);
-            task.failedLock = userHistory.points_earned === 0; // If 0 points, they failed the 3 attempts
-            cooldown.push(task);
-            
-            // Count towards daily limits
-            if (isBlog) blogCompletionsLast24h++;
-            else videoCompletionsLast24h++;
-            
-          } else {
-            available.push(task);
-          }
-        } else {
-          available.push(task);
-        }
+      let vCount = 0, bCount = 0;
+      (history || []).forEach(h => {
+        if (h.platform === 'blog') bCount++;
+        else vCount++;
       });
+      setQuotas({ videos: vCount, blogs: bCount });
 
-      // Daily Quota Math
-      const videoSlotsLeft = Math.max(0, 3 - videoCompletionsLast24h);
-      const blogSlotsLeft = Math.max(0, 20 - blogCompletionsLast24h);
-
-      // Separate, shuffle, and slice based on strict daily quotas
-      const blogs = available.filter(t => t.platform === 'blog').sort(() => 0.5 - Math.random()).slice(0, blogSlotsLeft);
-      const videos = available.filter(t => t.platform !== 'blog').sort(() => 0.5 - Math.random()).slice(0, videoSlotsLeft);
-
-      setAvailableTasks([...blogs, ...videos].sort(() => 0.5 - Math.random()));
-      setCooldownTasks(cooldown);
-    } catch (error) {
-      showToast('Failed to load tasks', 'error');
+      // 3. Fetch active tasks
+      const { data: activeTasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('status', 'active');
+        
+      setTasks(activeTasks || []);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }
 
-  if (loading) return <div style={{ background: C.surface, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ color: C.textMuted }}>Syncing Network...</div></div>;
+  const S = {
+    page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" },
+    glassCard: { background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 24, backdropFilter: 'blur(20px)', padding: 24 },
+    taskCard: { background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '24px', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, background 0.2s' },
+  };
+
+  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: '#fff' }}>Scanning network...</div>;
+
+  if (lockout) {
+    return (
+      <div style={S.page}>
+        <div style={{ ...S.glassCard, textAlign: 'center', padding: 80 }}>
+          <div style={{ fontSize: 64, marginBottom: 20 }}>🔒</div>
+          <h2 style={{ color: '#fff', fontSize: 24, fontFamily: "'Inter', sans-serif", marginBottom: 12 }}>Network Access Locked</h2>
+          <p style={{ color: 'rgba(255,255,255,0.5)' }}>Your account is under a 24-hour restriction due to failed anti-cheat verifications.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.surface, color: C.textMain, minHeight: '100vh', padding: '40px 5% 120px' }}>
-      {ToastComponent}
-      <div style={{ maxWidth: 800, margin: '0 auto' }}>
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: C.textMain, marginBottom: 8, fontWeight: 800 }}>Task Network</h1>
-          <p style={{ color: C.textMuted, fontSize: 15 }}>Complete verified engagements to earn reward points.</p>
-        </div>
+    <div style={S.page}>
+      <div style={{ marginBottom: 40 }}>
+        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: '#fff', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Engagement Network</h1>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15 }}>Complete tasks to acquire points. Daily quotas apply.</p>
+      </div>
 
-        {/* AVAILABLE FEED */}
-        <div style={{ marginBottom: 40 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>
-            Daily Quota Remaining ({availableTasks.length})
-          </div>
-          {availableTasks.length === 0 ? (
-            <div style={{ background: C.card, border: `1px dashed ${C.line}`, borderRadius: 12, padding: 40, textAlign: 'center', boxShadow: C.shadow }}>
-              <div style={{ fontSize: 40, marginBottom: 16 }}>🎯</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: C.textMain, marginBottom: 8 }}>Daily Limit Reached</div>
-              <div style={{ fontSize: 14, color: C.textMuted, maxWidth: 300, margin: '0 auto' }}>You have completed your available engagements for today. Check back tomorrow.</div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {availableTasks.map(function(task) {
-                const isBlog = task.platform === 'blog';
-                return (
-                  <div key={task.id} style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 12, padding: 20, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', justifyContent: 'space-between', boxShadow: C.shadow }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <div style={{ width: 48, height: 48, borderRadius: 10, background: C.input, border: `1px solid ${C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{isBlog ? '📄' : '▶️'}</div>
-                      <div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: C.textMain, marginBottom: 4 }}>{task.title}</div>
-                        <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 500 }}>{isBlog ? 'SEO Traffic' : 'Video Engagement'} • {task.watch_duration}s Required</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: C.limeText }}>+{task.reward_points} PTS</div>
-                      <button onClick={function() { navigate(`player/${task.id}`); }} style={{ background: C.textMain, color: C.surface, border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Start Task</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+      <div style={{ display: 'flex', gap: 20, marginBottom: 40, flexWrap: 'wrap' }}>
+        <div style={{ background: 'rgba(168,255,62,0.05)', border: '1px solid rgba(168,255,62,0.2)', padding: '12px 24px', borderRadius: 12 }}>
+          <span style={{ fontSize: 11, color: '#A8FF3E', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px', display: 'block' }}>Video Quota</span>
+          <span style={{ color: '#fff', fontSize: 18, fontWeight: 700 }}>{quotas.videos} / 3</span>
         </div>
+        <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px', borderRadius: 12 }}>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px', display: 'block' }}>Blog Quota</span>
+          <span style={{ color: '#fff', fontSize: 18, fontWeight: 700 }}>{quotas.blogs} / 20</span>
+        </div>
+      </div>
 
-        {/* COOLDOWN / FAILED FEED */}
-        {cooldownTasks.length > 0 && (
-          <div style={{ opacity: 0.8 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 }}>Locked for 24h ({cooldownTasks.length})</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {cooldownTasks.map(function(task) {
-                return (
-                  <div key={task.id} style={{ background: C.surface, border: `1px solid ${task.failedLock ? C.red : C.line}`, borderRadius: 12, padding: 16, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 8, background: task.failedLock ? 'rgba(239,68,68,0.1)' : C.input, display: 'flex', alignItems: 'center', justifyContent: 'center', filter: 'grayscale(100%)', fontSize: 18 }}>
-                        {task.failedLock ? '🔒' : (task.platform === 'blog' ? '📄' : '▶️')}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: task.failedLock ? C.red : C.textMuted }}>{task.title}</div>
-                        {task.failedLock && <div style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>Verification Failed</div>}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: task.failedLock ? C.red : C.textMuted, background: C.input, padding: '6px 12px', borderRadius: 100, border: `1px solid ${task.failedLock ? 'rgba(239,68,68,0.2)' : C.line}` }}>
-                      Unlocks in ~{task.hoursLeft}h
-                    </div>
-                  </div>
-                );
-              })}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+        {tasks.map(task => {
+          const isBlog = task.platform === 'blog';
+          const quotaHit = (isBlog && quotas.blogs >= 20) || (!isBlog && quotas.videos >= 3);
+
+          return (
+            <div key={task.id} style={{ ...S.taskCard, opacity: quotaHit ? 0.5 : 1 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                  {isBlog ? '📄' : '▶️'}
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{task.title}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{task.watch_duration}s Verification</div>
+                </div>
+              </div>
+              
+              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 16 }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#A8FF3E' }}>+{task.reward_points} PTS</div>
+                {quotaHit ? (
+                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>QUOTA REACHED</span>
+                ) : (
+                  <button onClick={() => navigate(`player/${task.id}`)} style={{ background: '#fff', color: '#000', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>INITIATE</button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })}
       </div>
     </div>
   );
