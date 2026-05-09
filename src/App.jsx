@@ -81,7 +81,6 @@ function ComingSoon({ title }) {
 }
 
 export default function App() {
-  // 🔥 FIX 1: Strip # and / to prevent blank pages, then remove ?ref= for the view state
   var rawHash = window.location.hash.replace(/^#\/?/, "");
   var cleanHash = rawHash.split("?")[0] || "landing";
   
@@ -93,7 +92,7 @@ export default function App() {
   
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
 
-  // 🔥 FIX 2: THE BULLETPROOF REFERRAL CATCHER 🔥
+  // 🔥 THE BULLETPROOF REFERRAL CATCHER 🔥
   useEffect(function() {
     if (typeof window !== "undefined") {
       var refId = null;
@@ -112,11 +111,11 @@ export default function App() {
 
       if (refId) {
         localStorage.setItem("taskivo_ref", refId);
+        setAuthMode("register"); // Instantly force UI to registration tab
       }
     }
   }, []);
 
-  // 🔥 FIX 3: Router URL Cleaning 🔥
   useEffect(function() {
     function handleHashChange() {
       var hash = window.location.hash.replace(/^#\/?/, "") || "landing";
