@@ -28,7 +28,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     return function () { clearTimeout(t); };
   }, []);
 
-  // ── AUTH LISTENER: PROCESS REFERRALS & PAYOUTS ON LOGIN ──
+  // ── AUTH LISTENER: PROCESS REFERRALS ON LOGIN ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
@@ -39,16 +39,10 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           var { data: currentUser } = await supabase.from("profiles").select("referred_by").eq("id", session.user.id).single();
           
           if (currentUser && !currentUser.referred_by) {
-            // 1. Attach the referrer ID
+            // 1. Attach the referrer ID (Backend SQL handles the payout)
             await supabase.from("profiles")
               .update({ referred_by: storedRef })
               .eq("id", session.user.id);
-              
-            // 2. 🔥 INSTANT BONUS: Add 50 points to the Referrer 🔥
-            var { data: refUser } = await supabase.from("profiles").select("points").eq("id", storedRef).single();
-            if (refUser) {
-              await supabase.from("profiles").update({ points: refUser.points + 50 }).eq("id", storedRef);
-            }
           }
           localStorage.removeItem("taskivo_ref");
         }
@@ -120,11 +114,24 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       setLoading(false);
       return;
     }
-    if (form.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    
+    // 🔥 ALIGNED WITH SUPABASE SECURITY RULES 🔥
+    if (form.password.length < 8) {
+      setError("Password must be at least 8 characters.");
       setLoading(false);
       return;
     }
+
+    var hasLowerCase = /[a-z]/.test(form.password);
+    var hasUpperCase = /[A-Z]/.test(form.password);
+    var hasDigit = /\d/.test(form.password);
+
+    if (!hasLowerCase || !hasUpperCase || !hasDigit) {
+      setError("Password must include an uppercase letter, a lowercase letter, and a number.");
+      setLoading(false);
+      return;
+    }
+
     var result = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -140,16 +147,14 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     if (result.data && result.data.user) {
       var storedRef = localStorage.getItem("taskivo_ref");
       
-      // 1. Update the new user's profile with the referrer ID
+      // Update the new user's profile with the referrer ID
       await supabase.from("profiles").update({
         email: form.email,
         role: role,
         referred_by: storedRef || null
       }).eq("id", result.data.user.id);
       
-      // 2. 🔥 INSTANT BONUS: Add 50 points to the Referrer 🔥
       if (storedRef) {
-        
         localStorage.removeItem("taskivo_ref");
       }
       
@@ -310,7 +315,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
 
           <div>
             <label style={labelStyle}>Password</label>
-            <input style={inputStyle} type="password" name="password" placeholder={mode === "register" ? "Min. 6 characters" : "••••••••"} value={form.password} onChange={handleChange} />
+            <input style={inputStyle} type="password" name="password" placeholder={mode === "register" ? "Min 8 chars, 1 Upper, 1 Number" : "••••••••"} value={form.password} onChange={handleChange} />
           </div>
 
           {error && <div style={errorStyle}>{error}</div>}
@@ -414,7 +419,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
 
           <div>
             <label style={labelStyle}>Password</label>
-            <input style={inputStyle} type="password" name="password" placeholder={mode === "register" ? "Min. 6 characters" : "••••••••"} value={form.password} onChange={handleChange} />
+            <input style={inputStyle} type="password" name="password" placeholder={mode === "register" ? "Min 8 chars, 1 Upper, 1 Number" : "••••••••"} value={form.password} onChange={handleChange} />
           </div>
 
           {error && <div style={errorStyle}>{error}</div>}
