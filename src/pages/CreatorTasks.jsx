@@ -1,170 +1,147 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase.js";
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
-export default function CreatorTasks({ navigate, showToast, user }) {
+export default function CreatorTasks({ user, navigate, showToast }) {
+  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState([]);
 
-  var [tasks, setTasks] = useState([]);
-  var [loading, setLoading] = useState(true);
-  var [tab, setTab] = useState("tasks");
+  useEffect(function() {
+    if (!user) return;
+    fetchCampaigns();
+  }, [user]);
 
-  useEffect(function () { loadTasks(); }, []);
+  async function fetchCampaigns() {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('creator_id', user.id)
+        .order('created_at', { ascending: false });
 
-  async function loadTasks() {
-    setLoading(true);
-    var result = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("creator_id", user.id)
-      .order("created_at", { ascending: false });
-    if (result.data) setTasks(result.data);
-    setLoading(false);
+      if (error) throw error;
+      setTasks(data || []);
+    } catch (err) {
+      if (showToast) showToast('Failed to load campaign ledger.', 'error');
+    } finally {
+      setLoading(false);
+    }
   }
 
-  // Chart data — completions per task
-  var chartMax = Math.max.apply(null, tasks.map(function (t) { return t.completed_slots || 0; }).concat([1]));
+  async function toggleStatus(taskId, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+    try {
+      const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+      if (error) throw error;
+      
+      setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+      if (showToast) showToast(`Campaign ${newStatus}.`, 'success');
+    } catch (err) {
+      if (showToast) showToast('Failed to update status.', 'error');
+    }
+  }
 
   if (loading) {
     return (
-      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 36, height: 36, border: "3px solid #E5E7EB", borderTopColor: "#A8FF3E", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+      <div style={{ padding: '80px 5%', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
+        <div style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+        Synchronizing ledger data...
       </div>
     );
   }
 
+  // ── ENTERPRISE B2B STYLES ──
+  const S = {
+    page: { padding: '40px 5%', maxWidth: 1100, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
+    glassCard: { background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 20, backdropFilter: 'blur(20px)', overflow: 'hidden' },
+    headerLabel: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif" },
+    btnGhost: { background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
+    btnAction: (isActive) => ({
+      background: isActive ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)',
+      border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.5px'
+    })
+  };
+
   return (
-    <div style={{ padding: "36px 32px", maxWidth: 1000, fontFamily: "var(--font-body)" }}>
-
-      <div style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, color: "#0A0A0F", marginBottom: 6, letterSpacing: "-0.5px" }}>
-        My Tasks
-      </div>
-      <div style={{ fontSize: 15, color: "#6B7280", marginBottom: 28 }}>
-        Manage your posted tasks and view performance.
-      </div>
-
-      {/* TABS */}
-      <div className="tabs">
-        <button className={"tab " + (tab === "tasks" ? "active" : "")} onClick={function () { setTab("tasks"); }}>All Tasks</button>
-        <button className={"tab " + (tab === "analytics" ? "active" : "")} onClick={function () { setTab("analytics"); }}>Analytics</button>
+    <div style={S.page}>
+      
+      <div style={{ marginBottom: 48, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20 }}>
+        <div>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: '#fff', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Campaign Ledger</h1>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, fontWeight: 400, margin: 0 }}>Comprehensive view of all active and historical deployments.</p>
+        </div>
+        <button onClick={() => navigate('creator-dashboard')} style={S.btnGhost}>← Return to Command</button>
       </div>
 
-      {/* TASKS TAB */}
-      {tab === "tasks" && (
-        <>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-            <button className="btn btn-primary btn-sm" onClick={function () { navigate("create-task"); }}>+ New Task</button>
+      <div style={S.glassCard}>
+        {tasks.length === 0 ? (
+          <div style={{ padding: 80, textAlign: 'center' }}>
+            <div style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>No campaigns recorded in the ledger.</div>
           </div>
+        ) : (
+          <div>
+            {/* Desktop Table Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr 1fr', gap: 16, padding: '20px 24px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)' }} className="hide-on-mobile">
+              <span style={S.headerLabel}>Campaign Designation</span>
+              <span style={S.headerLabel}>Parameters</span>
+              <span style={S.headerLabel}>Fulfillment Status</span>
+              <span style={{ ...S.headerLabel, textAlign: 'right' }}>Controls</span>
+            </div>
 
-          {tasks.length === 0 ? (
-            <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "48px 24px", textAlign: "center" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No tasks yet</div>
-              <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 20 }}>Create your first task to start collecting feedback.</div>
-              <button className="btn btn-primary" onClick={function () { navigate("create-task"); }}>+ Post New Task</button>
-            </div>
-          ) : (
-            <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Title</th>
-                      <th>Type</th>
-                      <th>Reward</th>
-                      <th>Progress</th>
-                      <th>Status</th>
-                      <th>Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tasks.map(function (task) {
-                      var filled = task.completed_slots || 0;
-                      var total = task.total_slots || 1;
-                      var pct = Math.round((filled / total) * 100);
-                      var date = new Date(task.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-                      return (
-                        <tr key={task.id}>
-                          <td style={{ fontWeight: 600, maxWidth: 200 }}>{task.title}</td>
-                          <td>
-                            <span className="badge badge-gray" style={{ textTransform: "capitalize" }}>
-                              {task.type || "general"}
-                            </span>
-                          </td>
-                          <td style={{ fontFamily: "var(--font-heading)", fontWeight: 700 }}>
-                            {task.reward} pts
-                          </td>
-                          <td style={{ minWidth: 140 }}>
-                            <div style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 4 }}>{filled}/{total} ({pct}%)</div>
-                            <div style={{ height: 4, background: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
-                              <div style={{ height: "100%", width: pct + "%", background: "#A8FF3E", borderRadius: 99 }} />
-                            </div>
-                          </td>
-                          <td>
-                            <span className={"badge " + (
-                              task.status === "active" ? "badge-green" :
-                              task.status === "pending" ? "badge-yellow" : "badge-red"
-                            )}>
-                              {task.status}
-                            </span>
-                          </td>
-                          <td style={{ color: "#9CA3AF", fontSize: 13 }}>{date}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+            {/* Ledger Rows */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {tasks.map(function(campaign, index) {
+                const isLast = index === tasks.length - 1;
+                const fulfillment = Math.round(((campaign.current_views || 0) / (campaign.target_views || 1)) * 100);
+                const isActive = campaign.status === 'active';
+                const isComplete = campaign.current_views >= campaign.target_views;
 
-      {/* ANALYTICS TAB */}
-      {tab === "analytics" && (
-        <>
-          <div style={{ fontFamily: "var(--font-heading)", fontSize: 16, fontWeight: 700, color: "#0A0A0F", marginBottom: 16 }}>
-            Completions Per Task
-          </div>
-          {tasks.length === 0 ? (
-            <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 16, padding: "48px 24px", textAlign: "center" }}>
-              <div style={{ fontSize: 13, color: "#6B7280" }}>No data yet. Post tasks to see analytics.</div>
-            </div>
-          ) : (
-            <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 20, padding: "28px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 200, padding: "0 8px" }}>
-                {tasks.map(function (task) {
-                  var filled = task.completed_slots || 0;
-                  var heightPct = chartMax > 0 ? Math.round((filled / chartMax) * 100) : 0;
-                  return (
-                    <div key={task.id} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#7ACC20" }}>{filled}</div>
-                      <div style={{
-                        width: "100%",
-                        height: (heightPct || 4) + "%",
-                        minHeight: 4,
-                        background: "linear-gradient(180deg, #A8FF3E, #7ACC20)",
-                        borderRadius: "6px 6px 0 0",
-                        transition: "height 0.6s",
-                      }} />
-                      <div style={{
-                        fontSize: 10, color: "#9CA3AF",
-                        textAlign: "center", lineHeight: 1.3,
-                        overflow: "hidden", maxWidth: "100%",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                      }}>
-                        {task.title.slice(0, 20)}...
+                return (
+                  <div key={campaign.id} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20, padding: '24px', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.03)', alignItems: 'center', background: isActive ? 'transparent' : 'rgba(0,0,0,0.2)' }}>
+                    
+                    {/* Identity */}
+                    <div>
+                      <div style={{ fontSize: 15, color: '#fff', fontWeight: 700, marginBottom: 4 }}>{campaign.title}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>{campaign.id.split('-')[0]} • {new Date(campaign.created_at).toLocaleDateString()}</div>
+                    </div>
+
+                    {/* Parameters */}
+                    <div>
+                      <div style={{ fontSize: 13, color: '#fff', fontWeight: 600, textTransform: 'capitalize', marginBottom: 4 }}>{campaign.platform}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{campaign.watch_duration}s Verification</div>
+                    </div>
+                    
+                    {/* Fulfillment */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>{campaign.current_views} / {campaign.target_views} Verified</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: isComplete ? '#A8FF3E' : '#fff' }}>{fulfillment}%</div>
+                      </div>
+                      <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden', width: '100%' }}>
+                        <div style={{ height: '100%', width: `${Math.min(fulfillment, 100)}%`, background: isComplete ? '#A8FF3E' : '#fff', borderRadius: 2 }}></div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    
+                    {/* Controls */}
+                    <div style={{ textAlign: 'right', display: 'flex', gap: 12, justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '1px', background: isActive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)', color: isActive ? '#fff' : 'rgba(255,255,255,0.4)' }}>
+                        {isComplete ? 'COMPLETED' : campaign.status}
+                      </span>
+                      
+                      {!isComplete && (
+                        <button onClick={() => toggleStatus(campaign.id, campaign.status)} style={S.btnAction(isActive)}>
+                          {isActive ? 'Pause' : 'Resume'}
+                        </button>
+                      )}
+                    </div>
+                    
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </>
-      )}
-
-      <div style={{ height: 48 }} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
