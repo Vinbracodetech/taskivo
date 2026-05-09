@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase.js";
 
 export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
-  var [mode, setMode] = useState(authMode || "login");
+  var [mode, setMode] = useState(function() {
+    // 🔥 Force the Register screen if they arrived with a referral link 🔥
+    if (typeof window !== "undefined" && localStorage.getItem("taskivo_ref")) {
+      return "register";
+    }
+    return authMode || "login";
+  });
   
   var [role, setRole] = useState(function() {
     if (typeof window !== "undefined") {
@@ -16,23 +22,34 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mounted, setMounted] = useState(false);
   var [form, setForm] = useState({ name: "", email: "", password: "" });
 
-  // ── ON MOUNT: ANIMATIONS ── (Old referral URL scraping removed from here)
+  // ── ON MOUNT: ANIMATIONS ──
   useEffect(function () {
     var t = setTimeout(function () { setMounted(true); }, 50);
     return function () { clearTimeout(t); };
   }, []);
 
-  // ── AUTH LISTENER: PROCESS REFERRALS ON LOGIN ──
+  // ── AUTH LISTENER: PROCESS REFERRALS & PAYOUTS ON LOGIN ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
         var storedRef = localStorage.getItem("taskivo_ref");
+        
         if (storedRef) {
-          await supabase.from("profiles")
-            .update({ referred_by: storedRef })
-            .eq("id", session.user.id)
-            .is("referred_by", null);
-            
+          // Check if this user was already referred to prevent double-paying
+          var { data: currentUser } = await supabase.from("profiles").select("referred_by").eq("id", session.user.id).single();
+          
+          if (currentUser && !currentUser.referred_by) {
+            // 1. Attach the referrer ID
+            await supabase.from("profiles")
+              .update({ referred_by: storedRef })
+              .eq("id", session.user.id);
+              
+            // 2. 🔥 INSTANT BONUS: Add 50 points to the Referrer 🔥
+            var { data: refUser } = await supabase.from("profiles").select("points").eq("id", storedRef).single();
+            if (refUser) {
+              await supabase.from("profiles").update({ points: refUser.points + 50 }).eq("id", storedRef);
+            }
+          }
           localStorage.removeItem("taskivo_ref");
         }
         if (loadProfile) await loadProfile(session.user);
@@ -122,13 +139,23 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     
     if (result.data && result.data.user) {
       var storedRef = localStorage.getItem("taskivo_ref");
+      
+      // 1. Update the new user's profile with the referrer ID
       await supabase.from("profiles").update({
         email: form.email,
         role: role,
         referred_by: storedRef || null
       }).eq("id", result.data.user.id);
       
-      if (storedRef) localStorage.removeItem("taskivo_ref");
+      // 2. 🔥 INSTANT BONUS: Add 50 points to the Referrer 🔥
+      if (storedRef) {
+        var { data: refUser } = await supabase.from("profiles").select("points").eq("id", storedRef).single();
+        if (refUser) {
+          await supabase.from("profiles").update({ points: refUser.points + 50 }).eq("id", storedRef);
+        }
+        localStorage.removeItem("taskivo_ref");
+      }
+      
       localStorage.removeItem("taskivo_role"); 
     }
     
