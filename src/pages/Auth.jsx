@@ -149,10 +149,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       
       // 2. 🔥 INSTANT BONUS: Add 50 points to the Referrer 🔥
       if (storedRef) {
-        var { data: refUser } = await supabase.from("profiles").select("points").eq("id", storedRef).single();
-        if (refUser) {
-          await supabase.from("profiles").update({ points: refUser.points + 50 }).eq("id", storedRef);
-        }
+        
         localStorage.removeItem("taskivo_ref");
       }
       
