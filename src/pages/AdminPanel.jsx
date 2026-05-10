@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-// ── SHARED ENTERPRISE ADMIN STYLES ──
+// ── SHARED ENTERPRISE ADMIN STYLES (THEME-AWARE) ──
 const S = {
   page: { padding: '40px 5%', maxWidth: 1200, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative', minHeight: '80vh' },
-  header: { fontFamily: "'Inter', sans-serif", fontSize: 32, color: '#fff', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' },
-  subHeader: { color: 'rgba(255,255,255,0.5)', fontSize: 15, fontWeight: 400, margin: '0 0 40px 0' },
-  glassCard: { background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, backdropFilter: 'blur(20px)', padding: 32 },
-  tableContainer: { background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 20, overflow: 'hidden', marginTop: 24 },
-  tableHeader: { display: 'grid', gap: 16, padding: '16px 24px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif" },
-  tableRow: { display: 'grid', gap: 16, padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center' },
-  btnAction: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
+  header: { fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' },
+  subHeader: { color: 'var(--slate)', fontSize: 15, fontWeight: 400, margin: '0 0 40px 0' },
+  glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.05)' },
+  tableContainer: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, overflow: 'hidden', marginTop: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.05)' },
+  tableHeader: { display: 'grid', gap: 16, padding: '16px 24px', background: 'var(--surface)', borderBottom: '1px solid var(--line)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', fontFamily: "'Inter', sans-serif" },
+  tableRow: { display: 'grid', gap: 16, padding: '20px 24px', borderBottom: '1px solid var(--line)', alignItems: 'center' },
+  btnAction: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
   btnDanger: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
-  btnSuccess: { background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: '#A8FF3E', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
-  input: { background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', padding: '8px 12px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' },
-  select: { background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', padding: '8px 12px', fontSize: 13, outline: 'none' }
+  btnSuccess: { background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
+  input: { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--ink)', padding: '8px 12px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' },
+  select: { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--ink)', padding: '8px 12px', fontSize: 13, outline: 'none' }
 };
 
 // ── 1. ADMIN OVERVIEW MODULE ──
@@ -46,7 +46,7 @@ export function AdminOverview({ navigate, showToast }) {
     fetchSystemStats();
   }, [showToast]);
 
-  if (loading) return <div style={{ padding: 80, textAlign: 'center', color: '#fff' }}>Connecting to Mainframe...</div>;
+  if (loading) return <div style={{ padding: 80, textAlign: 'center', color: 'var(--ink)' }}>Connecting to Mainframe...</div>;
 
   return (
     <div style={S.page}>
@@ -55,36 +55,36 @@ export function AdminOverview({ navigate, showToast }) {
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, marginBottom: 48 }}>
         <div style={S.glassCard}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>Total Registered Users</div>
-          <div style={{ fontSize: 40, fontWeight: 800, color: '#fff', fontFamily: "'Inter', sans-serif" }}>{stats.users.toLocaleString()}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>Total Registered Users</div>
+          <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>{stats.users.toLocaleString()}</div>
         </div>
         <div style={S.glassCard}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>Total Campaigns</div>
-          <div style={{ fontSize: 40, fontWeight: 800, color: '#fff', fontFamily: "'Inter', sans-serif" }}>{stats.tasks.toLocaleString()}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>Total Campaigns</div>
+          <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>{stats.tasks.toLocaleString()}</div>
         </div>
         <div style={S.glassCard}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>Pending Payouts</div>
-          <div style={{ fontSize: 40, fontWeight: 800, color: stats.pendingWithdrawals > 0 ? '#ef4444' : '#fff', fontFamily: "'Inter', sans-serif" }}>{stats.pendingWithdrawals.toLocaleString()}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>Pending Payouts</div>
+          <div style={{ fontSize: 40, fontWeight: 800, color: stats.pendingWithdrawals > 0 ? '#ef4444' : 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>{stats.pendingWithdrawals.toLocaleString()}</div>
         </div>
         <div style={S.glassCard}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>Verified Engagements</div>
-          <div style={{ fontSize: 40, fontWeight: 800, color: '#A8FF3E', fontFamily: "'Inter', sans-serif" }}>{stats.completions.toLocaleString()}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>Verified Engagements</div>
+          <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>{stats.completions.toLocaleString()}</div>
         </div>
       </div>
 
       <h2 style={{ ...S.header, fontSize: 20, marginBottom: 24 }}>Control Modules</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
         <div onClick={() => navigate('admin-users')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }}>
-          <h3 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: 18 }}>Identity & Access Management</h3>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, margin: 0 }}>Modify roles, suspend accounts, and edit balances.</p>
+          <h3 style={{ color: 'var(--ink)', margin: '0 0 8px 0', fontSize: 18 }}>Identity & Access Management</h3>
+          <p style={{ color: 'var(--slate)', fontSize: 13, margin: 0 }}>Modify roles, suspend accounts, and edit balances.</p>
         </div>
         <div onClick={() => navigate('admin-tasks')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }}>
-          <h3 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: 18 }}>Campaign Moderation</h3>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, margin: 0 }}>Approve, pause, or terminate creator campaigns.</p>
+          <h3 style={{ color: 'var(--ink)', margin: '0 0 8px 0', fontSize: 18 }}>Campaign Moderation</h3>
+          <p style={{ color: 'var(--slate)', fontSize: 13, margin: 0 }}>Approve, pause, or terminate creator campaigns.</p>
         </div>
         <div onClick={() => navigate('admin-withdrawals')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }}>
-          <h3 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: 18 }}>Financial Treasury</h3>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, margin: 0 }}>Process and audit earner withdrawal requests.</p>
+          <h3 style={{ color: 'var(--ink)', margin: '0 0 8px 0', fontSize: 18 }}>Financial Treasury</h3>
+          <p style={{ color: 'var(--slate)', fontSize: 13, margin: 0 }}>Process and audit earner withdrawal requests.</p>
         </div>
       </div>
     </div>
@@ -145,7 +145,7 @@ export function AdminUsers({ showToast, currentUser }) {
     }
   }
 
-  if (loading) return <div style={{ padding: 80, textAlign: 'center', color: '#fff' }}>Loading identities...</div>;
+  if (loading) return <div style={{ padding: 80, textAlign: 'center', color: 'var(--ink)' }}>Loading identities...</div>;
 
   return (
     <div style={S.page}>
@@ -163,8 +163,8 @@ export function AdminUsers({ showToast, currentUser }) {
         {users.map(u => (
           <div key={u.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
             <div>
-              <div style={{ fontSize: 14, color: '#fff', fontWeight: 600, marginBottom: 4 }}>{u.full_name || 'No Name Provided'}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{u.email}</div>
+              <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>{u.full_name || 'No Name Provided'}</div>
+              <div style={{ fontSize: 12, color: 'var(--slate)' }}>{u.email}</div>
             </div>
             
             {editingId === u.id ? (
@@ -184,11 +184,11 @@ export function AdminUsers({ showToast, currentUser }) {
             ) : (
               <>
                 <div>
-                  <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: u.role === 'admin' ? 'rgba(212,175,55,0.1)' : u.role === 'suspended' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.05)', color: u.role === 'admin' ? '#D4AF37' : u.role === 'suspended' ? '#ef4444' : '#fff' }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: u.role === 'admin' ? 'rgba(212,175,55,0.1)' : u.role === 'suspended' ? 'rgba(239,68,68,0.1)' : 'var(--surface)', color: u.role === 'admin' ? '#D4AF37' : u.role === 'suspended' ? '#ef4444' : 'var(--ink)', border: '1px solid var(--line)' }}>
                     {u.role}
                   </span>
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#A8FF3E' }}>{u.points.toLocaleString()}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{u.points.toLocaleString()}</div>
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
                   <button onClick={() => startEdit(u)} style={S.btnAction}>Modify</button>
                   <button onClick={() => wipeUser(u.id)} style={S.btnDanger}>Purge</button>
@@ -242,7 +242,7 @@ export function AdminTasks({ showToast }) {
     }
   }
 
-  if (loading) return <div style={{ padding: 80, textAlign: 'center', color: '#fff' }}>Loading campaigns...</div>;
+  if (loading) return <div style={{ padding: 80, textAlign: 'center', color: 'var(--ink)' }}>Loading campaigns...</div>;
 
   return (
     <div style={S.page}>
@@ -260,17 +260,17 @@ export function AdminTasks({ showToast }) {
         {tasks.map(t => (
           <div key={t.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
             <div>
-              <div style={{ fontSize: 14, color: '#fff', fontWeight: 600, marginBottom: 4 }}>{t.title}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>Creator: {t.creator_id.substring(0,8)}...</div>
+              <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>{t.title}</div>
+              <div style={{ fontSize: 12, color: 'var(--slate)', fontFamily: 'monospace' }}>Creator: {t.creator_id.substring(0,8)}...</div>
             </div>
             
             <div>
-              <div style={{ fontSize: 13, color: '#fff', fontWeight: 600, textTransform: 'capitalize' }}>{t.platform}</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{t.target_views} views limit</div>
+              <div style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600, textTransform: 'capitalize' }}>{t.platform}</div>
+              <div style={{ fontSize: 12, color: 'var(--slate)' }}>{t.target_views} views limit</div>
             </div>
             
             <div>
-              <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: t.status === 'active' ? 'rgba(168,255,62,0.1)' : 'rgba(255,255,255,0.05)', color: t.status === 'active' ? '#A8FF3E' : '#fff' }}>
+              <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: t.status === 'active' ? 'rgba(168,255,62,0.1)' : 'var(--surface)', color: t.status === 'active' ? 'var(--ink)' : 'var(--slate)', border: '1px solid var(--line)' }}>
                 {t.status}
               </span>
             </div>
@@ -297,7 +297,6 @@ export function AdminWithdrawals({ showToast }) {
   async function fetchWithdrawals() {
     try {
       setLoading(true);
-      // Fetch withdrawals and join profile emails to see who requested it
       const { data } = await supabase.from('withdrawals').select(`
         *,
         profiles!inner(email)
@@ -314,11 +313,9 @@ export function AdminWithdrawals({ showToast }) {
     try {
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
       
-      // 1. Update request status
       const { error } = await supabase.from('withdrawals').update({ status: newStatus }).eq('id', req.id);
       if (error) throw error;
 
-      // 2. If rejected, refund the points to the user
       if (action === 'reject') {
         const { data: userProfile } = await supabase.from('profiles').select('points').eq('id', req.user_id).single();
         if (userProfile) {
@@ -333,7 +330,7 @@ export function AdminWithdrawals({ showToast }) {
     }
   }
 
-  if (loading) return <div style={{ padding: 80, textAlign: 'center', color: '#fff' }}>Loading financial ledger...</div>;
+  if (loading) return <div style={{ padding: 80, textAlign: 'center', color: 'var(--ink)' }}>Loading financial ledger...</div>;
 
   return (
     <div style={S.page}>
@@ -349,23 +346,23 @@ export function AdminWithdrawals({ showToast }) {
         </div>
 
         {requests.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>No withdrawal requests found.</div>
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)', fontSize: 14 }}>No withdrawal requests found.</div>
         ) : (
           requests.map(req => (
             <div key={req.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
               <div>
-                <div style={{ fontSize: 14, color: '#fff', fontWeight: 600, marginBottom: 4 }}>{req.account_name}</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginBottom: 2 }}>{req.bank_name}</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>User: {req.profiles?.email}</div>
+                <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>{req.account_name}</div>
+                <div style={{ fontSize: 12, color: 'var(--slate)', marginBottom: 2 }}>{req.bank_name}</div>
+                <div style={{ fontSize: 11, color: 'var(--slate)' }}>User: {req.profiles?.email}</div>
               </div>
               
-              <div style={{ fontSize: 14, color: '#fff', fontFamily: 'monospace', letterSpacing: '1px' }}>
+              <div style={{ fontSize: 14, color: 'var(--ink)', fontFamily: 'monospace', letterSpacing: '1px' }}>
                 {req.account_number}
               </div>
 
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#A8FF3E' }}>{req.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>PTS</span></div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{new Date(req.created_at).toLocaleDateString()}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>{req.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'var(--slate)' }}>PTS</span></div>
+                <div style={{ fontSize: 11, color: 'var(--slate)', marginTop: 4 }}>{new Date(req.created_at).toLocaleDateString()}</div>
               </div>
 
               <div style={{ textAlign: 'right' }}>
@@ -375,7 +372,7 @@ export function AdminWithdrawals({ showToast }) {
                     <button onClick={() => processRequest(req, 'reject')} style={S.btnDanger}>Deny & Refund</button>
                   </div>
                 ) : (
-                  <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: req.status === 'approved' ? 'rgba(168,255,62,0.1)' : 'rgba(239,68,68,0.1)', color: req.status === 'approved' ? '#A8FF3E' : '#ef4444' }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: req.status === 'approved' ? 'rgba(168,255,62,0.1)' : 'rgba(239,68,68,0.1)', color: req.status === 'approved' ? 'var(--ink)' : '#ef4444', border: '1px solid var(--line)' }}>
                     {req.status}
                   </span>
                 )}
