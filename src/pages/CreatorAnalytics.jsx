@@ -45,8 +45,8 @@ export default function CreatorAnalytics({ user, navigate, showToast }) {
 
   if (loading) {
     return (
-      <div style={{ padding: '80px 5%', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
-        <div style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+      <div style={{ padding: '80px 5%', textAlign: 'center', color: 'var(--slate)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
+        <div style={{ width: 24, height: 24, border: '2px solid var(--line)', borderTopColor: 'var(--ink)', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
         Compiling analytics telemetry...
       </div>
     );
@@ -54,19 +54,19 @@ export default function CreatorAnalytics({ user, navigate, showToast }) {
 
   const S = {
     page: { padding: '40px 5%', maxWidth: 1100, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
-    glassCard: { background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.005) 100%)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 20, backdropFilter: 'blur(20px)', padding: 32 },
-    label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(255,255,255,0.4)', marginBottom: 12, display: 'block', fontFamily: "'Inter', sans-serif" },
-    value: { fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: '#fff', lineHeight: 1, letterSpacing: '-1px' },
+    glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.04)' },
+    label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 12, display: 'block', fontFamily: "'Inter', sans-serif" },
+    value: { fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1, letterSpacing: '-1px' },
   };
 
   return (
     <div style={S.page}>
       <div style={{ marginBottom: 48, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20 }}>
         <div>
-          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: '#fff', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Data & Telemetry</h1>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, margin: 0 }}>Network penetration and algorithmic ROI metrics.</p>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Data & Telemetry</h1>
+          <p style={{ color: 'var(--slate)', fontSize: 15, margin: 0 }}>Network penetration and algorithmic ROI metrics.</p>
         </div>
-        <button onClick={() => navigate('creator-dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>← Command Center</button>
+        <button onClick={() => navigate('creator-dashboard')} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>← Command Center</button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 40 }}>
@@ -74,16 +74,16 @@ export default function CreatorAnalytics({ user, navigate, showToast }) {
           <span style={S.label}>Global Yield (Verified Engagements)</span>
           <div style={S.value}>{metrics.totalVerified.toLocaleString()}</div>
         </div>
-        <div style={S.glassCard}>
+        <div style={{ ...S.glassCard, border: '1px solid var(--line)' }}>
           <span style={S.label}>Network Fulfillment Rate</span>
-          <div style={{ ...S.value, color: metrics.completionRate > 50 ? '#A8FF3E' : '#fff' }}>{metrics.completionRate}%</div>
+          <div style={{ ...S.value, color: metrics.completionRate > 50 ? 'var(--lime)' : 'var(--ink)' }}>{metrics.completionRate}%</div>
         </div>
       </div>
 
       <div style={S.glassCard}>
         <span style={{ ...S.label, marginBottom: 24 }}>Campaign Performance Matrix</span>
         {campaigns.length === 0 ? (
-          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, textAlign: 'center', padding: 40 }}>Awaiting deployment data.</div>
+          <div style={{ color: 'var(--slate)', fontSize: 14, textAlign: 'center', padding: 40 }}>Awaiting deployment data.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {campaigns.map(c => {
@@ -91,11 +91,11 @@ export default function CreatorAnalytics({ user, navigate, showToast }) {
               return (
                 <div key={c.id}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
-                    <div style={{ fontSize: 14, color: '#fff', fontWeight: 600 }}>{c.title}</div>
-                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>{pct}%</div>
+                    <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600 }}>{c.title}</div>
+                    <div style={{ fontSize: 13, color: 'var(--slate)', fontWeight: 600 }}>{pct}%</div>
                   </div>
-                  <div style={{ height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${Math.min(pct, 100)}%`, background: 'linear-gradient(90deg, rgba(255,255,255,0.4) 0%, #fff 100%)', borderRadius: 4 }} />
+                  <div style={{ height: 8, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${Math.min(pct, 100)}%`, background: 'var(--ink)', borderRadius: 4 }} />
                   </div>
                 </div>
               );
