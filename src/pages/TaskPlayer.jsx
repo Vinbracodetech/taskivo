@@ -50,17 +50,15 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     if (passed) {
       try {
         setLoading(true);
-        // 🔥 SECURE DATABASE HANDOFF 🔥
-        // We only insert the completion. The SQL Trigger handles the points, the campaign deduction, and auto-pausing.
+        // Secure Handoff: The database trigger handles payout and campaign updates
         const { error } = await supabase.from('completions').insert({ 
-  earner_id: user.id, // <-- CHANGED HERE
-  task_id: task.id, 
-  platform: task.platform 
-});
+          earner_id: user.id, 
+          task_id: task.id, 
+          platform: task.platform 
+        });
 
         if (error) throw error;
 
-        // Optimistic UI update so the user feels it instantly
         user.points += task.reward_points; 
         alert(`Verification Successful! ${task.reward_points} PTS securely deposited.`);
         navigate('tasks');
@@ -72,14 +70,23 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         setLoading(false);
       }
     } else {
-      const newStrikes = strikes + 1;
-      setStrikes(newStrikes);
-      if (newStrikes >= 3) {
-        localStorage.setItem(`taskivo_lockout_${user.id}`, new Date().getTime() + 86400000);
-        alert('Verification failed 3 times. Account locked for 24 hours.');
-        navigate('tasks');
-      } else {
-        alert(`Incorrect response. Strike ${newStrikes}/3.`);
+      try {
+        setLoading(true);
+        // 🔥 SECURE BACKEND STRIKE TRACKER 🔥
+        const { data, error } = await supabase.rpc('record_quiz_failure');
+        if (error) throw error;
+
+        if (data.is_locked) {
+          alert('Verification failed 3 times. Account permanently locked for 24 hours.');
+          navigate('tasks');
+        } else {
+          setStrikes(data.strikes);
+          alert(`Incorrect response. Strike ${data.strikes}/3.`);
+          setLoading(false);
+        }
+      } catch (err) {
+        alert("Network error processing verification.");
+        setLoading(false);
       }
     }
   }
