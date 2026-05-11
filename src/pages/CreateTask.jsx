@@ -10,15 +10,28 @@ export default function CreateTask({ session, navigate, showToast }) {
     platform: 'youtube',
     url: '',
     watch_duration: 30,
-    package: 'starter'
+    package: 'traction' // Default to the most popular package
   });
 
+  // 🔥 DYNAMIC B2B PRICING TIERS 🔥
   const packages = {
-    trial: { label: 'Pilot Protocol', views: 20, price: 'Free', desc: 'Test the network with 20 verified engagements.' },
-    starter: { label: 'Starter Tier', views: 100, price: '$10', desc: 'Ideal for initial algorithmic traction.' },
-    growth: { label: 'Growth Tier', views: 500, price: '$40', desc: 'Standard deployment for steady engagement.' },
-    scale: { label: 'Scale Tier', views: 2000, price: '$140', desc: 'Maximum velocity for major campaigns.' }
+    social: {
+      starter: { label: 'Starter Tier', views: 50, price: '$5', desc: 'Baseline test for algorithmic response.' },
+      traction: { label: 'Traction Tier', views: 200, price: '$15', desc: 'Ideal volume for initial momentum.' },
+      scale: { label: 'Scale Tier', views: 500, price: '$35', desc: 'High volume for sustained engagement.' },
+      enterprise: { label: 'Enterprise Tier', views: 1000, price: '$68', desc: 'Maximum velocity for major campaigns.' }
+    },
+    seo: {
+      starter: { label: 'Starter SEO', views: 100, price: '$8', desc: 'Guaranteed 2+ minutes on page.' },
+      traction: { label: 'Traction SEO', views: 300, price: '$24', desc: 'Ideal for initial search ranking.' },
+      scale: { label: 'Scale SEO', views: 800, price: '$55', desc: 'High volume traffic for domain authority.' },
+      enterprise: { label: 'Enterprise SEO', views: 2000, price: '$120', desc: 'Maximum sustained web presence.' }
+    }
   };
+
+  // Determine which list to show based on the dropdown selection
+  const currentPlatformType = form.platform === 'blog' ? 'seo' : 'social';
+  const activePackages = packages[currentPlatformType];
 
   function handleInput(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -33,11 +46,23 @@ export default function CreateTask({ session, navigate, showToast }) {
 
     try {
       setLoading(true);
-      const selectedPackage = packages[form.package];
+      
+      // Grab the correct package from the active array (Social vs SEO)
+      const selectedPackage = activePackages[form.package];
+      
+      // 🔥 SECURE DYNAMIC PAYOUT: 50 pts ($0.05) for Blog, 30 pts ($0.03) for Social
+      const earnerPayout = form.platform === 'blog' ? 50 : 30;
       
       const { error } = await supabase.from('tasks').insert({
-        creator_id: user.id, title: form.title, platform: form.platform, url: form.url,
-        watch_duration: parseInt(form.watch_duration, 10), target_views: selectedPackage.views, current_views: 0, status: 'active', reward_points: 50
+        creator_id: user.id, 
+        title: form.title, 
+        platform: form.platform, 
+        url: form.url,
+        watch_duration: parseInt(form.watch_duration, 10), 
+        target_views: selectedPackage.views, 
+        current_views: 0, 
+        status: 'active', 
+        reward_points: earnerPayout
       });
 
       if (error) throw error;
@@ -51,6 +76,7 @@ export default function CreateTask({ session, navigate, showToast }) {
     }
   }
 
+  // ── THEME-AWARE STYLES ──
   const S = {
     page: { padding: '40px 5%', maxWidth: 900, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
     glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 40, boxShadow: '0 8px 32px rgba(0,0,0,0.04)' },
@@ -79,11 +105,13 @@ export default function CreateTask({ session, navigate, showToast }) {
 
       <div style={S.glassCard}>
         <form onSubmit={handleSubmit}>
+          
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
             <div>
               <span style={S.label}>Internal Campaign Designation</span>
               <input style={S.input} type="text" name="title" placeholder="e.g., Q3 Product Launch Video" value={form.title} onChange={handleInput} required />
             </div>
+            
             <div>
               <span style={S.label}>Target Platform</span>
               <select style={S.select} name="platform" value={form.platform} onChange={handleInput}>
@@ -94,7 +122,10 @@ export default function CreateTask({ session, navigate, showToast }) {
             </div>
           </div>
 
-          <div><span style={S.label}>Asset URL</span><input style={S.input} type="url" name="url" placeholder="https://..." value={form.url} onChange={handleInput} required /></div>
+          <div>
+            <span style={S.label}>Asset URL</span>
+            <input style={S.input} type="url" name="url" placeholder="https://..." value={form.url} onChange={handleInput} required />
+          </div>
 
           <div>
             <span style={S.label}>Verification Duration (Seconds)</span>
@@ -107,18 +138,25 @@ export default function CreateTask({ session, navigate, showToast }) {
 
           <div style={{ marginTop: 16, marginBottom: 32 }}>
             <span style={{ ...S.label, marginBottom: 16 }}>Select Engagement Allocation</span>
+            
+            {/* 🔥 DYNAMIC PACKAGES RENDERED HERE 🔥 */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-              {Object.entries(packages).map(([key, pkg]) => (
+              {Object.entries(activePackages).map(([key, pkg]) => (
                 <div key={key} onClick={() => setForm(prev => ({ ...prev, package: key }))} style={S.packageCard(form.package === key)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <div style={{ fontSize: 13, fontWeight: 700 }}>{pkg.label}</div>
-                    <div style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 100, border: `1px solid ${form.package === key ? 'var(--surface)' : 'var(--line)'}` }}>{pkg.price}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 100, border: `1px solid ${form.package === key ? 'var(--surface)' : 'var(--line)'}` }}>
+                      {pkg.price}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, fontFamily: "'Inter', sans-serif", letterSpacing: '-0.5px' }}>{pkg.views} <span style={{ fontSize: 12, fontWeight: 600 }}>VERIFICATIONS</span></div>
+                  <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8, fontFamily: "'Inter', sans-serif", letterSpacing: '-0.5px' }}>
+                    {pkg.views} <span style={{ fontSize: 12, fontWeight: 600 }}>VERIFICATIONS</span>
+                  </div>
                   <div style={{ fontSize: 12, lineHeight: 1.4, opacity: 0.8 }}>{pkg.desc}</div>
                 </div>
               ))}
             </div>
+            
           </div>
 
           <button type="submit" disabled={loading} style={{ ...S.btnPrimary, opacity: loading ? 0.5 : 1 }}>
