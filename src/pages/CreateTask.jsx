@@ -10,10 +10,10 @@ export default function CreateTask({ session, navigate, showToast }) {
     platform: 'youtube',
     url: '',
     watch_duration: 30,
-    package: 'traction' // Default to the most popular package
+    package: 'traction',
+    paymentGateway: 'stripe' // Default to Stripe for global
   });
 
-  // 🔥 DYNAMIC B2B PRICING TIERS 🔥
   const packages = {
     social: {
       starter: { label: 'Starter Tier', views: 50, price: '$5', desc: 'Baseline test for algorithmic response.' },
@@ -29,7 +29,6 @@ export default function CreateTask({ session, navigate, showToast }) {
     }
   };
 
-  // Determine which list to show based on the dropdown selection
   const currentPlatformType = form.platform === 'blog' ? 'seo' : 'social';
   const activePackages = packages[currentPlatformType];
 
@@ -47,13 +46,22 @@ export default function CreateTask({ session, navigate, showToast }) {
     try {
       setLoading(true);
       
-      // Grab the correct package from the active array (Social vs SEO)
       const selectedPackage = activePackages[form.package];
-      
-      // 🔥 SECURE DYNAMIC PAYOUT: 50 pts ($0.05) for Blog, 30 pts ($0.03) for Social
       const earnerPayout = form.platform === 'blog' ? 50 : 30;
       
-      const { error } = await supabase.from('tasks').insert({
+      // 1. Check for Free Early Adopter Credit
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('free_credits')
+        .eq('id', user.id)
+        .single();
+
+      const hasFreeCredit = profile?.free_credits > 0;
+      
+      // 2. Insert the task securely
+      const initialStatus = hasFreeCredit ? 'active' : 'pending_payment';
+
+      const { data: newTask, error } = await supabase.from('tasks').insert({
         creator_id: user.id, 
         title: form.title, 
         platform: form.platform, 
@@ -61,16 +69,36 @@ export default function CreateTask({ session, navigate, showToast }) {
         watch_duration: parseInt(form.watch_duration, 10), 
         target_views: selectedPackage.views, 
         current_views: 0, 
-        status: 'active', 
+        status: initialStatus, 
         reward_points: earnerPayout
-      });
+      }).select().single();
 
       if (error) throw error;
-      if (showToast) showToast('Campaign successfully deployed.', 'success');
-      navigate('creator-dashboard');
+
+      // 3. Routing Logic: Free vs Paid
+      if (hasFreeCredit) {
+        // Securely deduct the credit (Requires SQL function we will add later)
+        // await supabase.rpc('deduct_free_credit', { user_id: user.id });
+        if (showToast) showToast('Free Pilot Grant Applied! Campaign is LIVE.', 'success');
+        navigate('creator-dashboard');
+      } else {
+        // Log the intent and route to the correct gateway
+        if (showToast) showToast(`Initiating secure connection to ${form.paymentGateway.toUpperCase()}...`, 'success');
+        
+        if (form.paymentGateway === 'stripe') {
+           console.log(`Redirecting to Stripe for Task ID: ${newTask.id} | Amount: ${selectedPackage.price}`);
+           // window.location.href = `YOUR_STRIPE_CHECKOUT_URL`;
+        } else {
+           console.log(`Redirecting to Paystack for Task ID: ${newTask.id} | Amount: ${selectedPackage.price}`);
+           // window.location.href = `YOUR_PAYSTACK_CHECKOUT_URL`;
+        }
+        
+        navigate('creator-dashboard'); 
+      }
       
     } catch (err) {
       if (showToast) showToast('Deployment failed. Please try again.', 'error');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -79,17 +107,20 @@ export default function CreateTask({ session, navigate, showToast }) {
   // ── THEME-AWARE STYLES ──
   const S = {
     page: { padding: '40px 5%', maxWidth: 900, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
-    glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 40, boxShadow: '0 8px 32px rgba(0,0,0,0.04)' },
+    glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 40, boxShadow: 'var(--shadow)' },
     label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 12, display: 'block', fontFamily: "'Inter', sans-serif" },
     input: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s', marginBottom: 24 },
     select: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', appearance: 'none', marginBottom: 24 },
-    btnPrimary: { width: '100%', background: 'var(--ink)', border: 'none', color: 'var(--surface)', borderRadius: 12, padding: '18px', fontSize: 14, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 16 },
+    btnPrimary: { width: '100%', background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '18px', fontSize: 14, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 16, boxShadow: '0 8px 16px rgba(168,255,62,0.2)' },
     packageCard: (isActive) => ({
       padding: 20, borderRadius: 16, cursor: 'pointer', transition: 'all 0.2s',
       background: isActive ? 'var(--ink)' : 'var(--surface)',
       border: `1px solid ${isActive ? 'var(--ink)' : 'var(--line)'}`,
       color: isActive ? 'var(--surface)' : 'var(--ink)',
       boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.1)' : 'none'
+    }),
+    gatewayCard: (isActive) => ({
+      padding: '16px', borderRadius: '12px', cursor: 'pointer', border: `1px solid ${isActive ? 'var(--lime)' : 'var(--line)'}`, background: isActive ? 'var(--lime-dim)' : 'var(--surface)', flex: 1, display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s'
     })
   };
 
@@ -139,7 +170,6 @@ export default function CreateTask({ session, navigate, showToast }) {
           <div style={{ marginTop: 16, marginBottom: 32 }}>
             <span style={{ ...S.label, marginBottom: 16 }}>Select Engagement Allocation</span>
             
-            {/* 🔥 DYNAMIC PACKAGES RENDERED HERE 🔥 */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
               {Object.entries(activePackages).map(([key, pkg]) => (
                 <div key={key} onClick={() => setForm(prev => ({ ...prev, package: key }))} style={S.packageCard(form.package === key)}>
@@ -156,11 +186,34 @@ export default function CreateTask({ session, navigate, showToast }) {
                 </div>
               ))}
             </div>
-            
+          </div>
+
+          {/* 🔥 DUAL PAYMENT GATEWAY SELECTOR 🔥 */}
+          <div style={{ marginBottom: 32, padding: '24px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--line)' }}>
+            <span style={{ ...S.label, marginBottom: 16 }}>Payment Processor</span>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+              
+              <div onClick={() => setForm(prev => ({ ...prev, paymentGateway: 'stripe' }))} style={S.gatewayCard(form.paymentGateway === 'stripe')}>
+                <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `5px solid ${form.paymentGateway === 'stripe' ? 'var(--lime)' : 'var(--slate)'}` }}></div>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--ink)' }}>Stripe (Global)</div>
+                  <div style={{ fontSize: '12px', color: 'var(--slate)' }}>USD, EUR, GBP</div>
+                </div>
+              </div>
+
+              <div onClick={() => setForm(prev => ({ ...prev, paymentGateway: 'paystack' }))} style={S.gatewayCard(form.paymentGateway === 'paystack')}>
+                <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `5px solid ${form.paymentGateway === 'paystack' ? 'var(--lime)' : 'var(--slate)'}` }}></div>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--ink)' }}>Paystack (Africa)</div>
+                  <div style={{ fontSize: '12px', color: 'var(--slate)' }}>NGN, ZAR, GHS, USD</div>
+                </div>
+              </div>
+
+            </div>
           </div>
 
           <button type="submit" disabled={loading} style={{ ...S.btnPrimary, opacity: loading ? 0.5 : 1 }}>
-            {loading ? 'Processing Deployment...' : 'Authorize & Deploy Campaign'}
+            {loading ? 'Processing...' : `Pay ${activePackages[form.package].price} & Deploy`}
           </button>
         </form>
       </div>
