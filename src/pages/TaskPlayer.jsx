@@ -48,12 +48,29 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
   async function handleQuiz(passed) {
     if (passed) {
-      await supabase.from('profiles').update({ points: user.points + task.reward_points }).eq('id', user.id);
-      await supabase.from('completions').insert({ user_id: user.id, task_id: task.id, platform: task.platform });
-      await supabase.from('tasks').update({ current_views: task.current_views + 1 }).eq('id', task.id);
-      
-      alert(`Success! ${task.reward_points} PTS acquired.`);
-      navigate('tasks');
+      try {
+        setLoading(true);
+        // 🔥 SECURE DATABASE HANDOFF 🔥
+        // We only insert the completion. The SQL Trigger handles the points, the campaign deduction, and auto-pausing.
+        const { error } = await supabase.from('completions').insert({ 
+          user_id: user.id, 
+          task_id: task.id, 
+          platform: task.platform 
+        });
+
+        if (error) throw error;
+
+        // Optimistic UI update so the user feels it instantly
+        user.points += task.reward_points; 
+        alert(`Verification Successful! ${task.reward_points} PTS securely deposited.`);
+        navigate('tasks');
+
+      } catch (err) {
+        alert("Verification failed: Campaign may have just reached its allocation limit.");
+        navigate('tasks');
+      } finally {
+        setLoading(false);
+      }
     } else {
       const newStrikes = strikes + 1;
       setStrikes(newStrikes);
@@ -62,7 +79,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         alert('Verification failed 3 times. Account locked for 24 hours.');
         navigate('tasks');
       } else {
-        alert(`Incorrect. Strike ${newStrikes}/3.`);
+        alert(`Incorrect response. Strike ${newStrikes}/3.`);
       }
     }
   }
@@ -75,7 +92,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     btnPlay: { background: 'var(--ink)', color: 'var(--surface)', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }
   };
 
-  if (loading || !task) return <div style={S.page}><div style={{color: 'var(--slate)'}}>Initializing sandbox...</div></div>;
+  if (loading || !task) return <div style={S.page}><div style={{color: 'var(--slate)'}}>Initializing secure sandbox...</div></div>;
 
   return (
     <div style={S.page}>
