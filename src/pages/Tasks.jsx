@@ -17,27 +17,25 @@ export default function Tasks({ session, navigate }) {
     try {
       setLoading(true);
       
-      // 🔥 SECURE DB LOCKOUT CHECK 🔥
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('locked_until')
-        .eq('id', user.id)
-        .single();
-
-      if (profile?.locked_until && new Date(profile.locked_until) > new Date()) {
+      // 🔥 SECURE LOCKOUT CHECK FROM DATABASE 🔥
+      const { data: profile } = await supabase.from('profiles').select('lockout_until').eq('id', user.id).single();
+      
+      if (profile?.lockout_until && new Date() < new Date(profile.lockout_until)) {
         setLockout(true);
         setLoading(false);
-        return; // Stop fetching tasks if locked
+        return;
       }
 
+      // Check daily quotas (Fixed: searching by earner_id)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const { data: history } = await supabase.from('completions').select('platform').eq('user_id', user.id).gte('created_at', today.toISOString());
+      const { data: history } = await supabase.from('completions').select('platform').eq('earner_id', user.id).gte('created_at', today.toISOString());
 
       let vCount = 0, bCount = 0;
       (history || []).forEach(h => { if (h.platform === 'blog') bCount++; else vCount++; });
       setQuotas({ videos: vCount, blogs: bCount });
 
+      // Load available tasks
       const { data: activeTasks } = await supabase.from('tasks').select('*').eq('status', 'active');
       setTasks(activeTasks || []);
     } catch (err) {
@@ -61,7 +59,7 @@ export default function Tasks({ session, navigate }) {
         <div style={S.glassCard}>
           <div style={{ fontSize: 64, marginBottom: 20 }}>🔒</div>
           <h2 style={{ color: 'var(--ink)', fontSize: 24, fontFamily: "'Inter', sans-serif", marginBottom: 12 }}>Network Access Locked</h2>
-          <p style={{ color: 'var(--slate)' }}>Your account is under a strict 24-hour restriction due to multiple failed verification attempts.</p>
+          <p style={{ color: 'var(--slate)' }}>Your account is under a strict 24-hour restriction due to failed anti-cheat verifications.</p>
         </div>
       </div>
     );
@@ -75,4 +73,45 @@ export default function Tasks({ session, navigate }) {
       </div>
 
       <div style={{ display: 'flex', gap: 20, marginBottom: 40, flexWrap: 'wrap' }}>
-        <div style={{
+        <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.3)', padding: '12px 24px', borderRadius: 12 }}>
+          <span style={{ fontSize: 11, color: 'var(--ink)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px', display: 'block' }}>Video Quota</span>
+          <span style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>{quotas.videos} / 3</span>
+        </div>
+        <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', padding: '12px 24px', borderRadius: 12 }}>
+          <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px', display: 'block' }}>Blog Quota</span>
+          <span style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>{quotas.blogs} / 20</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+        {tasks.map(task => {
+          const isBlog = task.platform === 'blog';
+          const quotaHit = (isBlog && quotas.blogs >= 20) || (!isBlog && quotas.videos >= 3);
+
+          return (
+            <div key={task.id} style={{ ...S.taskCard, opacity: quotaHit ? 0.5 : 1 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                  {isBlog ? '📄' : '▶️'}
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{task.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{task.watch_duration}s Verification</div>
+                </div>
+              </div>
+              
+              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 16 }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lime)' }}>+{task.reward_points} PTS</div>
+                {quotaHit ? (
+                  <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 700 }}>QUOTA REACHED</span>
+                ) : (
+                  <button onClick={() => navigate(`player/${task.id}`)} style={{ background: 'var(--ink)', color: 'var(--surface)', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>INITIATE</button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
