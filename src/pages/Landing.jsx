@@ -16,6 +16,9 @@ const C = {
 export default function Landing({ navigate, setAuthMode }) {
   const [openFaq, setOpenFaq] = useState(null);
   const [claimedSpots, setClaimedSpots] = useState(0);
+  
+  // 🔥 NEW: Pricing Toggle State 🔥
+  const [pricingMode, setPricingMode] = useState('social');
 
   useEffect(function () {
     document.title = 'Taskivo — Digital Engagement Infrastructure';
@@ -79,21 +82,22 @@ export default function Landing({ navigate, setAuthMode }) {
     document.head.appendChild(style);
   }, []);
 
-  const pricing = [
-    { 
-      name: 'Starter', price: '$8', slots: 50, useCase: 'Baseline engagement test',
-      features: ['Platform-Specific Base Watch Time', 'Guaranteed Like & Comment', 'Anti-Cheat Verification', 'No guaranteed follows/subs']
-    },
-    { 
-      name: 'Growth', price: '$24', slots: 200, useCase: 'Best Value (Includes 50 Bonus)',
-      features: ['Platform-Specific Base Watch Time', 'Guaranteed Like & Comment', 'Anti-Cheat Verification', 'Guaranteed Engaged Follows/Subs'],
-      isPopular: true
-    },
-    { 
-      name: 'Scale', price: '$48', slots: 500, useCase: 'Massive reach (Includes 200 Bonus)',
-      features: ['Platform-Specific Base Watch Time', 'Guaranteed Like & Comment', 'Anti-Cheat Verification', 'Guaranteed Engaged Follows/Subs', 'Priority Network Routing']
-    },
+  // 🔥 NEW: Dual Pricing Arrays (4 Tiers Each) 🔥
+  const socialPricing = [
+    { name: 'Starter', price: '$5', slots: 50, useCase: 'Baseline algorithmic test', features: ['Social Algorithm Verification', 'Guaranteed Like & Comment', 'Anti-Cheat Protection', 'Algorithmic Safety Protocols'] },
+    { name: 'Traction', price: '$15', slots: 200, useCase: 'Best Value (Most Popular)', features: ['Social Algorithm Verification', 'Guaranteed Like & Comment', 'Anti-Cheat Protection', 'Algorithmic Safety Protocols'], isPopular: true },
+    { name: 'Scale', price: '$35', slots: 500, useCase: 'Sustained engagement', features: ['Social Algorithm Verification', 'Guaranteed Like & Comment', 'Anti-Cheat Protection', 'Algorithmic Safety Protocols', 'Priority Network Routing'] },
+    { name: 'Enterprise', price: '$68', slots: 1000, useCase: 'Maximum velocity', features: ['Social Algorithm Verification', 'Guaranteed Like & Comment', 'Anti-Cheat Protection', 'Algorithmic Safety Protocols', 'Priority Network Routing'] },
   ];
+
+  const seoPricing = [
+    { name: 'Starter SEO', price: '$8', slots: 100, useCase: 'Initial Search Visibility', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Simulation', 'Anti-Cheat Protection', 'Safe Search Protocols'] },
+    { name: 'Traction SEO', price: '$24', slots: 300, useCase: 'Best Value (Most Popular)', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Simulation', 'Anti-Cheat Protection', 'Safe Search Protocols'], isPopular: true },
+    { name: 'Scale SEO', price: '$55', slots: 800, useCase: 'Domain Authority Boost', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Simulation', 'Anti-Cheat Protection', 'Safe Search Protocols', 'Priority Network Routing'] },
+    { name: 'Enterprise SEO', price: '$120', slots: 2000, useCase: 'Maximum Organic Reach', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Simulation', 'Anti-Cheat Protection', 'Safe Search Protocols', 'Priority Network Routing'] },
+  ];
+
+  const activePricing = pricingMode === 'social' ? socialPricing : seoPricing;
 
   const faqs = [
     { q: 'How do rewards work?', a: 'Contributors accumulate reward points based on active task completion, platform engagement, and maintaining activity streaks. Points reflect your overall participation quality.' },
@@ -101,7 +105,6 @@ export default function Landing({ navigate, setAuthMode }) {
     { q: 'Who can use Taskivo?', a: 'Taskivo is built for global businesses seeking genuine digital engagement across social and web properties, and individuals worldwide looking for structured micro-earning opportunities.' },
   ];
 
-  // 🔥 THE NEW ONBOARDING FUNNELS 🔥
   function goRegisterEarner() {
     localStorage.setItem('taskivo_role', 'earner');
     if (setAuthMode) setAuthMode("register");
@@ -114,7 +117,6 @@ export default function Landing({ navigate, setAuthMode }) {
     navigate("auth");
   }
 
-  // 🔥 THE FREE TRIAL TAGGER 🔥
   function claimFreeGrant() {
     localStorage.setItem('taskivo_role', 'creator');
     localStorage.setItem('taskivo_grant', 'true');
@@ -158,13 +160,11 @@ export default function Landing({ navigate, setAuthMode }) {
           
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {/* ROUTES TO EARNER */}
               <button style={{
                 background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px',
                 fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
               }} onClick={goRegisterEarner}>Join as Founding Contributor</button>
               
-              {/* ROUTES TO BUSINESS */}
               <button style={{
                 background: 'transparent', color: C.white, border: `1px solid ${C.darkLine}`, borderRadius: 8,
                 padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
@@ -177,7 +177,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </div>
 
-      {/* PILOT PROGRAM BANNER (LIVE SUPABASE DATA) */}
+      {/* PILOT PROGRAM BANNER */}
       <div style={{ background: C.ink, borderTop: `1px solid ${C.darkLine}`, borderBottom: `1px solid ${C.darkLine}`, padding: '24px 5%' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
           <div style={{ flex: '1 1 300px' }}>
@@ -196,7 +196,6 @@ export default function Landing({ navigate, setAuthMode }) {
               <div style={{ width: `${Math.min((claimedSpots / 10) * 100, 100)}%`, height: '100%', background: C.lime, transition: 'width 1s ease-in-out' }}></div>
             </div>
           </div>
-          {/* 🔥 ROUTES TO FREE GRANT 🔥 */}
           <button 
             style={{ 
               background: claimedSpots >= 10 ? 'rgba(255,255,255,0.1)' : C.lime, 
@@ -228,7 +227,6 @@ export default function Landing({ navigate, setAuthMode }) {
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Get high-retention engagement from real users</li>
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Predictable and scalable algorithmic growth</li>
             </ul>
-            {/* ROUTES TO BUSINESS */}
             <button style={{ background: C.ink, color: C.white, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterCreator}>Create Campaign</button>
           </div>
           <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, padding: 40 }}>
@@ -239,13 +237,12 @@ export default function Landing({ navigate, setAuthMode }) {
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Earn dynamic reward points for your verified attention</li>
               <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Build consistency streaks for internal bonuses</li>
             </ul>
-            {/* ROUTES TO EARNER */}
             <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterEarner}>Join Network</button>
           </div>
         </div>
       </section>
 
-      {/* TRUST LAYER: ENGINEERED FOR INTEGRITY */}
+      {/* TRUST LAYER */}
       <section className="lp-section-pad" style={{ background: C.ink, color: C.white }}>
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.lime, marginBottom: 12 }}>Platform Strictness</div>
@@ -270,17 +267,32 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </section>
 
-      {/* PRICING (BUSINESSES) */}
+      {/* 🔥 DYNAMIC PRICING TOGGLE 🔥 */}
       <section className="lp-section-pad" style={{ background: C.white }}>
-        <div style={{ textAlign: 'center', marginBottom: 56 }}>
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Campaign Pricing</div>
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Predictable growth packages.</h2>
-          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>
-            Purchase secure campaign slots to tap into our distributed network. Extended time available at checkout.
+          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>
+            Purchase secure campaign slots. Select your target distribution network below.
           </p>
+
+          <div style={{ display: 'inline-flex', background: C.off, padding: 6, borderRadius: 100, border: `1px solid ${C.line}` }}>
+            <button 
+              onClick={() => setPricingMode('social')} 
+              style={{ background: pricingMode === 'social' ? C.ink : 'transparent', color: pricingMode === 'social' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>
+              Video & Social
+            </button>
+            <button 
+              onClick={() => setPricingMode('seo')} 
+              style={{ background: pricingMode === 'seo' ? C.ink : 'transparent', color: pricingMode === 'seo' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>
+              SEO & Web Traffic
+            </button>
+          </div>
         </div>
-        <div className="lp-grid-3" style={{ maxWidth: 1100, margin: '0 auto', alignItems: 'center' }}>
-          {pricing.map(function(plan, i) {
+
+        {/* Updated Grid for 4 Columns */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
+          {activePricing.map(function(plan, i) {
             return (
               <div key={i} style={{ 
                 background: plan.isPopular ? C.ink : C.white, 
@@ -295,22 +307,19 @@ export default function Landing({ navigate, setAuthMode }) {
                 )}
                 <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{plan.name}</div>
                 <div className="heading" style={{ fontSize: 40, color: plan.isPopular ? C.lime : C.ink, marginBottom: 8 }}>{plan.price}</div>
-                <div style={{ fontSize: 15, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>
                   {plan.slots.toLocaleString()} Verified Engagements
                 </div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 14, flexGrow: 1 }}>
                   {plan.features.map(function(feat, idx) {
-                    const isMuted = feat === 'No guaranteed follows/subs';
                     return (
-                      <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: isMuted ? C.slate : (plan.isPopular ? 'rgba(255,255,255,0.8)' : C.slate) }}>
-                        <span style={{ color: isMuted ? C.slate : (plan.isPopular ? C.lime : C.ink), fontWeight: 'bold' }}>{isMuted ? '✕' : '✓'}</span>
-                        {feat}
+                      <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: plan.isPopular ? 'rgba(255,255,255,0.7)' : C.slate, fontWeight: 500 }}>
+                        <span style={{ color: plan.isPopular ? C.lime : C.ink, fontWeight: 'bold' }}>✓</span> {feat}
                       </li>
                     );
                   })}
                 </ul>
-                {/* ROUTES TO BUSINESS */}
-                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterCreator}>
+                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>
                   Select Package
                 </button>
               </div>
@@ -364,9 +373,7 @@ export default function Landing({ navigate, setAuthMode }) {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>Product</div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* ROUTES TO EARNER */}
               <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={goRegisterEarner}>For Contributors</span></li>
-              {/* ROUTES TO BUSINESS */}
               <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={goRegisterCreator}>For Businesses</span></li>
               <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={goRegisterCreator}>Pricing</span></li>
             </ul>
