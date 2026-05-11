@@ -53,10 +53,10 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         // 🔥 SECURE DATABASE HANDOFF 🔥
         // We only insert the completion. The SQL Trigger handles the points, the campaign deduction, and auto-pausing.
         const { error } = await supabase.from('completions').insert({ 
-          user_id: user.id, 
-          task_id: task.id, 
-          platform: task.platform 
-        });
+  earner_id: user.id, // <-- CHANGED HERE
+  task_id: task.id, 
+  platform: task.platform 
+});
 
         if (error) throw error;
 
