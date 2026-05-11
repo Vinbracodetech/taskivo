@@ -1,82 +1,71 @@
-import { useEffect } from "react";
+export default function StaticPages({ pageType }) {
+  const S = {
+    page: { padding: '80px 5%', maxWidth: 800, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", minHeight: '100vh', background: 'var(--surface)' },
+    title: { fontFamily: "'Inter', sans-serif", fontSize: 40, color: 'var(--ink)', marginBottom: 24, fontWeight: 800, letterSpacing: '-1px' },
+    h2: { fontFamily: "'Inter', sans-serif", fontSize: 20, color: 'var(--ink)', margin: '40px 0 16px 0', fontWeight: 700 },
+    p: { color: 'var(--slate)', fontSize: 15, lineHeight: 1.7, marginBottom: 16 },
+    accentBlock: { padding: 24, background: 'var(--surface-card)', borderLeft: '4px solid var(--lime)', border: '1px solid var(--line)', borderLeftWidth: 4, borderRadius: '0 12px 12px 0', marginBottom: 32 }
+  };
 
-// A reusable layout wrapper for all text-heavy pages
-function PageLayout({ title, date, children }) {
-  useEffect(function () {
-    window.scrollTo(0, 0);
-    document.title = "Taskivo — " + title;
-  }, [title]);
+  const content = {
+    terms: {
+      title: "Terms of Service",
+      date: "Last Updated: May 2026",
+      body: (
+        <>
+          <div style={S.accentBlock}>
+            <p style={{...S.p, margin: 0, color: 'var(--ink)', fontWeight: 600}}>By accessing the Taskivo infrastructure, you agree to strict compliance with our Anti-Cheat and algorithmic safety protocols.</p>
+          </div>
+          <h2 style={S.h2}>1. Account Integrity</h2>
+          <p style={S.p}>Users must provide accurate identity information. The use of automated scripts, VPNs to mask geography, or multiple accounts by a single individual will result in immediate and permanent network termination.</p>
+          <h2 style={S.h2}>2. Financial Clearing</h2>
+          <p style={S.p}>All points earned are held in ledger pending final verification. Taskivo reserves the right to withhold payouts if algorithmic anomalies or artificial engagement patterns are detected on an account.</p>
+        </>
+      )
+    },
+    privacy: {
+      title: "Privacy Architecture",
+      date: "Last Updated: May 2026",
+      body: (
+        <>
+          <p style={S.p}>Taskivo engineers its platform to collect the minimum viable telemetry required to verify human attention and execute financial distributions.</p>
+          <h2 style={S.h2}>Data Collection</h2>
+          <p style={S.p}>We collect session duration, interaction milestones, and hardware profiling strictly for the purpose of maintaining network integrity against botfarms.</p>
+          <h2 style={S.h2}>Financial Data</h2>
+          <p style={S.p}>Banking information provided for withdrawal routing is encrypted and utilized solely for payment processing. We do not sell user telemtry to third-party brokers.</p>
+        </>
+      )
+    },
+    about: {
+      title: "About Taskivo",
+      date: "Established 2026",
+      body: (
+        <>
+          <h2 style={{...S.h2, marginTop: 0}}>The Verification Layer of the Internet.</h2>
+          <p style={S.p}>Taskivo bridges the gap between digital businesses demanding real human attention and global contributors seeking verifiable micro-earning opportunities.</p>
+          <div style={{ display: 'flex', gap: 16, marginTop: 32 }}>
+            <div style={{ flex: 1, padding: 24, background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16 }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--lime)', marginBottom: 8 }}>100%</div>
+              <div style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600 }}>Human Attention Guaranteed</div>
+            </div>
+            <div style={{ flex: 1, padding: 24, background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16 }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--lime)', marginBottom: 8 }}>T+1</div>
+              <div style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600 }}>Rapid Payout Execution</div>
+            </div>
+          </div>
+        </>
+      )
+    }
+  };
+
+  const current = content[pageType] || content.terms;
 
   return (
-    <div className="page animate-fadeIn" style={{ paddingBottom: 100, maxWidth: 800 }}>
-      <div style={{ marginBottom: 40, borderBottom: "1px solid var(--line)", paddingBottom: 24 }}>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 40, fontWeight: 800, color: "var(--ink)", marginBottom: 8, letterSpacing: "-1px" }}>
-          {title}
-        </h1>
-        <div style={{ color: "var(--slate)", fontSize: 14 }}>Last updated: {date}</div>
-      </div>
-      <div style={{ color: "var(--slate)", fontSize: 16, lineHeight: 1.8, display: "flex", flexDirection: "column", gap: 24 }}>
-        {children}
-      </div>
+    <div style={S.page}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12 }}>{current.date}</div>
+      <h1 style={S.title}>{current.title}</h1>
+      <div style={{ height: 1, background: 'var(--line)', margin: '32px 0' }} />
+      <div>{current.body}</div>
     </div>
-  );
-}
-
-export function About() {
-  return (
-    <PageLayout title="About Taskivo" date="May 2026">
-      <p>
-        <strong style={{ color: "var(--ink)" }}>Two sides. One platform.</strong><br />
-        Taskivo was built on a simple premise: engagement should be genuine, and time should be rewarded. 
-      </p>
-      <p>
-        For years, creators have struggled with algorithmic suppression and "bot" views that do nothing for their actual community growth. On the other side, millions of internet users spend hours watching content for free. We built Taskivo to bridge that gap.
-      </p>
-      <h3 style={{ color: "var(--ink)", fontSize: 20, marginTop: 16 }}>Our Mission</h3>
-      <p>
-        Our mission is to create a transparent, global economy for digital engagement. By enforcing strict watch-timers and comprehension quizzes, we guarantee creators get real human interaction, while providing earners globally with a legitimate, accessible way to make money online.
-      </p>
-    </PageLayout>
-  );
-}
-
-export function Terms() {
-  return (
-    <PageLayout title="Terms of Service" date="May 5, 2026">
-      <p>Welcome to Taskivo. By accessing our platform, you agree to these terms.</p>
-      
-      <h3 style={{ color: "var(--ink)", fontSize: 20, marginTop: 16 }}>1. Earner Accounts & Fair Use</h3>
-      <p>
-        Earners must complete tasks manually and genuinely. The use of automated bots, scripts, tab-switching bypasses, or multiple accounts to farm points is strictly prohibited. Accounts caught violating these rules will be permanently banned and all pending withdrawals will be forfeited.
-      </p>
-
-      <h3 style={{ color: "var(--ink)", fontSize: 20, marginTop: 16 }}>2. Creator Campaigns</h3>
-      <p>
-        Creators are responsible for the content they promote on Taskivo. Videos or articles promoting illegal activities, hate speech, or explicit content will be rejected during the admin approval process without refund.
-      </p>
-
-      <h3 style={{ color: "var(--ink)", fontSize: 20, marginTop: 16 }}>3. Withdrawals & Payments</h3>
-      <p>
-        Points earned hold no real-world value until a withdrawal request is approved by an administrator. Taskivo reserves the right to hold or deny payouts if suspicious activity is detected on the earner's account. Standard processing time for withdrawals is 24 to 48 hours.
-      </p>
-    </PageLayout>
-  );
-}
-
-export function Privacy() {
-  return (
-    <PageLayout title="Privacy Policy" date="May 5, 2026">
-      <p>Your privacy is critically important to us. At Taskivo, we follow a few fundamental principles regarding your data.</p>
-      
-      <h3 style={{ color: "var(--ink)", fontSize: 20, marginTop: 16 }}>Information We Collect</h3>
-      <p>
-        We only ask for personal information when we truly need it to provide a service to you. This includes your email address for account creation, your country for localized task rates, and your payment details strictly for processing your withdrawals.
-      </p>
-
-      <h3 style={{ color: "var(--ink)", fontSize: 20, marginTop: 16 }}>How We Use Your Data</h3>
-      <p>
-        We use your data to authenticate your account, prevent platform fraud, and ensure you get paid accurately. We do not sell your personal data to third-party marketing agencies. Creator task analytics are anonymized and do not reveal the personal email addresses of the earners.
-      </p>
-    </PageLayout>
   );
 }
