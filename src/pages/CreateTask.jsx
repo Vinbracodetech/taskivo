@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import PaystackPop from '@paystack/inline-js';
 
 export default function CreateTask({ session, navigate, showToast }) {
   const user = session?.user;
@@ -11,21 +12,21 @@ export default function CreateTask({ session, navigate, showToast }) {
     url: '',
     watch_duration: 30,
     package: 'traction',
-    paymentGateway: 'stripe' // Default to Stripe for global
+    paymentGateway: 'paystack' // Defaulting to Paystack since it is fully wired
   });
 
   const packages = {
     social: {
-      starter: { label: 'Starter Tier', views: 50, price: '$5', desc: 'Baseline test for algorithmic response.' },
-      traction: { label: 'Traction Tier', views: 200, price: '$15', desc: 'Ideal volume for initial momentum.' },
-      scale: { label: 'Scale Tier', views: 500, price: '$35', desc: 'High volume for sustained engagement.' },
-      enterprise: { label: 'Enterprise Tier', views: 1000, price: '$68', desc: 'Maximum velocity for major campaigns.' }
+      starter: { label: 'Starter Tier', views: 50, price: '$5', numericPrice: 5, desc: 'Baseline test for algorithmic response.' },
+      traction: { label: 'Traction Tier', views: 200, price: '$15', numericPrice: 15, desc: 'Ideal volume for initial momentum.' },
+      scale: { label: 'Scale Tier', views: 500, price: '$35', numericPrice: 35, desc: 'High volume for sustained engagement.' },
+      enterprise: { label: 'Enterprise Tier', views: 1000, price: '$68', numericPrice: 68, desc: 'Maximum velocity for major campaigns.' }
     },
     seo: {
-      starter: { label: 'Starter SEO', views: 100, price: '$8', desc: 'Guaranteed 2+ minutes on page.' },
-      traction: { label: 'Traction SEO', views: 300, price: '$24', desc: 'Ideal for initial search ranking.' },
-      scale: { label: 'Scale SEO', views: 800, price: '$55', desc: 'High volume traffic for domain authority.' },
-      enterprise: { label: 'Enterprise SEO', views: 2000, price: '$120', desc: 'Maximum sustained web presence.' }
+      starter: { label: 'Starter SEO', views: 100, price: '$8', numericPrice: 8, desc: 'Guaranteed 2+ minutes on page.' },
+      traction: { label: 'Traction SEO', views: 300, price: '$24', numericPrice: 24, desc: 'Ideal for initial search ranking.' },
+      scale: { label: 'Scale SEO', views: 800, price: '$55', numericPrice: 55, desc: 'High volume traffic for domain authority.' },
+      enterprise: { label: 'Enterprise SEO', views: 2000, price: '$120', numericPrice: 120, desc: 'Maximum sustained web presence.' }
     }
   };
 
@@ -53,12 +54,12 @@ export default function CreateTask({ session, navigate, showToast }) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('free_credits')
-        .eq('id', user.id)
+        .eq('id', user?.id)
         .single();
 
       const hasFreeCredit = profile?.free_credits > 0;
       
-      // 2. Insert the task securely
+      // 2. Insert the task securely into Taskivo database
       const initialStatus = hasFreeCredit ? 'active' : 'pending_payment';
 
       const { data: newTask, error } = await supabase.from('tasks').insert({
@@ -77,29 +78,41 @@ export default function CreateTask({ session, navigate, showToast }) {
 
       // 3. Routing Logic: Free vs Paid
       if (hasFreeCredit) {
-        // Securely deduct the credit (Requires SQL function we will add later)
-        // await supabase.rpc('deduct_free_credit', { user_id: user.id });
         if (showToast) showToast('Free Pilot Grant Applied! Campaign is LIVE.', 'success');
-        navigate('creator-dashboard');
+        navigate('/creator-dashboard');
       } else {
-        // Log the intent and route to the correct gateway
         if (showToast) showToast(`Initiating secure connection to ${form.paymentGateway.toUpperCase()}...`, 'success');
         
-        if (form.paymentGateway === 'stripe') {
-           console.log(`Redirecting to Stripe for Task ID: ${newTask.id} | Amount: ${selectedPackage.price}`);
-           // window.location.href = `YOUR_STRIPE_CHECKOUT_URL`;
-        } else {
-           console.log(`Redirecting to Paystack for Task ID: ${newTask.id} | Amount: ${selectedPackage.price}`);
-           // window.location.href = `YOUR_PAYSTACK_CHECKOUT_URL`;
+        if (form.paymentGateway === 'paystack') {
+           // Initialize Paystack Popup
+           const paystack = new PaystackPop();
+           paystack.newTransaction({
+             key: 'pk_test_dbc405eee8b6b7e9c572', // Your exact test key
+             email: user.email,
+             // Convert USD to NGN (roughly x1500 for demo) and multiply by 100 for kobo
+             amount: selectedPackage.numericPrice * 1500 * 100, 
+             metadata: {
+               // The critical link for the webhook to activate the right task
+               task_id: newTask.id 
+             },
+             onSuccess: (transaction) => {
+               if (showToast) showToast('Payment successful! Campaign is going live.', 'success');
+               navigate('/creator-dashboard'); 
+             },
+             onCancel: () => {
+               if (showToast) showToast('Payment was cancelled.', 'error');
+               setLoading(false);
+             }
+           });
+        } else if (form.paymentGateway === 'stripe') {
+           console.log(`Stripe integration coming soon for Task ID: ${newTask.id}`);
+           navigate('/creator-dashboard'); 
         }
-        
-        navigate('creator-dashboard'); 
       }
       
     } catch (err) {
       if (showToast) showToast('Deployment failed. Please try again.', 'error');
       console.error(err);
-    } finally {
       setLoading(false);
     }
   }
@@ -131,7 +144,7 @@ export default function CreateTask({ session, navigate, showToast }) {
           <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Campaign Deployment</h1>
           <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400, margin: 0 }}>Configure and launch your engagement architecture.</p>
         </div>
-        <button onClick={() => navigate('creator-dashboard')} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>← Dashboard</button>
+        <button onClick={() => navigate('/creator-dashboard')} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>← Dashboard</button>
       </div>
 
       <div style={S.glassCard}>
@@ -188,7 +201,6 @@ export default function CreateTask({ session, navigate, showToast }) {
             </div>
           </div>
 
-          {/* 🔥 DUAL PAYMENT GATEWAY SELECTOR 🔥 */}
           <div style={{ marginBottom: 32, padding: '24px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--line)' }}>
             <span style={{ ...S.label, marginBottom: 16 }}>Payment Processor</span>
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
