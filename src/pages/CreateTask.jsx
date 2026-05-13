@@ -111,7 +111,9 @@ export default function CreateTask({ session, navigate, showToast }) {
       }
       
     } catch (err) {
-      if (showToast) showToast('Deployment failed. Please try again.', 'error');
+      // 🚨 THE NEW DEBUG BLOCK 🚨
+      const errorMessage = err.message || err.toString();
+      if (showToast) showToast(`Checkout Failed: ${errorMessage}`, 'error');
       console.error(err);
       setLoading(false);
     }
