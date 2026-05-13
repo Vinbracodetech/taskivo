@@ -89,7 +89,7 @@ export default function CreateTask({ session, navigate, showToast }) {
         if (form.paymentGateway === 'paystack') {
            const paystack = new PaystackPop();
            paystack.newTransaction({
-             key: 'pk_test_dbc405eee8b6b7e9c572',
+             key: 'pk_test_dbc405eee8b6b7e9c5723a2f984a6c395a355902',
              email: user.email,
              amount: selectedPackage.numericPrice * 1500 * 100, 
              metadata: {
