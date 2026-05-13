@@ -69,12 +69,13 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     try {
       setLoading(true);
       
-      // Attempt to save the completion record
+      // 🚨 THE FIX: Both earner_id and user_id are now passed to satisfy Supabase security 🚨
       const { error } = await supabase.from('completions').insert({ 
         earner_id: user.id, 
+        user_id: user.id, 
         task_id: task.id, 
         platform: task.platform,
-        social_handle: socialHandle // Saving the handle for the creator audit
+        social_handle: socialHandle 
       });
 
       if (error) throw error;
@@ -83,7 +84,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       navigate('tasks');
 
     } catch (err) {
-      // Unmasking the real error to catch any missing database columns instantly
       alert(`Backend Error: ${err.message}`);
       setVerificationMode(false);
     } finally {
