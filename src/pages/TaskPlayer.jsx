@@ -8,8 +8,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   
   const [timer, setTimer] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [quizMode, setQuizMode] = useState(false);
-  const [strikes, setStrikes] = useState(0);
+  const [verificationMode, setVerificationMode] = useState(false);
+  const [socialHandle, setSocialHandle] = useState('');
 
   const timerRef = useRef(null);
 
@@ -29,7 +29,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       timerRef.current = setInterval(() => setTimer(t => t - 1), 1000);
     } else if (timer === 0 && playing) {
       setPlaying(false);
-      setQuizMode(true);
+      setVerificationMode(true);
     }
     return () => clearInterval(timerRef.current);
   }, [playing, timer]);
@@ -46,48 +46,48 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
   }
 
-  async function handleQuiz(passed) {
-    if (passed) {
-      try {
-        setLoading(true);
-        // Secure Handoff: The database trigger handles payout and campaign updates
-        const { error } = await supabase.from('completions').insert({ 
-          earner_id: user.id, 
-          task_id: task.id, 
-          platform: task.platform 
-        });
+  // 🛠️ SMART URL CONVERTER FOR YOUTUBE IFRAMES 🛠️
+  function getEmbedUrl(url) {
+    if (!url) return '';
+    if (url.includes('youtu.be/')) {
+      const id = url.split('youtu.be/')[1].split('?')[0];
+      return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1`;
+    }
+    if (url.includes('youtube.com/watch')) {
+      const urlParams = new URL(url).searchParams;
+      return `https://www.youtube.com/embed/${urlParams.get('v')}?autoplay=1&mute=1`;
+    }
+    return url;
+  }
 
-        if (error) throw error;
+  async function handleClaim() {
+    if (!socialHandle.trim()) {
+      alert("Please enter your social handle to claim points.");
+      return;
+    }
 
-        user.points += task.reward_points; 
-        alert(`Verification Successful! ${task.reward_points} PTS securely deposited.`);
-        navigate('tasks');
+    try {
+      setLoading(true);
+      
+      // Attempt to save the completion record
+      const { error } = await supabase.from('completions').insert({ 
+        earner_id: user.id, 
+        task_id: task.id, 
+        platform: task.platform,
+        social_handle: socialHandle // Saving the handle for the creator audit
+      });
 
-      } catch (err) {
-        alert("Verification failed: Campaign may have just reached its allocation limit.");
-        navigate('tasks');
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      try {
-        setLoading(true);
-        // 🔥 SECURE BACKEND STRIKE TRACKER 🔥
-        const { data, error } = await supabase.rpc('record_quiz_failure');
-        if (error) throw error;
+      if (error) throw error;
 
-        if (data.is_locked) {
-          alert('Verification failed 3 times. Account permanently locked for 24 hours.');
-          navigate('tasks');
-        } else {
-          setStrikes(data.strikes);
-          alert(`Incorrect response. Strike ${data.strikes}/3.`);
-          setLoading(false);
-        }
-      } catch (err) {
-        alert("Network error processing verification.");
-        setLoading(false);
-      }
+      alert(`Verification Successful! ${task.reward_points} PTS securely deposited.`);
+      navigate('tasks');
+
+    } catch (err) {
+      // Unmasking the real error to catch any missing database columns instantly
+      alert(`Backend Error: ${err.message}`);
+      setVerificationMode(false);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -96,7 +96,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     terminal: { width: '100%', maxWidth: 800, background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, overflow: 'hidden', boxShadow: '0 16px 40px rgba(0,0,0,0.05)' },
     hud: { display: 'flex', justifyContent: 'space-between', padding: '20px 32px', background: 'var(--surface)', borderBottom: '1px solid var(--line)', alignItems: 'center' },
     timerGlow: { fontFamily: 'monospace', fontSize: 24, fontWeight: 800, color: playing ? 'var(--lime)' : '#ef4444' },
-    btnPlay: { background: 'var(--ink)', color: 'var(--surface)', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }
+    btnPlay: { background: 'var(--ink)', color: 'var(--surface)', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" },
+    input: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, outline: 'none', boxSizing: 'border-box', marginBottom: 24, textAlign: 'center' }
   };
 
   if (loading || !task) return <div style={S.page}><div style={{color: 'var(--slate)'}}>Initializing secure sandbox...</div></div>;
@@ -122,20 +123,49 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           )}
         </div>
 
-        {quizMode ? (
-          <div style={{ padding: 60, textAlign: 'center' }}>
-            <h2 style={{ color: 'var(--ink)', fontFamily: "'Inter', sans-serif", marginBottom: 24 }}>Proof of Attention Required</h2>
-            <p style={{ color: 'var(--slate)', marginBottom: 40 }}>To verify manual engagement, please confirm you are human.</p>
-            <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-              <button onClick={() => handleQuiz(false)} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', padding: '14px 24px', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>I am a bot</button>
-              <button onClick={() => handleQuiz(true)} style={{ background: 'var(--lime)', border: 'none', color: '#000', padding: '14px 24px', borderRadius: 8, cursor: 'pointer', fontWeight: 800 }}>I am human</button>
+        {verificationMode ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center', maxWidth: 400, margin: '0 auto' }}>
+            <h2 style={{ color: 'var(--ink)', fontFamily: "'Inter', sans-serif", marginBottom: 12 }}>Engagement Required</h2>
+            <p style={{ color: 'var(--slate)', marginBottom: 32, fontSize: 14, lineHeight: 1.5 }}>
+              The required view time is complete. Please engage with the content to claim your reward.
+            </p>
+            
+            {/* The Deep Link Button */}
+            <button 
+              onClick={() => window.open(task.url, '_blank')} 
+              style={{ ...S.btnPlay, width: '100%', marginBottom: 32, background: '#ef4444', color: '#fff', padding: '16px' }}>
+              ▶ OPEN APP TO LIKE & SUBSCRIBE
+            </button>
+
+            <div style={{ textAlign: 'left' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: 8, display: 'block' }}>
+                Drop your handle for verification
+              </span>
+              <input 
+                style={S.input} 
+                type="text" 
+                placeholder="e.g., @VincentCodes" 
+                value={socialHandle} 
+                onChange={(e) => setSocialHandle(e.target.value)} 
+              />
             </div>
-            <div style={{ marginTop: 24, fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Strikes: {strikes} / 3</div>
+
+            <button 
+              onClick={handleClaim} 
+              style={{ background: 'var(--lime)', border: 'none', color: '#000', width: '100%', padding: '16px', borderRadius: 12, cursor: 'pointer', fontWeight: 800, fontSize: 16 }}>
+              CLAIM {task.reward_points} POINTS
+            </button>
           </div>
         ) : (
           <div style={{ background: 'var(--surface)', height: 450, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--line)' }}>
              {playing ? (
-               <iframe src={task.url} style={{ width: '100%', height: '100%', border: 'none' }} title="Task Asset" />
+               <iframe 
+                 src={getEmbedUrl(task.url)} 
+                 allow="autoplay; encrypted-media"
+                 allowFullScreen
+                 style={{ width: '100%', height: '100%', border: 'none' }} 
+                 title="Task Asset" 
+               />
              ) : (
                <div style={{ color: 'var(--slate)', fontSize: 14, fontWeight: 600, letterSpacing: '0.5px' }}>PLAYBACK SUSPENDED - AWAITING INITIALIZATION</div>
              )}
