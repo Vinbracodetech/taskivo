@@ -37,6 +37,7 @@ export default function DailyRewardWidget({ session }) {
   }
 
   if (loading) return null;
+  
   return (
     <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: 24, textAlign: 'center', marginBottom: 32 }}>
       <div style={{ fontSize: 40 }}>{streak > 0 ? '🔥' : '🧊'}</div>
