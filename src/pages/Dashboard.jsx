@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import DailyRewardWidget from './DailyRewardWidget';
 
 export default function Dashboard({ user, navigate, showToast }) {
   const [loading, setLoading] = useState(true);
@@ -60,11 +61,17 @@ export default function Dashboard({ user, navigate, showToast }) {
     <div style={S.page}>
       
       {/* HEADER */}
-      <div style={{ marginBottom: 48, position: 'relative', zIndex: 1 }}>
+      <div style={{ marginBottom: 32, position: 'relative', zIndex: 1 }}>
         <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>
           Welcome back, <span style={{ color: 'var(--lime)', textTransform: 'capitalize' }}>{user.full_name?.split(' ')[0] || 'Earner'}</span>.
         </h1>
         <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400 }}>Your engagement portfolio and network analytics.</p>
+      </div>
+
+      {/* 🔥 THE DAILY REWARD WIDGET 🔥 */}
+      {/* Passing the user object mapped inside a session object so your widget code reads it perfectly */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <DailyRewardWidget session={{ user }} />
       </div>
 
       {/* STATS GRID */}
