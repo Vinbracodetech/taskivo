@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import DailyRewardWidget from '../components/DailyRewardWidget';
+import { enforceDeviceFingerprint } from '../lib/security';
+
 export default function Dashboard({ user, navigate, showToast }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ completions: 0 });
@@ -13,7 +15,12 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   useEffect(() => {
     if (!user) return;
+    
     fetchDashboardData();
+    
+    // 🔥 SILENTLY TRIGGER THE DEVICE TRACKER 🔥
+    enforceDeviceFingerprint(user.id);
+    
   }, [user]);
 
   async function fetchDashboardData() {
