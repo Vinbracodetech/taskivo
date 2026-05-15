@@ -52,6 +52,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     if (!task || cooldown || verification) return;
 
     const loadPlayer = () => {
+      if (ytPlayerRef.current) return; 
+      
       const vidMatch = task.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
       const vidId = vidMatch ? vidMatch[1] : '';
 
@@ -60,13 +62,19 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         playerVars: { playsinline: 1, rel: 0 },
         events: {
           onStateChange: (e) => {
+            // 1 = Playing, 0 = Ended natively by YouTube
             setIsLive(e.data === 1);
+            
+            // THE FIX: If the video physically ends, force the timer to complete
+            if (e.data === 0) {
+              setTimer(0);
+            }
           }
         }
       });
     };
 
-    if (!window.YT) {
+    if (!window.YT || !window.YT.Player) {
       const s = document.createElement('script');
       s.src = 'https://www.youtube.com/iframe_api';
       window.onYouTubeIframeAPIReady = loadPlayer;
@@ -76,6 +84,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
   }, [task, cooldown, verification]);
 
+  // Tab switch protection
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
@@ -89,9 +98,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
-  // 🚨 THE FIXED TIMER LOGIC 🚨
+  // Timer logic
   useEffect(() => {
-    // 1. If it hits zero, immediately lock the screen regardless of video state
     if (timer <= 0 && task && !verification) {
       setVerification(true);
       setIsLive(false);
@@ -101,7 +109,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       return;
     }
 
-    // 2. Only tick down if actively playing and tab is open
     let interval;
     if (isLive && !document.hidden && timer > 0) {
       interval = setInterval(() => {
@@ -113,7 +120,10 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   }, [isLive, timer, task, verification]);
 
   async function claim() {
-    if (!handle.trim()) return alert("Enter your platform handle to claim points.");
+    if (!handle.trim()) {
+      alert("Enter your handle to claim points.");
+      return;
+    }
     
     const { error } = await supabase
       .from('completions')
@@ -133,23 +143,38 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
   }
 
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Syncing secure sandbox...</div>;
-  if (cooldown) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>⏱️ Task on Cooldown. Return in {cooldown} hours.</div>;
+  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Syncing...</div>;
+  if (cooldown) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>⏱️ Cooldown: {cooldown}h left</div>;
+
+  // ── THE FIX: PROPER UI TEXT STATUS ──
+  let statusText = 'PLAYBACK PAUSED';
+  let statusColor = '#ff4444';
+
+  if (verification) {
+    statusText = '✅ VERIFICATION READY';
+    statusColor = 'var(--lime)';
+  } else if (isLive) {
+    statusText = `TRACKING VIEW: ${timer}s`;
+    statusColor = 'var(--lime)';
+  } else if (timer === task?.watch_duration) {
+    statusText = 'TAP VIDEO TO START';
+    statusColor = '#fbbf24'; 
+  }
 
   const wrapStyle = { padding: 20, maxWidth: 600, margin: 'auto', fontFamily: "'Inter', sans-serif" };
   const cardStyle = { background: '#000', borderRadius: 16, overflow: 'hidden', marginBottom: 20, border: '1px solid var(--line)' };
-  const headerStyle = { padding: 15, background: '#111', color: isLive ? 'var(--lime)' : '#ff4444', fontWeight: 800, textAlign: 'center', letterSpacing: '1px' };
+  const headerStyle = { padding: 15, background: '#111', color: statusColor, fontWeight: 800, textAlign: 'center' };
   const verifBox = { padding: 40, background: 'var(--surface-card)', textAlign: 'center' };
   const inputStyle = { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)' };
-  const btnRed = { background: '#ff4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 14 };
-  const btnGreen = { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16 };
+  const btnRed = { background: '#ff4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer' };
+  const btnGreen = { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer' };
 
   return (
     <div style={wrapStyle}>
       <div style={cardStyle}>
         
         <div style={headerStyle}>
-          {isLive ? `TRACKING VIEW: ${timer}s` : 'PLAYBACK PAUSED'}
+          {statusText}
         </div>
         
         {!verification ? (
@@ -163,7 +188,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
             </button>
             
             <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>
-              Drop your handle for verification
+              Drop your handle
             </div>
             
             <input 
