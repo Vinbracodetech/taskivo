@@ -9,7 +9,7 @@ export default function Wallet({ user, navigate, showToast }) {
 
   const minWithdrawal = 2000;
 
-  useEffect(function() {
+  useEffect(() => {
     if (!user) return;
     fetchLedger();
   }, [user]);
@@ -25,6 +25,18 @@ export default function Wallet({ user, navigate, showToast }) {
         
       if (error) throw error;
       setWithdrawals(data || []);
+      
+      // Attempt to pre-fill their locked payout account if they have one
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('payout_account')
+        .eq('id', user.id)
+        .single();
+        
+      if (profile?.payout_account) {
+        setForm(prev => ({ ...prev, account_number: profile.payout_account }));
+      }
+      
     } catch (err) {
       if (showToast) showToast('Failed to sync transaction ledger', 'error');
     } finally {
@@ -33,7 +45,7 @@ export default function Wallet({ user, navigate, showToast }) {
   }
 
   function handleInput(e) {
-    setForm(function(prev) {
+    setForm(prev => {
       return { ...prev, [e.target.name]: e.target.value };
     });
   }
@@ -57,6 +69,25 @@ export default function Wallet({ user, navigate, showToast }) {
 
     try {
       setSubmitting(true);
+      
+      // 🚨 LAYER 3 SECURITY: Attempt to bind the payout account to this specific user 🚨
+      const { error: bindError } = await supabase
+        .from('profiles')
+        .update({ payout_account: form.account_number })
+        .eq('id', user.id);
+
+      // If the database unique constraint blocks this, they are running multiple accounts
+      if (bindError) {
+        if (bindError.message.includes('unique') || bindError.code === '23505') {
+           if (showToast) showToast('🚨 SECURITY ALERT: This payout account is already bound to another earner. Multiple accounts are strictly prohibited.', 'error');
+           setSubmitting(false);
+           return;
+        } else {
+           throw bindError; // Throw other random errors to the generic catch block
+        }
+      }
+
+      // If the bind was successful, process the withdrawal normally
       const { error: insertError } = await supabase.from('withdrawals').insert({
         user_id: user.id, amount: amountNum, bank_name: form.bank_name, account_number: form.account_number, account_name: form.account_name, status: 'pending'
       });
@@ -65,8 +96,8 @@ export default function Wallet({ user, navigate, showToast }) {
       const { error: updateError } = await supabase.from('profiles').update({ points: user.points - amountNum }).eq('id', user.id);
       if (updateError) throw updateError;
 
-      if (showToast) showToast('Payout request successfully submitted.', 'success');
-      setForm({ amount: '', bank_name: '', account_number: '', account_name: '' });
+      if (showToast) showToast('Payout successfully bound and submitted.', 'success');
+      setForm({ amount: '', bank_name: '', account_number: form.account_number, account_name: '' });
       user.points -= amountNum; 
       fetchLedger();
     } catch (err) {
@@ -144,6 +175,12 @@ export default function Wallet({ user, navigate, showToast }) {
             <span style={{ ...S.label, marginBottom: 0, color: 'var(--ink)' }}>Secure Payout Terminal</span>
           </div>
 
+          {/* 🔥 SECURITY NOTICE ADDED TO UI 🔥 */}
+          <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: 12, borderRadius: 8, marginBottom: 20 }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Security Lock Active</span>
+            <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>Payout accounts are permanently bound to your identity to prevent multi-account farming.</div>
+          </div>
+
           <form onSubmit={handleWithdrawal}>
             <div>
               <label style={S.label}>Withdrawal Amount (PTS)</label>
@@ -156,8 +193,8 @@ export default function Wallet({ user, navigate, showToast }) {
             </div>
 
             <div>
-              <label style={S.label}>Account Number</label>
-              <input style={S.input} type="text" name="account_number" placeholder="Enter strictly numeric account ID" value={form.account_number} onChange={handleInput} disabled={!isEligible} />
+              <label style={S.label}>Account Number / Wallet ID</label>
+              <input style={S.input} type="text" name="account_number" placeholder="Enter payout destination" value={form.account_number} onChange={handleInput} disabled={!isEligible} />
             </div>
 
             <div>
@@ -166,7 +203,7 @@ export default function Wallet({ user, navigate, showToast }) {
             </div>
 
             <button type="submit" disabled={!isEligible || submitting} style={isEligible ? S.btnLime : S.btnDisabled}>
-              {submitting ? 'Processing...' : isEligible ? 'Initiate Transfer' : 'Insufficient Liquidity'}
+              {submitting ? 'Verifying Network...' : isEligible ? 'Initiate Transfer' : 'Insufficient Liquidity'}
             </button>
           </form>
         </div>
