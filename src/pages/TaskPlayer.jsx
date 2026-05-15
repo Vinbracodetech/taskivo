@@ -11,8 +11,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [cooldown, setCooldown] = useState(null);
   const [handle, setHandle] = useState('');
   
-  // 🔥 THE NEW FRICTION GATE STATE 🔥
-  const [hasVisitedPlatform, setHasVisitedPlatform] = useState(false);
+  // 🔥 THE FRICTION GATE 🔥
+  const [gateUnlocked, setGateUnlocked] = useState(false);
 
   const ytPlayerRef = useRef(null);
 
@@ -117,9 +117,15 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     return () => clearInterval(interval);
   }, [isLive, timer, task, verification]);
 
+  // 🔥 UNLOCK THE GATE WHEN THEY CLICK THE APP BUTTON 🔥
+  function handleOpenApp() {
+    window.open(task.url, '_blank');
+    setGateUnlocked(true); 
+  }
+
   async function claim() {
     if (!handle.trim()) {
-      alert("Enter your handle to claim points.");
+      alert("Enter your platform handle to claim points.");
       return;
     }
     
@@ -134,18 +140,11 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       });
       
     if (error) {
-      alert(error.message);
+      alert(`Database Error: ${error.message}`);
     } else {
-      alert("Verified! Points added.");
+      alert("Verified! Points successfully deposited.");
       navigate('tasks');
     }
-  }
-
-  // 🚨 THE ON-CLICK HANDLER FOR THE GATE 🚨
-  function handleOpenApp() {
-    window.open(task.url, '_blank');
-    // Once they click it, we unlock the claim button
-    setHasVisitedPlatform(true); 
   }
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Syncing...</div>;
@@ -170,8 +169,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const headerStyle = { padding: 15, background: '#111', color: statusColor, fontWeight: 800, textAlign: 'center' };
   const verifBox = { padding: 40, background: 'var(--surface-card)', textAlign: 'center' };
   const inputStyle = { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)' };
-  const btnRed = { background: '#ff4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer' };
-  const btnGreen = { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer' };
+  const btnRed = { background: '#ff4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 14 };
+  const btnGreen = { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16 };
 
   return (
     <div style={wrapStyle}>
@@ -191,18 +190,15 @@ export default function TaskPlayer({ session, navigate, taskId }) {
               Engagement Required
             </h3>
             
-            <button 
-              onClick={handleOpenApp} 
-              style={btnRed}
-            >
-              ▶ OPEN APP TO LIKE & SUBSCRIBE
+            <button onClick={handleOpenApp} style={btnRed}>
+              ▶ 1. OPEN APP TO LIKE & SUBSCRIBE
             </button>
             
-            {/* 🔥 CONDITIONAL RENDERING FOR THE CLAIM BUTTON 🔥 */}
-            {hasVisitedPlatform ? (
+            {/* 🔥 THE GATE LOGIC 🔥 */}
+            {gateUnlocked ? (
               <>
                 <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>
-                  Drop your handle
+                  2. Drop your handle
                 </div>
                 
                 <input 
@@ -213,12 +209,12 @@ export default function TaskPlayer({ session, navigate, taskId }) {
                 />
                 
                 <button onClick={claim} style={btnGreen}>
-                  CLAIM {task.reward_points} POINTS
+                  3. CLAIM {task.reward_points} POINTS
                 </button>
               </>
             ) : (
-              <div style={{ color: 'var(--slate)', fontSize: 14, fontStyle: 'italic', marginTop: 16 }}>
-                * You must open the app and engage before you can claim points.
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: 20, color: 'var(--slate)', fontSize: 14, marginTop: 16 }}>
+                🔒 Click the red button above to open the video. The claim form will unlock automatically.
               </div>
             )}
             
