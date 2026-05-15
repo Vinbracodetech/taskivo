@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import DailyRewardWidget from './DailyRewardWidget';
-
+import DailyRewardWidget from '../components/DailyRewardWidget';
 export default function Dashboard({ user, navigate, showToast }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ completions: 0 });
