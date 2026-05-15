@@ -1,4 +1,3 @@
-// src/lib/security.js
 import { supabase } from './supabase';
 
 export async function enforceDeviceFingerprint(userId) {
@@ -7,10 +6,9 @@ export async function enforceDeviceFingerprint(userId) {
   // 1. Check if the device already has a permanent tracker
   let deviceId = localStorage.getItem('taskivo_device_hash');
   
-  // 2. If not, generate one based on their hardware/browser footprint
+  // 2. Generate one based on their hardware/browser footprint
   if (!deviceId) {
     const footprint = navigator.userAgent + screen.width + screen.height + navigator.hardwareConcurrency;
-    // Simple hash function to create a short ID
     let hash = 0;
     for (let i = 0; i < footprint.length; i++) {
       hash = Math.imul(31, hash) + footprint.charCodeAt(i) | 0;
@@ -24,5 +22,5 @@ export async function enforceDeviceFingerprint(userId) {
     .from('profiles')
     .update({ device_id: deviceId })
     .eq('id', userId)
-    .is('device_id', null); // Only update if they don't have one yet
+    .is('device_id', null); 
 }
