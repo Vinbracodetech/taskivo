@@ -6,35 +6,16 @@ export default function CreateTask({ session, navigate, showToast }) {
   const user = session?.user;
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState(null); 
-  const [freeCredits, setFreeCredits] = useState(0); // 🔥 NEW: Track free grants
+  const [freeCredits, setFreeCredits] = useState(0); 
   
   const [form, setForm] = useState({
     title: '',
     platform: 'youtube',
     url: '',
     watch_duration: 30,
-    package: 'traction',
+    package: 'traction', // Default fallback
     paymentGateway: 'paystack'
   });
-
-  const packages = {
-    social: {
-      starter: { label: 'Starter Tier', views: 50, price: '$5', numericPrice: 5, desc: 'Baseline test for algorithmic response.' },
-      traction: { label: 'Traction Tier', views: 200, price: '$15', numericPrice: 15, desc: 'Ideal volume for initial momentum.' },
-      scale: { label: 'Scale Tier', views: 500, price: '$35', numericPrice: 35, desc: 'High volume for sustained engagement.' },
-      enterprise: { label: 'Enterprise Tier', views: 1000, price: '$68', numericPrice: 68, desc: 'Maximum velocity for major campaigns.' }
-    },
-    seo: {
-      starter: { label: 'Starter SEO', views: 100, price: '$8', numericPrice: 8, desc: 'Guaranteed 2+ minutes on page.' },
-      traction: { label: 'Traction SEO', views: 300, price: '$24', numericPrice: 24, desc: 'Ideal for initial search ranking.' },
-      scale: { label: 'Scale SEO', views: 800, price: '$55', numericPrice: 55, desc: 'High volume traffic for domain authority.' },
-      enterprise: { label: 'Enterprise SEO', views: 2000, price: '$120', numericPrice: 120, desc: 'Maximum sustained web presence.' }
-    }
-  };
-
-  const currentPlatformType = form.platform === 'blog' ? 'seo' : 'social';
-  const activePackages = packages[currentPlatformType];
-  const hasFreeCredit = freeCredits > 0;
 
   // 🔥 CHECK FOR GRANTS ON LOAD 🔥
   useEffect(() => {
@@ -44,10 +25,40 @@ export default function CreateTask({ session, navigate, showToast }) {
         .select('free_credits')
         .eq('id', user?.id)
         .single();
-      if (data) setFreeCredits(data.free_credits || 0);
+        
+      if (data && data.free_credits > 0) {
+        setFreeCredits(data.free_credits);
+        // Force auto-select the pilot plan if they have a credit
+        setForm(prev => ({ ...prev, package: 'pilot' }));
+      }
     }
     if (user?.id) checkGrants();
   }, [user]);
+
+  const packages = {
+    social: {
+      starter: { label: 'Starter Tier', views: 50, price: '$5', numericPrice: 5 },
+      traction: { label: 'Traction Tier', views: 200, price: '$15', numericPrice: 15 },
+      scale: { label: 'Scale Tier', views: 500, price: '$35', numericPrice: 35 },
+      enterprise: { label: 'Enterprise Tier', views: 1000, price: '$68', numericPrice: 68 }
+    },
+    seo: {
+      starter: { label: 'Starter SEO', views: 100, price: '$8', numericPrice: 8 },
+      traction: { label: 'Traction SEO', views: 300, price: '$24', numericPrice: 24 },
+      scale: { label: 'Scale SEO', views: 800, price: '$55', numericPrice: 55 },
+      enterprise: { label: 'Enterprise SEO', views: 2000, price: '$120', numericPrice: 120 }
+    }
+  };
+
+  const currentPlatformType = form.platform === 'blog' ? 'seo' : 'social';
+  const activePackages = packages[currentPlatformType];
+  const hasFreeCredit = freeCredits > 0;
+  
+  // Create a special Pilot Package object for logic
+  const pilotPackage = { label: 'Pilot Grant', views: 20, price: 'FREE', numericPrice: 0 };
+  
+  // Determine which package data we are actually using
+  const selectedPackageData = form.package === 'pilot' ? pilotPackage : activePackages[form.package];
 
   function handleInput(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -65,9 +76,9 @@ export default function CreateTask({ session, navigate, showToast }) {
     try {
       setLoading(true);
       
-      const selectedPackage = activePackages[form.package];
       const earnerPayout = form.platform === 'blog' ? 50 : 30;
-      const initialStatus = hasFreeCredit ? 'active' : 'pending_payment';
+      const isUsingPilot = form.package === 'pilot';
+      const initialStatus = isUsingPilot ? 'active' : 'pending_payment';
 
       // 1. Insert the task
       const { data: newTask, error: insertErr } = await supabase.from('tasks').insert({
@@ -76,7 +87,7 @@ export default function CreateTask({ session, navigate, showToast }) {
         platform: form.platform, 
         url: form.url,
         watch_duration: parseInt(form.watch_duration, 10), 
-        target_views: selectedPackage.views, 
+        target_views: selectedPackageData.views, 
         current_views: 0, 
         status: initialStatus, 
         reward_points: earnerPayout
@@ -85,33 +96,28 @@ export default function CreateTask({ session, navigate, showToast }) {
       if (insertErr) throw new Error(`Database Insert Error: ${insertErr.message}`);
 
       // 2. Routing Logic: Free vs Paid
-      if (hasFreeCredit) {
+      if (isUsingPilot) {
         
-        // Deduct 1 credit from their profile
+        // Deduct their 1 and only credit
         const { error: deductErr } = await supabase
           .from('profiles')
-          .update({ free_credits: freeCredits - 1 })
+          .update({ free_credits: 0 })
           .eq('id', user.id);
           
         if (deductErr) throw new Error(`Failed to deduct grant: ${deductErr.message}`);
 
-        if (showToast) showToast('Free Pilot Grant Applied! Campaign is LIVE.', 'success');
+        if (showToast) showToast('Pilot Grant Applied! Campaign is LIVE.', 'success');
         navigate('/creator-dashboard');
         
       } else {
-        
         if (form.paymentGateway === 'paystack') {
            const paystack = new PaystackPop();
            paystack.newTransaction({
              key: 'pk_test_dbc405eee8b6b7e9c5723a2f984a6c395a355902',
              email: user.email,
-             amount: selectedPackage.numericPrice * 1500 * 100, 
-             metadata: {
-               task_id: newTask.id 
-             },
-             onSuccess: (transaction) => {
-               navigate('/creator-dashboard'); 
-             },
+             amount: selectedPackageData.numericPrice * 1500 * 100, 
+             metadata: { task_id: newTask.id },
+             onSuccess: () => navigate('/creator-dashboard'),
              onCancel: () => {
                setLocalError('Payment was cancelled by the user.');
                setLoading(false);
@@ -125,7 +131,6 @@ export default function CreateTask({ session, navigate, showToast }) {
       
     } catch (err) {
       setLocalError(err.message || err.toString());
-      console.error(err);
       setLoading(false);
     }
   }
@@ -135,19 +140,17 @@ export default function CreateTask({ session, navigate, showToast }) {
     page: { padding: '40px 5%', maxWidth: 900, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
     glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 40, boxShadow: 'var(--shadow)' },
     label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 12, display: 'block', fontFamily: "'Inter', sans-serif" },
-    input: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s', marginBottom: 24 },
+    input: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', marginBottom: 24 },
     select: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', appearance: 'none', marginBottom: 24 },
-    btnPrimary: { width: '100%', background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '18px', fontSize: 14, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 16, boxShadow: '0 8px 16px rgba(168,255,62,0.2)' },
+    btnPrimary: { width: '100%', background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '18px', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 16 },
     packageCard: (isActive) => ({ padding: 20, borderRadius: 16, cursor: 'pointer', transition: 'all 0.2s', background: isActive ? 'var(--ink)' : 'var(--surface)', border: `1px solid ${isActive ? 'var(--ink)' : 'var(--line)'}`, color: isActive ? 'var(--surface)' : 'var(--ink)', boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.1)' : 'none' }),
-    gatewayCard: (isActive) => ({ padding: '16px', borderRadius: '12px', cursor: 'pointer', border: `1px solid ${isActive ? 'var(--lime)' : 'var(--line)'}`, background: isActive ? 'var(--lime-dim)' : 'var(--surface)', flex: 1, display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s' })
+    gatewayCard: (isActive) => ({ padding: '16px', borderRadius: '12px', cursor: 'pointer', border: `1px solid ${isActive ? 'var(--lime)' : 'var(--line)'}`, background: isActive ? 'var(--lime-dim)' : 'var(--surface)', flex: 1, display: 'flex', alignItems: 'center', gap: '12px' })
   };
 
   return (
     <div style={S.page}>
       <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div>
-          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Campaign Deployment</h1>
-        </div>
+        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', margin: 0, fontWeight: 800, letterSpacing: '-0.5px' }}>Campaign Deployment</h1>
         <button onClick={() => navigate('/creator-dashboard')} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>← Dashboard</button>
       </div>
 
@@ -159,13 +162,11 @@ export default function CreateTask({ session, navigate, showToast }) {
         )}
 
         <form onSubmit={handleSubmit}>
-          
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
             <div>
               <span style={S.label}>Internal Campaign Designation</span>
-              <input style={S.input} type="text" name="title" placeholder="e.g., Q3 Product Launch Video" value={form.title} onChange={handleInput} required />
+              <input style={S.input} type="text" name="title" placeholder="e.g., Q3 Product Launch" value={form.title} onChange={handleInput} required />
             </div>
-            
             <div>
               <span style={S.label}>Target Platform</span>
               <select style={S.select} name="platform" value={form.platform} onChange={handleInput}>
@@ -186,7 +187,6 @@ export default function CreateTask({ session, navigate, showToast }) {
             <select style={S.select} name="watch_duration" value={form.watch_duration} onChange={handleInput}>
               <option value="30">30 Seconds (Standard Check)</option>
               <option value="60">60 Seconds (Deep Engagement)</option>
-              <option value="120">120 Seconds (High Retention)</option>
             </select>
           </div>
 
@@ -194,12 +194,30 @@ export default function CreateTask({ session, navigate, showToast }) {
             <span style={{ ...S.label, marginBottom: 16 }}>Select Engagement Allocation</span>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+              
+              {/* 🔥 EXCLUSIVE PILOT GRANT CARD 🔥 */}
+              {hasFreeCredit && (
+                <div onClick={() => setForm(prev => ({ ...prev, package: 'pilot' }))} style={{ ...S.packageCard(form.package === 'pilot'), border: `2px solid ${form.package === 'pilot' ? 'var(--lime)' : 'var(--line)'}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: form.package === 'pilot' ? 'var(--lime)' : 'var(--ink)' }}>🎁 Pilot Grant</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 100, border: `1px solid ${form.package === 'pilot' ? 'var(--surface)' : 'var(--line)'}` }}>
+                      FREE
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
+                    20 <span style={{ fontSize: 12, fontWeight: 600 }}>VERIFICATIONS</span>
+                  </div>
+                  <div style={{ fontSize: 11, opacity: 0.8 }}>One-time network trial.</div>
+                </div>
+              )}
+
+              {/* Standard Packages */}
               {Object.entries(activePackages).map(([key, pkg]) => (
                 <div key={key} onClick={() => setForm(prev => ({ ...prev, package: key }))} style={S.packageCard(form.package === key)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <div style={{ fontSize: 13, fontWeight: 700 }}>{pkg.label}</div>
                     <div style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 100, border: `1px solid ${form.package === key ? 'var(--surface)' : 'var(--line)'}` }}>
-                      {hasFreeCredit ? 'FREE' : pkg.price}
+                      {pkg.price}
                     </div>
                   </div>
                   <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
@@ -210,8 +228,8 @@ export default function CreateTask({ session, navigate, showToast }) {
             </div>
           </div>
 
-          {/* 🔥 HIDE PAYMENT GATEWAY IF THEY HAVE A FREE GRANT 🔥 */}
-          {!hasFreeCredit && (
+          {/* Hide payment UI if they selected the Free Pilot plan */}
+          {form.package !== 'pilot' && (
             <div style={{ marginBottom: 32, padding: '24px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--line)' }}>
               <span style={{ ...S.label, marginBottom: 16 }}>Payment Processor</span>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -227,7 +245,7 @@ export default function CreateTask({ session, navigate, showToast }) {
           )}
 
           <button type="submit" disabled={loading} style={{ ...S.btnPrimary, opacity: loading ? 0.5 : 1 }}>
-            {loading ? 'Processing...' : hasFreeCredit ? `DEPLOY FOR FREE (${freeCredits} Grants Left)` : `Pay ${activePackages[form.package].price} & Deploy`}
+            {loading ? 'Processing...' : form.package === 'pilot' ? `Deploy Pilot Campaign (Free)` : `Pay ${selectedPackageData.price} & Deploy`}
           </button>
         </form>
       </div>
