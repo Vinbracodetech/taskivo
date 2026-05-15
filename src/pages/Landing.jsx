@@ -15,23 +15,26 @@ const C = {
 
 export default function Landing({ navigate, setAuthMode }) {
   const [openFaq, setOpenFaq] = useState(null);
-  const [claimedSpots, setClaimedSpots] = useState(0);
   
-  // 🔥 NEW: Pricing Toggle State 🔥
+  // 🔥 SCARCITY STATES 🔥
+  const [claimedSpots, setClaimedSpots] = useState(0);
+  const TOTAL_SPOTS = 10;
+  const remainingSpots = Math.max(0, TOTAL_SPOTS - claimedSpots);
+  
   const [pricingMode, setPricingMode] = useState('social');
 
   useEffect(function () {
     document.title = 'Taskivo — Digital Engagement Infrastructure';
   }, []);
 
+  // 🔥 LIVE DATABASE SYNC FOR GRANTS 🔥
   useEffect(function () {
     async function fetchPilotData() {
       try {
         const { count, error } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
-          .eq('role', 'creator')
-          .eq('pilot_claimed', true);
+          .gt('free_credits', 0); // We count anyone who currently holds free credits
         
         if (!error && count !== null) {
           setClaimedSpots(count);
@@ -82,7 +85,6 @@ export default function Landing({ navigate, setAuthMode }) {
     document.head.appendChild(style);
   }, []);
 
-  // 🔥 NEW: Dual Pricing Arrays (4 Tiers Each) 🔥
   const socialPricing = [
     { name: 'Starter', price: '$5', slots: 50, useCase: 'Baseline algorithmic test', features: ['Social Algorithm Verification', 'Guaranteed Like & Comment', 'Anti-Cheat Protection', 'Algorithmic Safety Protocols'] },
     { name: 'Traction', price: '$15', slots: 200, useCase: 'Best Value (Most Popular)', features: ['Social Algorithm Verification', 'Guaranteed Like & Comment', 'Anti-Cheat Protection', 'Algorithmic Safety Protocols'], isPopular: true },
@@ -177,7 +179,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </div>
 
-      {/* PILOT PROGRAM BANNER */}
+      {/* 🔥 UPGRADED PILOT PROGRAM BANNER 🔥 */}
       <div style={{ background: C.ink, borderTop: `1px solid ${C.darkLine}`, borderBottom: `1px solid ${C.darkLine}`, padding: '24px 5%' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
           <div style={{ flex: '1 1 300px' }}>
@@ -187,25 +189,28 @@ export default function Landing({ navigate, setAuthMode }) {
             </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>We are gifting 20 free campaign slots to our first 10 businesses to stress-test the network.</div>
           </div>
+          
           <div style={{ flex: '1 1 250px', maxWidth: 350, width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: C.white, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-              <span>Grants Claimed</span>
-              <span>{claimedSpots} / 10</span>
+              <span>Grants Remaining</span>
+              <span style={{ color: C.lime }}>{remainingSpots} / {TOTAL_SPOTS}</span>
             </div>
+            {/* The progress bar fills up based on how many are CLAIMED */}
             <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 10, overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min((claimedSpots / 10) * 100, 100)}%`, height: '100%', background: C.lime, transition: 'width 1s ease-in-out' }}></div>
+              <div style={{ width: `${Math.min((claimedSpots / TOTAL_SPOTS) * 100, 100)}%`, height: '100%', background: C.lime, transition: 'width 1s ease-in-out' }}></div>
             </div>
           </div>
+          
           <button 
             style={{ 
-              background: claimedSpots >= 10 ? 'rgba(255,255,255,0.1)' : C.lime, 
-              color: claimedSpots >= 10 ? 'rgba(255,255,255,0.4)' : C.ink, 
+              background: remainingSpots === 0 ? 'rgba(255,255,255,0.1)' : C.lime, 
+              color: remainingSpots === 0 ? 'rgba(255,255,255,0.4)' : C.ink, 
               border: 'none', borderRadius: 6, padding: '12px 24px', fontSize: 13, fontWeight: 700, 
-              cursor: claimedSpots >= 10 ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif"
+              cursor: remainingSpots === 0 ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif"
             }} 
-            onClick={function() { if (claimedSpots < 10) claimFreeGrant(); }}
+            onClick={function() { if (remainingSpots > 0) claimFreeGrant(); }}
           >
-            {claimedSpots >= 10 ? 'Cohort Full' : 'Claim Free Slots'}
+            {remainingSpots === 0 ? 'Cohort Full' : 'Claim Free Slots'}
           </button>
         </div>
       </div>
@@ -290,7 +295,6 @@ export default function Landing({ navigate, setAuthMode }) {
           </div>
         </div>
 
-        {/* Updated Grid for 4 Columns */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
           {activePricing.map(function(plan, i) {
             return (
