@@ -3,8 +3,8 @@ import { supabase } from "../lib/supabase.js";
 
 export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mode, setMode] = useState(function() {
-    // 🔥 Force the Register screen if they arrived with a referral link 🔥
-    if (typeof window !== "undefined" && localStorage.getItem("taskivo_ref")) {
+    // 🔥 Force Register screen if they arrived with referral OR grant 🔥
+    if (typeof window !== "undefined" && (localStorage.getItem("taskivo_ref") || localStorage.getItem("taskivo_grant"))) {
       return "register";
     }
     return authMode || "login";
@@ -22,30 +22,39 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mounted, setMounted] = useState(false);
   var [form, setForm] = useState({ name: "", email: "", password: "" });
 
-  // ── ON MOUNT: ANIMATIONS ──
   useEffect(function () {
     var t = setTimeout(function () { setMounted(true); }, 50);
     return function () { clearTimeout(t); };
   }, []);
 
-  // ── AUTH LISTENER: PROCESS REFERRALS ON LOGIN ──
+  // ── AUTH LISTENER: PROCESS REFERRALS & GRANTS ON GOOGLE LOGIN ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
         var storedRef = localStorage.getItem("taskivo_ref");
+        var hasGrant = localStorage.getItem("taskivo_grant");
         
+        var updates = {};
+
         if (storedRef) {
-          // Check if this user was already referred to prevent double-paying
           var { data: currentUser } = await supabase.from("profiles").select("referred_by").eq("id", session.user.id).single();
-          
           if (currentUser && !currentUser.referred_by) {
-            // 1. Attach the referrer ID (Backend SQL handles the payout)
-            await supabase.from("profiles")
-              .update({ referred_by: storedRef })
-              .eq("id", session.user.id);
+            updates.referred_by = storedRef;
           }
           localStorage.removeItem("taskivo_ref");
         }
+
+        // 🔥 APPLY GRANT FOR GOOGLE SIGNUPS 🔥
+        if (hasGrant) {
+          updates.free_credits = 1;
+          updates.pilot_claimed = true;
+          localStorage.removeItem("taskivo_grant");
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await supabase.from("profiles").update(updates).eq("id", session.user.id);
+        }
+
         if (loadProfile) await loadProfile(session.user);
       }
     });
@@ -115,7 +124,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       return;
     }
     
-    // 🔥 ALIGNED WITH SUPABASE SECURITY RULES 🔥
     if (form.password.length < 8) {
       setError("Password must be at least 8 characters.");
       setLoading(false);
@@ -146,18 +154,24 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     
     if (result.data && result.data.user) {
       var storedRef = localStorage.getItem("taskivo_ref");
+      var hasGrant = localStorage.getItem("taskivo_grant");
       
-      // Update the new user's profile with the referrer ID
-      await supabase.from("profiles").update({
+      var profileData = {
         email: form.email,
         role: role,
         referred_by: storedRef || null
-      }).eq("id", result.data.user.id);
-      
-      if (storedRef) {
-        localStorage.removeItem("taskivo_ref");
+      };
+
+      // 🔥 APPLY GRANT FOR EMAIL SIGNUPS 🔥
+      if (hasGrant) {
+        profileData.free_credits = 1;
+        profileData.pilot_claimed = true;
       }
+
+      await supabase.from("profiles").update(profileData).eq("id", result.data.user.id);
       
+      if (storedRef) localStorage.removeItem("taskivo_ref");
+      if (hasGrant) localStorage.removeItem("taskivo_grant");
       localStorage.removeItem("taskivo_role"); 
     }
     
