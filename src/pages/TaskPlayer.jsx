@@ -11,7 +11,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [cooldown, setCooldown] = useState(null);
   const [handle, setHandle] = useState('');
   
-  // 🔥 THE FRICTION GATE 🔥
   const [gateUnlocked, setGateUnlocked] = useState(false);
 
   const ytPlayerRef = useRef(null);
@@ -117,7 +116,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     return () => clearInterval(interval);
   }, [isLive, timer, task, verification]);
 
-  // 🔥 UNLOCK THE GATE WHEN THEY CLICK THE APP BUTTON 🔥
   function handleOpenApp() {
     window.open(task.url, '_blank');
     setGateUnlocked(true); 
@@ -169,8 +167,9 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const headerStyle = { padding: 15, background: '#111', color: statusColor, fontWeight: 800, textAlign: 'center' };
   const verifBox = { padding: 40, background: 'var(--surface-card)', textAlign: 'center' };
   const inputStyle = { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)' };
-  const btnRed = { background: '#ff4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 14 };
+  const btnRed = { background: '#ff4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 13, letterSpacing: '0.5px' };
   const btnGreen = { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16 };
+  const warningBox = { background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 16, marginBottom: 24, textAlign: 'left' };
 
   return (
     <div style={wrapStyle}>
@@ -191,14 +190,22 @@ export default function TaskPlayer({ session, navigate, taskId }) {
             </h3>
             
             <button onClick={handleOpenApp} style={btnRed}>
-              ▶ 1. OPEN APP TO LIKE & SUBSCRIBE
+              ▶ 1. OPEN APP TO LIKE, COMMENT & SUBSCRIBE
             </button>
             
-            {/* 🔥 THE GATE LOGIC 🔥 */}
             {gateUnlocked ? (
               <>
+                <div style={warningBox}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.5px' }}>
+                    ⚠️ Strict Verification Warning
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--slate)', lineHeight: 1.5 }}>
+                    Creators actively audit this network. If a Creator reports your engagement as fake or missing, you will immediately face a <strong style={{ color: '#ef4444' }}>50 PTS deduction</strong> and risk permanent suspension.
+                  </div>
+                </div>
+
                 <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>
-                  2. Drop your handle
+                  2. Drop your handle for audit
                 </div>
                 
                 <input 
