@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import DailyRewardWidget from '../components/DailyRewardWidget';
+import DailyRewardWidget from './DailyRewardWidget';
 
 export default function Dashboard({ user, navigate, showToast }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ completions: 0 });
   const [featuredTasks, setFeaturedTasks] = useState([]);
   const [referralCopied, setReferralCopied] = useState(false);
+  
+  // 🔥 SMART LOCK STATES 🔥
+  const [quotas, setQuotas] = useState({ videos: 0, blogs: 0 });
+  const [cooldowns, setCooldowns] = useState({});
 
-  useEffect(function() {
+  useEffect(() => {
     if (!user) return;
     fetchDashboardData();
   }, [user]);
@@ -16,10 +20,55 @@ export default function Dashboard({ user, navigate, showToast }) {
   async function fetchDashboardData() {
     try {
       setLoading(true);
-      const { count } = await supabase.from('completions').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
-      const { data: tasks } = await supabase.from('tasks').select('*').eq('status', 'active').limit(3);
+      
+      // 1. Fetch Basic Stats
+      const { count } = await supabase
+        .from('completions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+        
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('status', 'active')
+        .limit(3);
+        
       setStats({ completions: count || 0 });
       setFeaturedTasks(tasks || []);
+
+      // 2. Fetch History for Quotas & Cooldowns
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const todayMidnight = new Date();
+      todayMidnight.setHours(0, 0, 0, 0);
+
+      const fetchDate = twentyFourHoursAgo < todayMidnight ? twentyFourHoursAgo : todayMidnight;
+
+      const { data: history } = await supabase
+        .from('completions')
+        .select('task_id, platform, created_at')
+        .eq('user_id', user.id)
+        .gte('created_at', fetchDate.toISOString());
+
+      let vCount = 0, bCount = 0;
+      const cooldownMap = {};
+
+      (history || []).forEach(h => {
+        const completedAt = new Date(h.created_at);
+        
+        if (completedAt >= todayMidnight) {
+          if (h.platform === 'blog') bCount++; 
+          else vCount++;
+        }
+
+        if (completedAt >= twentyFourHoursAgo) {
+          const hoursPassed = (new Date() - completedAt) / 3600000;
+          cooldownMap[h.task_id] = Math.ceil(24 - hoursPassed);
+        }
+      });
+
+      setQuotas({ videos: vCount, blogs: bCount });
+      setCooldowns(cooldownMap);
+
     } catch (err) {
       if (showToast) showToast('Failed to sync dashboard', 'error');
     } finally {
@@ -31,7 +80,7 @@ export default function Dashboard({ user, navigate, showToast }) {
     navigator.clipboard.writeText(`https://taskivo.online/#auth?ref=${user.id}`);
     setReferralCopied(true);
     if (showToast) showToast('Invite link copied!', 'success');
-    setTimeout(function() { setReferralCopied(false); }, 3000);
+    setTimeout(() => setReferralCopied(false), 3000);
   }
 
   if (loading) {
@@ -53,8 +102,9 @@ export default function Dashboard({ user, navigate, showToast }) {
     premiumCard: { background: 'var(--surface-card)', border: '1px solid rgba(212, 175, 55, 0.4)', borderRadius: 24, padding: 32, boxShadow: '0 24px 48px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' },
     label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 16, display: 'block', fontFamily: "'Inter', sans-serif" },
     valueGlow: { fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
-    btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif" },
-    btnLime: { background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif", boxShadow: '0 8px 16px rgba(168,255,62,0.2)' },
+    btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif" },
+    btnLime: { background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif", boxShadow: '0 8px 16px rgba(168,255,62,0.2)' },
+    btnLocked: { background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px', fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif" }
   };
 
   return (
@@ -68,8 +118,6 @@ export default function Dashboard({ user, navigate, showToast }) {
         <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400 }}>Your engagement portfolio and network analytics.</p>
       </div>
 
-      {/* 🔥 THE DAILY REWARD WIDGET 🔥 */}
-      {/* Passing the user object mapped inside a session object so your widget code reads it perfectly */}
       <div style={{ position: 'relative', zIndex: 1 }}>
         <DailyRewardWidget session={{ user }} />
       </div>
@@ -77,7 +125,6 @@ export default function Dashboard({ user, navigate, showToast }) {
       {/* STATS GRID */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
         
-        {/* BALANCE CARD */}
         <div style={S.glassCard}>
           <span style={S.label}>Available Balance</span>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
@@ -85,11 +132,10 @@ export default function Dashboard({ user, navigate, showToast }) {
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px' }}>PTS</div>
           </div>
           <div style={{ marginTop: 'auto' }}>
-            <button onClick={function() { navigate('wallet'); }} style={{ ...S.btnGhost, width: '100%' }}>Manage Portfolio</button>
+            <button onClick={() => navigate('wallet')} style={{ ...S.btnGhost, width: '100%' }}>Manage Portfolio</button>
           </div>
         </div>
 
-        {/* PROGRESS CARD */}
         <div style={S.glassCard}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <span style={{ ...S.label, marginBottom: 0 }}>Verified Engagements</span>
@@ -109,7 +155,7 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
 
           <div style={{ marginTop: 'auto' }}>
-            <button onClick={function() { navigate('tasks'); }} style={{ ...S.btnLime, width: '100%' }}>Acquire Tasks</button>
+            <button onClick={() => navigate('tasks')} style={{ ...S.btnLime, width: '100%' }}>Acquire Tasks</button>
           </div>
         </div>
       </div>
@@ -131,11 +177,11 @@ export default function Dashboard({ user, navigate, showToast }) {
         </button>
       </div>
 
-      {/* TASK LIST */}
+      {/* TASK LIST WITH SMART LOCKS */}
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.5px' }}>Active Opportunities</h2>
-          <span onClick={function() { navigate('tasks'); }} style={{ color: 'var(--slate)', fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>View Directory →</span>
+          <span onClick={() => navigate('tasks')} style={{ color: 'var(--slate)', fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>View Directory →</span>
         </div>
         
         {featuredTasks.length === 0 ? (
@@ -144,10 +190,14 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {featuredTasks.map(function(task) {
+            {featuredTasks.map(task => {
               const isBlog = task.platform === 'blog';
+              const quotaHit = (isBlog && quotas.blogs >= 20) || (!isBlog && quotas.videos >= 3);
+              const cooldownHours = cooldowns[task.id];
+              const isLocked = quotaHit || cooldownHours;
+
               return (
-                <div key={task.id} style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                <div key={task.id} style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, opacity: isLocked ? 0.6 : 1 }}>
                   
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
@@ -155,16 +205,24 @@ export default function Dashboard({ user, navigate, showToast }) {
                     </div>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 4, letterSpacing: '-0.2px' }}>{task.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{task.watch_duration}s Verification Required</div>
+                      <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{task.watch_duration}s Verification</div>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Yield</div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lime)' }}>+{task.reward_points} PTS</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: isLocked ? 'var(--slate)' : 'var(--lime)' }}>+{task.reward_points} PTS</div>
                     </div>
-                    <button onClick={function() { navigate(`player/${task.id}`); }} style={{ ...S.btnGhost, padding: '10px 20px', fontSize: 12 }}>Initiate</button>
+                    
+                    {/* 🔥 THE FRONT DOOR LOCKS 🔥 */}
+                    {quotaHit ? (
+                      <button disabled style={S.btnLocked}>LIMIT REACHED</button>
+                    ) : cooldownHours ? (
+                      <button disabled style={S.btnLocked}>🔒 {cooldownHours}H COOLDOWN</button>
+                    ) : (
+                      <button onClick={() => navigate(`player/${task.id}`)} style={{ ...S.btnGhost, padding: '10px 20px', fontSize: 12 }}>Initiate</button>
+                    )}
                   </div>
 
                 </div>
