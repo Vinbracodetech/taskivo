@@ -11,7 +11,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [cooldown, setCooldown] = useState(null);
   const [handle, setHandle] = useState('');
 
-  // 🚨 THE REMOTE CONTROL FOR YOUTUBE 🚨
   const ytPlayerRef = useRef(null);
 
   useEffect(() => {
@@ -77,7 +76,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
   }, [task, cooldown, verification]);
 
-  // 🚨 ANTI-CHEAT: FORCE PAUSE ON TAB SWITCH 🚨
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
@@ -91,12 +89,10 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
-  // 🚨 THE BULLETPROOF TIMER 🚨
+  // 🚨 THE FIXED TIMER LOGIC 🚨
   useEffect(() => {
-    let interval;
-    
-    // If hitting 0, instantly lock the screen
-    if (timer === 0 && isLive) {
+    // 1. If it hits zero, immediately lock the screen regardless of video state
+    if (timer <= 0 && task && !verification) {
       setVerification(true);
       setIsLive(false);
       if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') {
@@ -105,6 +101,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       return;
     }
 
+    // 2. Only tick down if actively playing and tab is open
+    let interval;
     if (isLive && !document.hidden && timer > 0) {
       interval = setInterval(() => {
         setTimer((prev) => prev - 1);
@@ -112,10 +110,10 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
     
     return () => clearInterval(interval);
-  }, [isLive, timer]);
+  }, [isLive, timer, task, verification]);
 
   async function claim() {
-    if (!handle.trim()) return alert("Enter handle");
+    if (!handle.trim()) return alert("Enter your platform handle to claim points.");
     
     const { error } = await supabase
       .from('completions')
@@ -130,53 +128,53 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     if (error) {
       alert(error.message);
     } else {
-      alert("Verified!");
+      alert("Verified! Points added.");
       navigate('tasks');
     }
   }
 
-  if (loading) {
-    return <div style={{ padding: 40, textAlign: 'center' }}>Syncing...</div>;
-  }
-  
-  if (cooldown) {
-    return <div style={{ padding: 40, textAlign: 'center' }}>⏱️ Cooldown: {cooldown}h left</div>;
-  }
+  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Syncing secure sandbox...</div>;
+  if (cooldown) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>⏱️ Task on Cooldown. Return in {cooldown} hours.</div>;
 
-  // ── CLEAN STYLES TO PREVENT MOBILE BUGS ──
-  const wrapStyle = { padding: 20, maxWidth: 600, margin: 'auto' };
-  const cardStyle = { background: '#000', borderRadius: 16, overflow: 'hidden', marginBottom: 20 };
-  const headerStyle = { padding: 15, background: '#111', color: isLive ? '#4ade80' : '#ff4444', fontWeight: 800, textAlign: 'center' };
-  const verifBox = { padding: 40, background: '#fff', textAlign: 'center' };
-  const inputStyle = { width: '100%', boxSizing: 'border-box', padding: 12, marginBottom: 20, borderRadius: 8, border: '1px solid #ddd' };
-  const btnRed = { background: '#ff4444', color: '#fff', padding: 15, width: '100%', border: 'none', borderRadius: 8, marginBottom: 20, fontWeight: 800, cursor: 'pointer' };
-  const btnGreen = { background: '#4ade80', color: '#000', padding: 15, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer' };
+  const wrapStyle = { padding: 20, maxWidth: 600, margin: 'auto', fontFamily: "'Inter', sans-serif" };
+  const cardStyle = { background: '#000', borderRadius: 16, overflow: 'hidden', marginBottom: 20, border: '1px solid var(--line)' };
+  const headerStyle = { padding: 15, background: '#111', color: isLive ? 'var(--lime)' : '#ff4444', fontWeight: 800, textAlign: 'center', letterSpacing: '1px' };
+  const verifBox = { padding: 40, background: 'var(--surface-card)', textAlign: 'center' };
+  const inputStyle = { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)' };
+  const btnRed = { background: '#ff4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 14 };
+  const btnGreen = { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16 };
 
   return (
     <div style={wrapStyle}>
       <div style={cardStyle}>
         
         <div style={headerStyle}>
-          {isLive ? `TRACKING: ${timer}s` : 'PAUSED'}
+          {isLive ? `TRACKING VIEW: ${timer}s` : 'PLAYBACK PAUSED'}
         </div>
         
         {!verification ? (
           <div id="yt-frame" style={{ width: '100%', height: 350 }}></div>
         ) : (
           <div style={verifBox}>
+            <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 24 }}>Engagement Required</h3>
+            
             <button onClick={() => window.open(task.url, '_blank')} style={btnRed}>
-              1. OPEN & ENGAGE
+              ▶ OPEN APP TO LIKE & SUBSCRIBE
             </button>
             
+            <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>
+              Drop your handle for verification
+            </div>
+            
             <input 
-              placeholder="@handle" 
+              placeholder="e.g., @YourUsername" 
               value={handle} 
               onChange={e => setHandle(e.target.value)} 
               style={inputStyle} 
             />
             
             <button onClick={claim} style={btnGreen}>
-              2. CLAIM POINTS
+              CLAIM {task.reward_points} POINTS
             </button>
           </div>
         )}
