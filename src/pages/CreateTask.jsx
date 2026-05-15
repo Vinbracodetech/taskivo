@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import PaystackPop from '@paystack/inline-js';
 
 export default function CreateTask({ session, navigate, showToast }) {
   const user = session?.user;
   const [loading, setLoading] = useState(false);
-  const [localError, setLocalError] = useState(null); // NEW: Dedicated error state
+  const [localError, setLocalError] = useState(null); 
+  const [freeCredits, setFreeCredits] = useState(0); // 🔥 NEW: Track free grants
   
   const [form, setForm] = useState({
     title: '',
@@ -33,6 +34,20 @@ export default function CreateTask({ session, navigate, showToast }) {
 
   const currentPlatformType = form.platform === 'blog' ? 'seo' : 'social';
   const activePackages = packages[currentPlatformType];
+  const hasFreeCredit = freeCredits > 0;
+
+  // 🔥 CHECK FOR GRANTS ON LOAD 🔥
+  useEffect(() => {
+    async function checkGrants() {
+      const { data } = await supabase
+        .from('profiles')
+        .select('free_credits')
+        .eq('id', user?.id)
+        .single();
+      if (data) setFreeCredits(data.free_credits || 0);
+    }
+    if (user?.id) checkGrants();
+  }, [user]);
 
   function handleInput(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -40,7 +55,7 @@ export default function CreateTask({ session, navigate, showToast }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setLocalError(null); // Clear previous errors
+    setLocalError(null); 
 
     if (!form.title || !form.url) {
       setLocalError('Please complete all required fields.');
@@ -52,21 +67,9 @@ export default function CreateTask({ session, navigate, showToast }) {
       
       const selectedPackage = activePackages[form.package];
       const earnerPayout = form.platform === 'blog' ? 50 : 30;
-      
-      // 1. Check for Free Early Adopter Credit
-      const { data: profile, error: profileErr } = await supabase
-        .from('profiles')
-        .select('free_credits')
-        .eq('id', user?.id)
-        .single();
-
-      if (profileErr) throw new Error(`Profile fetch error: ${profileErr.message}`);
-
-      const hasFreeCredit = profile?.free_credits > 0;
-      
-      // 2. Insert the task securely into Taskivo database
       const initialStatus = hasFreeCredit ? 'active' : 'pending_payment';
 
+      // 1. Insert the task
       const { data: newTask, error: insertErr } = await supabase.from('tasks').insert({
         creator_id: user.id, 
         title: form.title, 
@@ -81,11 +84,22 @@ export default function CreateTask({ session, navigate, showToast }) {
 
       if (insertErr) throw new Error(`Database Insert Error: ${insertErr.message}`);
 
-      // 3. Routing Logic: Free vs Paid
+      // 2. Routing Logic: Free vs Paid
       if (hasFreeCredit) {
+        
+        // Deduct 1 credit from their profile
+        const { error: deductErr } = await supabase
+          .from('profiles')
+          .update({ free_credits: freeCredits - 1 })
+          .eq('id', user.id);
+          
+        if (deductErr) throw new Error(`Failed to deduct grant: ${deductErr.message}`);
+
         if (showToast) showToast('Free Pilot Grant Applied! Campaign is LIVE.', 'success');
         navigate('/creator-dashboard');
+        
       } else {
+        
         if (form.paymentGateway === 'paystack') {
            const paystack = new PaystackPop();
            paystack.newTransaction({
@@ -110,7 +124,6 @@ export default function CreateTask({ session, navigate, showToast }) {
       }
       
     } catch (err) {
-      // 🚨 THIS WILL PRINT THE EXACT ERROR ON SCREEN 🚨
       setLocalError(err.message || err.toString());
       console.error(err);
       setLoading(false);
@@ -139,7 +152,6 @@ export default function CreateTask({ session, navigate, showToast }) {
       </div>
 
       <div style={S.glassCard}>
-        {/* 🔥 THE NEW ON-SCREEN ERROR BANNER 🔥 */}
         {localError && (
           <div style={{ padding: '16px', background: '#fee2e2', border: '1px solid #ef4444', color: '#991b1b', borderRadius: '12px', marginBottom: '24px', fontSize: '14px', fontWeight: '600' }}>
             🚨 {localError}
@@ -187,7 +199,7 @@ export default function CreateTask({ session, navigate, showToast }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <div style={{ fontSize: 13, fontWeight: 700 }}>{pkg.label}</div>
                     <div style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 100, border: `1px solid ${form.package === key ? 'var(--surface)' : 'var(--line)'}` }}>
-                      {pkg.price}
+                      {hasFreeCredit ? 'FREE' : pkg.price}
                     </div>
                   </div>
                   <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
@@ -198,21 +210,24 @@ export default function CreateTask({ session, navigate, showToast }) {
             </div>
           </div>
 
-          <div style={{ marginBottom: 32, padding: '24px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--line)' }}>
-            <span style={{ ...S.label, marginBottom: 16 }}>Payment Processor</span>
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <div onClick={() => setForm(prev => ({ ...prev, paymentGateway: 'paystack' }))} style={S.gatewayCard(form.paymentGateway === 'paystack')}>
-                <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `5px solid ${form.paymentGateway === 'paystack' ? 'var(--lime)' : 'var(--slate)'}` }}></div>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--ink)' }}>Paystack (Africa)</div>
-                  <div style={{ fontSize: '12px', color: 'var(--slate)' }}>NGN, ZAR, GHS, USD</div>
+          {/* 🔥 HIDE PAYMENT GATEWAY IF THEY HAVE A FREE GRANT 🔥 */}
+          {!hasFreeCredit && (
+            <div style={{ marginBottom: 32, padding: '24px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--line)' }}>
+              <span style={{ ...S.label, marginBottom: 16 }}>Payment Processor</span>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <div onClick={() => setForm(prev => ({ ...prev, paymentGateway: 'paystack' }))} style={S.gatewayCard(form.paymentGateway === 'paystack')}>
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `5px solid ${form.paymentGateway === 'paystack' ? 'var(--lime)' : 'var(--slate)'}` }}></div>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--ink)' }}>Paystack (Africa)</div>
+                    <div style={{ fontSize: '12px', color: 'var(--slate)' }}>NGN, ZAR, GHS, USD</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           <button type="submit" disabled={loading} style={{ ...S.btnPrimary, opacity: loading ? 0.5 : 1 }}>
-            {loading ? 'Processing...' : `Pay ${activePackages[form.package].price} & Deploy`}
+            {loading ? 'Processing...' : hasFreeCredit ? `DEPLOY FOR FREE (${freeCredits} Grants Left)` : `Pay ${activePackages[form.package].price} & Deploy`}
           </button>
         </form>
       </div>
