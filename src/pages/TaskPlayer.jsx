@@ -10,6 +10,9 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [verification, setVerification] = useState(false);
   const [cooldown, setCooldown] = useState(null);
   const [handle, setHandle] = useState('');
+  
+  // 🔥 THE NEW FRICTION GATE STATE 🔥
+  const [hasVisitedPlatform, setHasVisitedPlatform] = useState(false);
 
   const ytPlayerRef = useRef(null);
 
@@ -138,6 +141,13 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
   }
 
+  // 🚨 THE ON-CLICK HANDLER FOR THE GATE 🚨
+  function handleOpenApp() {
+    window.open(task.url, '_blank');
+    // Once they click it, we unlock the claim button
+    setHasVisitedPlatform(true); 
+  }
+
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Syncing...</div>;
   if (cooldown) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>⏱️ Cooldown: {cooldown}h left</div>;
 
@@ -171,7 +181,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           {statusText}
         </div>
         
-        {/* 🔥 THE FIX: We hide the video with CSS instead of destroying it 🔥 */}
         <div style={{ display: verification ? 'none' : 'block' }}>
           <div id="yt-frame" style={{ width: '100%', height: 350 }}></div>
         </div>
@@ -183,26 +192,36 @@ export default function TaskPlayer({ session, navigate, taskId }) {
             </h3>
             
             <button 
-              onClick={() => window.open(task.url, '_blank')} 
+              onClick={handleOpenApp} 
               style={btnRed}
             >
               ▶ OPEN APP TO LIKE & SUBSCRIBE
             </button>
             
-            <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>
-              Drop your handle
-            </div>
+            {/* 🔥 CONDITIONAL RENDERING FOR THE CLAIM BUTTON 🔥 */}
+            {hasVisitedPlatform ? (
+              <>
+                <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>
+                  Drop your handle
+                </div>
+                
+                <input 
+                  placeholder="e.g., @YourUsername" 
+                  value={handle} 
+                  onChange={e => setHandle(e.target.value)} 
+                  style={inputStyle} 
+                />
+                
+                <button onClick={claim} style={btnGreen}>
+                  CLAIM {task.reward_points} POINTS
+                </button>
+              </>
+            ) : (
+              <div style={{ color: 'var(--slate)', fontSize: 14, fontStyle: 'italic', marginTop: 16 }}>
+                * You must open the app and engage before you can claim points.
+              </div>
+            )}
             
-            <input 
-              placeholder="e.g., @YourUsername" 
-              value={handle} 
-              onChange={e => setHandle(e.target.value)} 
-              style={inputStyle} 
-            />
-            
-            <button onClick={claim} style={btnGreen}>
-              CLAIM {task.reward_points} POINTS
-            </button>
           </div>
         )}
         
