@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 const C = {
@@ -9,6 +9,21 @@ const C = {
 
 export default function FloatingNav({ user, navigate, logout, toggleTheme, theme }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currentHash, setCurrentHash] = useState(window.location.hash.replace('#', ''));
+
+  // 🔥 NEW: LISTEN TO URL CHANGES 🔥
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentHash(window.location.hash.replace('#', ''));
+    };
+    
+    // Listen for browser navigation
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
 
   if (!user) return null;
 
@@ -18,6 +33,8 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
   function handleNavigate(route) {
     closeMenu();
     navigate(route);
+    // Manually update local state just in case event listener is slow
+    setCurrentHash(route);
   }
 
   function handleLogout() {
@@ -25,7 +42,6 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
     if (logout) logout();
   }
 
-  // 🔥 INSTANT WIPE & LOGOUT 🔥
   async function requestAccountDeletion() {
     closeMenu();
     const confirmed = window.confirm("Are you sure you want to permanently wipe your data? This will instantly delete your profile and log you out. This cannot be undone.");
@@ -52,14 +68,16 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
   const IconTrash = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
   const IconLogout = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
 
-  function PillButton({ icon, onClick, isProfile }) {
+  // 🔥 NEW: DYNAMIC PILL BUTTON 🔥
+  // We renamed `isProfile` to `isActive` because any button can be active now!
+  function PillButton({ icon, onClick, isActive }) {
     return (
       <button 
         onClick={onClick}
         style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-          background: isProfile ? C.card : 'transparent', border: isProfile ? `1px solid ${C.line}` : 'none', 
-          borderRadius: 12, padding: '8px 16px', color: isProfile ? C.limeText : C.textMuted, cursor: 'pointer', transition: 'all 0.2s ease'
+          background: isActive ? C.card : 'transparent', border: isActive ? `1px solid ${C.line}` : 'none', 
+          borderRadius: 12, padding: '8px 16px', color: isActive ? C.limeText : C.textMuted, cursor: 'pointer', transition: 'all 0.2s ease'
         }}
       >
         {icon}
@@ -81,15 +99,45 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
     );
   }
 
+  // Figure out the home dashboard route based on user role
+  const homeRoute = user.role === 'admin' ? 'admin-dashboard' : user.role === 'creator' ? 'creator-dashboard' : 'user-dashboard';
+
   return (
     <>
       <div style={{ position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4, padding: '8px', background: C.glass, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.line}`, borderRadius: 100, zIndex: 9990, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-        <PillButton icon={IconHome} onClick={function() { if (user.role === 'admin') handleNavigate('admin-dashboard'); else if (user.role === 'creator') handleNavigate('creator-dashboard'); else handleNavigate('user-dashboard'); }} />
-        {user.role === 'earner' && (<><PillButton icon={IconTasks} onClick={() => handleNavigate('tasks')} /><PillButton icon={IconWallet} onClick={() => handleNavigate('wallet')} /></>)}
-        {user.role === 'creator' && (<><PillButton icon={<span style={{fontSize: 16}}>🚀</span>} onClick={() => handleNavigate('create-task')} /><PillButton icon={IconAnalytics} onClick={() => handleNavigate('creator-analytics')} /></>)}
-        {user.role === 'admin' && (<><PillButton icon={IconUsers} onClick={() => handleNavigate('admin-users')} /><PillButton icon={IconAdminList} onClick={() => handleNavigate('admin-tasks')} /></>)}
+        
+        {/* 🔥 COMPARE CURRENT HASH TO ROUTE TO DETERMINE isActive 🔥 */}
+        <PillButton 
+          icon={IconHome} 
+          onClick={() => handleNavigate(homeRoute)} 
+          isActive={currentHash === homeRoute || currentHash === ''} 
+        />
+        
+        {user.role === 'earner' && (
+          <>
+            <PillButton icon={IconTasks} onClick={() => handleNavigate('tasks')} isActive={currentHash === 'tasks'} />
+            <PillButton icon={IconWallet} onClick={() => handleNavigate('wallet')} isActive={currentHash === 'wallet'} />
+          </>
+        )}
+        
+        {user.role === 'creator' && (
+          <>
+            <PillButton icon={<span style={{fontSize: 16}}>🚀</span>} onClick={() => handleNavigate('create-task')} isActive={currentHash === 'create-task'} />
+            <PillButton icon={IconAnalytics} onClick={() => handleNavigate('creator-analytics')} isActive={currentHash === 'creator-analytics'} />
+          </>
+        )}
+        
+        {user.role === 'admin' && (
+          <>
+            <PillButton icon={IconUsers} onClick={() => handleNavigate('admin-users')} isActive={currentHash === 'admin-users'} />
+            <PillButton icon={IconAdminList} onClick={() => handleNavigate('admin-tasks')} isActive={currentHash === 'admin-tasks'} />
+          </>
+        )}
+        
         <div style={{ width: 1, height: 24, background: C.line, margin: '0 4px' }} />
-        <PillButton icon={IconProfile} onClick={openMenu} isProfile={true} />
+        
+        {/* Profile menu button doesn't track a route, it tracks if the menu is open! */}
+        <PillButton icon={IconProfile} onClick={openMenu} isActive={menuOpen} />
       </div>
 
       <div onClick={closeMenu} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9995, opacity: menuOpen ? 1 : 0, pointerEvents: menuOpen ? 'auto' : 'none', transition: 'opacity 0.3s ease' }} />
@@ -105,7 +153,7 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <MenuItem icon={IconHome} label="Dashboard" onClick={function() { if (user.role === 'admin') handleNavigate('admin-dashboard'); else if (user.role === 'creator') handleNavigate('creator-dashboard'); else handleNavigate('user-dashboard'); }} />
+          <MenuItem icon={IconHome} label="Dashboard" onClick={() => handleNavigate(homeRoute)} />
           {user.role === 'earner' && (<><MenuItem icon={IconTasks} label="Task Network" onClick={() => handleNavigate('tasks')} /><MenuItem icon={IconWallet} label="Wallet & Withdrawals" onClick={() => handleNavigate('wallet')} /></>)}
           {user.role === 'creator' && (<><MenuItem icon={<span style={{fontSize: 18}}>🚀</span>} label="Launch Campaign" onClick={() => handleNavigate('create-task')} /><MenuItem icon={IconAnalytics} label="Campaign Analytics" onClick={() => handleNavigate('creator-analytics')} /></>)}
           {user.role === 'admin' && (<><MenuItem icon={IconUsers} label="Manage Users" onClick={() => handleNavigate('admin-users')} /><MenuItem icon={IconAdminList} label="Review Network Tasks" onClick={() => handleNavigate('admin-tasks')} /><MenuItem icon={IconWallet} label="Process Withdrawals" onClick={() => handleNavigate('admin-withdrawals')} /></>)}
