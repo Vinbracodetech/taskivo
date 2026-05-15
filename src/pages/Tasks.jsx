@@ -7,8 +7,11 @@ export default function Tasks({ session, navigate }) {
   const [tasks, setTasks] = useState([]);
   const [quotas, setQuotas] = useState({ videos: 0, blogs: 0 });
   const [lockout, setLockout] = useState(false);
+  
+  // 🔥 THE NEW COOLDOWN MEMORY 🔥
+  const [cooldowns, setCooldowns] = useState({});
 
-  useEffect(function() {
+  useEffect(() => {
     if (!user) return;
     fetchMarketplace();
   }, [user]);
@@ -17,27 +20,63 @@ export default function Tasks({ session, navigate }) {
     try {
       setLoading(true);
       
-      // 🔥 SECURE LOCKOUT CHECK FROM DATABASE 🔥
-      const { data: profile } = await supabase.from('profiles').select('lockout_until').eq('id', user.id).single();
-      
+      // 1. SECURE LOCKOUT CHECK
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('lockout_until')
+        .eq('id', user.id)
+        .single();
+        
       if (profile?.lockout_until && new Date() < new Date(profile.lockout_until)) {
         setLockout(true);
         setLoading(false);
         return;
       }
 
-      // Check daily quotas (Fixed: searching by earner_id)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const { data: history } = await supabase.from('completions').select('platform').eq('earner_id', user.id).gte('created_at', today.toISOString());
+      // 2. FETCH HISTORY (For both Quotas & 24h Cooldowns)
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const todayMidnight = new Date();
+      todayMidnight.setHours(0, 0, 0, 0);
+
+      // Grab the earliest date needed to cover both 24h rolling and midnight
+      const fetchDate = twentyFourHoursAgo < todayMidnight ? twentyFourHoursAgo : todayMidnight;
+
+      const { data: history } = await supabase
+        .from('completions')
+        .select('task_id, platform, created_at')
+        .eq('user_id', user.id) // Ensure this matches your DB (user_id or earner_id)
+        .gte('created_at', fetchDate.toISOString());
 
       let vCount = 0, bCount = 0;
-      (history || []).forEach(h => { if (h.platform === 'blog') bCount++; else vCount++; });
-      setQuotas({ videos: vCount, blogs: bCount });
+      const cooldownMap = {};
 
-      // Load available tasks
-      const { data: activeTasks } = await supabase.from('tasks').select('*').eq('status', 'active');
+      (history || []).forEach(h => {
+        const completedAt = new Date(h.created_at);
+        
+        // Quota Math (Only count tasks completed since midnight today)
+        if (completedAt >= todayMidnight) {
+          if (h.platform === 'blog') bCount++; 
+          else vCount++;
+        }
+
+        // Cooldown Math (Count tasks completed in the last 24 rolling hours)
+        if (completedAt >= twentyFourHoursAgo) {
+          const hoursPassed = (new Date() - completedAt) / 3600000;
+          cooldownMap[h.task_id] = Math.ceil(24 - hoursPassed);
+        }
+      });
+
+      setQuotas({ videos: vCount, blogs: bCount });
+      setCooldowns(cooldownMap);
+
+      // 3. LOAD ACTIVE TASKS
+      const { data: activeTasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('status', 'active');
+        
       setTasks(activeTasks || []);
+      
     } catch (err) {
       console.error(err);
     } finally {
@@ -45,21 +84,87 @@ export default function Tasks({ session, navigate }) {
     }
   }
 
+  // ── 💎 PREMIUM LUXURY STYLES 💎 ──
   const S = {
-    page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" },
-    glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 40, boxShadow: '0 8px 32px rgba(0,0,0,0.04)', textAlign: 'center' },
-    taskCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: '24px', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, background 0.2s', boxShadow: '0 4px 16px rgba(0,0,0,0.02)' },
+    page: { 
+      padding: '40px 5%', 
+      maxWidth: 1040, 
+      margin: '0 auto', 
+      fontFamily: "'DM Sans', sans-serif" 
+    },
+    headerWrap: { 
+      marginBottom: 48, 
+      borderBottom: '1px solid rgba(255,255,255,0.05)', 
+      paddingBottom: 24 
+    },
+    glassCard: { 
+      background: 'var(--surface-card)', 
+      border: '1px solid var(--line)', 
+      borderRadius: 24, 
+      padding: 40, 
+      textAlign: 'center' 
+    },
+    quotaGlowBox: {
+      background: 'linear-gradient(145deg, rgba(168,255,62,0.1) 0%, rgba(168,255,62,0.02) 100%)',
+      border: '1px solid rgba(168,255,62,0.3)',
+      boxShadow: '0 8px 32px rgba(168,255,62,0.05)',
+      padding: '16px 24px',
+      borderRadius: 16,
+      flex: '1 1 200px',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    quotaDarkBox: {
+      background: 'var(--surface-card)',
+      border: '1px solid var(--line)',
+      padding: '16px 24px',
+      borderRadius: 16,
+      flex: '1 1 200px'
+    },
+    taskCard: { 
+      background: 'linear-gradient(180deg, var(--surface-card) 0%, rgba(15,23,42,0.6) 100%)', 
+      border: '1px solid rgba(255,255,255,0.05)', 
+      borderRadius: 20, 
+      padding: '24px', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+      position: 'relative'
+    },
+    btnActive: { 
+      background: 'var(--lime)', 
+      color: '#000', 
+      border: 'none', 
+      padding: '10px 20px', 
+      borderRadius: 10, 
+      fontSize: 13, 
+      fontWeight: 800, 
+      cursor: 'pointer', 
+      boxShadow: '0 4px 12px rgba(168,255,62,0.2)',
+      letterSpacing: '0.5px'
+    },
+    btnLocked: {
+      background: 'rgba(255,255,255,0.05)', 
+      color: 'var(--slate)', 
+      border: '1px solid rgba(255,255,255,0.1)', 
+      padding: '10px 20px', 
+      borderRadius: 10, 
+      fontSize: 12, 
+      fontWeight: 700, 
+      cursor: 'not-allowed',
+      letterSpacing: '0.5px'
+    }
   };
 
-  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: 'var(--slate)' }}>Scanning network...</div>;
+  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: 'var(--slate)' }}><div style={{ animation: 'pulse 1.5s infinite' }}>Syncing Network...</div></div>;
 
   if (lockout) {
     return (
       <div style={S.page}>
         <div style={S.glassCard}>
           <div style={{ fontSize: 64, marginBottom: 20 }}>🔒</div>
-          <h2 style={{ color: 'var(--ink)', fontSize: 24, fontFamily: "'Inter', sans-serif", marginBottom: 12 }}>Network Access Locked</h2>
-          <p style={{ color: 'var(--slate)' }}>Your account is under a strict 24-hour restriction due to failed anti-cheat verifications.</p>
+          <h2 style={{ color: 'var(--ink)', fontSize: 24, marginBottom: 12 }}>Network Access Locked</h2>
+          <p style={{ color: 'var(--slate)' }}>Your account is under a strict 24-hour restriction.</p>
         </div>
       </div>
     );
@@ -67,46 +172,65 @@ export default function Tasks({ session, navigate }) {
 
   return (
     <div style={S.page}>
-      <div style={{ marginBottom: 40 }}>
-        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Engagement Network</h1>
-        <p style={{ color: 'var(--slate)', fontSize: 15 }}>Complete tasks to acquire points. Daily quotas apply.</p>
+      <div style={S.headerWrap}>
+        <h1 style={{ fontSize: 36, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-1px' }}>
+          Engagement <span style={{ color: 'var(--lime)' }}>Network</span>
+        </h1>
+        <p style={{ color: 'var(--slate)', fontSize: 16 }}>Complete premium tasks to acquire yield. Daily allocations apply.</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 20, marginBottom: 40, flexWrap: 'wrap' }}>
-        <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.3)', padding: '12px 24px', borderRadius: 12 }}>
-          <span style={{ fontSize: 11, color: 'var(--ink)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px', display: 'block' }}>Video Quota</span>
-          <span style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>{quotas.videos} / 3</span>
+      <div style={{ display: 'flex', gap: 20, marginBottom: 48, flexWrap: 'wrap' }}>
+        
+        <div style={S.quotaGlowBox}>
+          <span style={{ fontSize: 11, color: 'var(--lime)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1.5px', display: 'block', marginBottom: 4 }}>Video Quota</span>
+          <span style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800 }}>{quotas.videos} <span style={{ fontSize: 16, color: 'rgba(168,255,62,0.5)' }}>/ 3</span></span>
         </div>
-        <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', padding: '12px 24px', borderRadius: 12 }}>
-          <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1px', display: 'block' }}>Blog Quota</span>
-          <span style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>{quotas.blogs} / 20</span>
+        
+        <div style={S.quotaDarkBox}>
+          <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1.5px', display: 'block', marginBottom: 4 }}>Blog Quota</span>
+          <span style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800 }}>{quotas.blogs} <span style={{ fontSize: 16, color: 'var(--slate)' }}>/ 20</span></span>
         </div>
+        
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
         {tasks.map(task => {
           const isBlog = task.platform === 'blog';
           const quotaHit = (isBlog && quotas.blogs >= 20) || (!isBlog && quotas.videos >= 3);
+          const cooldownHours = cooldowns[task.id];
+          const isLocked = quotaHit || cooldownHours;
 
           return (
-            <div key={task.id} style={{ ...S.taskCard, opacity: quotaHit ? 0.5 : 1 }}>
+            <div key={task.id} style={{ ...S.taskCard, opacity: isLocked ? 0.6 : 1 }}>
+              
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
                   {isBlog ? '📄' : '▶️'}
                 </div>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{task.title}</div>
-                  <div style={{ fontSize: 12, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{task.watch_duration}s Verification</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.3 }}>{task.title}</div>
+                  <div style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
+                    {task.watch_duration}s Verification
+                  </div>
                 </div>
               </div>
               
-              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line)', paddingTop: 16 }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--lime)' }}>+{task.reward_points} PTS</div>
+              <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 20 }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: isLocked ? 'var(--slate)' : 'var(--lime)' }}>
+                  +{task.reward_points} PTS
+                </div>
+                
+                {/* 🔥 THE SMART FRONT-DOOR LOCKS 🔥 */}
                 {quotaHit ? (
-                  <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 700 }}>QUOTA REACHED</span>
+                  <button disabled style={S.btnLocked}>LIMIT REACHED</button>
+                ) : cooldownHours ? (
+                  <button disabled style={S.btnLocked}>🔒 {cooldownHours}H COOLDOWN</button>
                 ) : (
-                  <button onClick={() => navigate(`player/${task.id}`)} style={{ background: 'var(--ink)', color: 'var(--surface)', border: 'none', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>INITIATE</button>
+                  <button onClick={() => navigate(`player/${task.id}`)} style={S.btnActive}>
+                    INITIATE
+                  </button>
                 )}
+                
               </div>
             </div>
           );
