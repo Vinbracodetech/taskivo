@@ -62,10 +62,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         playerVars: { playsinline: 1, rel: 0 },
         events: {
           onStateChange: (e) => {
-            // 1 = Playing, 0 = Ended natively by YouTube
             setIsLive(e.data === 1);
-            
-            // THE FIX: If the video physically ends, force the timer to complete
             if (e.data === 0) {
               setTimer(0);
             }
@@ -84,7 +81,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
   }, [task, cooldown, verification]);
 
-  // Tab switch protection
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
@@ -98,7 +94,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
-  // Timer logic
   useEffect(() => {
     if (timer <= 0 && task && !verification) {
       setVerification(true);
@@ -146,7 +141,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Syncing...</div>;
   if (cooldown) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>⏱️ Cooldown: {cooldown}h left</div>;
 
-  // ── THE FIX: PROPER UI TEXT STATUS ──
   let statusText = 'PLAYBACK PAUSED';
   let statusColor = '#ff4444';
 
@@ -177,13 +171,21 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           {statusText}
         </div>
         
-        {!verification ? (
+        {/* 🔥 THE FIX: We hide the video with CSS instead of destroying it 🔥 */}
+        <div style={{ display: verification ? 'none' : 'block' }}>
           <div id="yt-frame" style={{ width: '100%', height: 350 }}></div>
-        ) : (
+        </div>
+        
+        {verification && (
           <div style={verifBox}>
-            <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 24 }}>Engagement Required</h3>
+            <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 24 }}>
+              Engagement Required
+            </h3>
             
-            <button onClick={() => window.open(task.url, '_blank')} style={btnRed}>
+            <button 
+              onClick={() => window.open(task.url, '_blank')} 
+              style={btnRed}
+            >
               ▶ OPEN APP TO LIKE & SUBSCRIBE
             </button>
             
