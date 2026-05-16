@@ -14,12 +14,9 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   useEffect(() => {
     if (!user) return;
-    
     fetchDashboardData();
-    
-    // 🔥 SILENTLY TRIGGER THE DEVICE TRACKER 🔥
+    // Silently trigger the device tracker
     enforceDeviceFingerprint(user.id);
-    
   }, [user]);
 
   async function fetchDashboardData() {
@@ -104,7 +101,6 @@ export default function Dashboard({ user, navigate, showToast }) {
     valueGlow: { fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
     btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif" },
     btnLime: { background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif", boxShadow: '0 8px 16px rgba(168,255,62,0.2)' },
-    btnLocked: { background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px', fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif" }
   };
 
   return (
@@ -119,7 +115,7 @@ export default function Dashboard({ user, navigate, showToast }) {
       </div>
 
       {/* STATS GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 24, position: 'relative', zIndex: 1 }}>
         <div style={S.glassCard}>
           <span style={S.label}>Available Balance</span>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
@@ -151,6 +147,30 @@ export default function Dashboard({ user, navigate, showToast }) {
 
           <div style={{ marginTop: 'auto' }}>
             <button onClick={() => navigate('tasks')} style={{ ...S.btnLime, width: '100%' }}>Acquire Tasks</button>
+          </div>
+        </div>
+      </div>
+
+      {/* 🔥 RESTORED DAILY QUOTA WIDGET 🔥 */}
+      <div style={{ ...S.glassCard, marginBottom: 48, padding: 24, display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, color: 'var(--ink)', marginBottom: 4, fontWeight: 800 }}>Daily Algorithmic Quota</h3>
+          <p style={{ color: 'var(--slate)', fontSize: 13, margin: 0 }}>Limits reset at midnight to ensure engagement safety.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ background: 'var(--surface)', padding: '12px 20px', borderRadius: 12, border: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 20 }}>📺</span>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase' }}>Video Limit</div>
+              <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 800 }}>{quotas.videos} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>/ 15</span></div>
+            </div>
+          </div>
+          <div style={{ background: 'var(--surface)', padding: '12px 20px', borderRadius: 12, border: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 20 }}>✍️</span>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase' }}>Blog Limit</div>
+              <div style={{ fontSize: 16, color: 'var(--ink)', fontWeight: 800 }}>{quotas.blogs} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>/ 15</span></div>
+            </div>
           </div>
         </div>
       </div>
