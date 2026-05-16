@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import DailyRewardWidget from '../components/DailyRewardWidget';
 import { enforceDeviceFingerprint } from '../lib/security';
 
 export default function Dashboard({ user, navigate, showToast }) {
@@ -27,7 +26,6 @@ export default function Dashboard({ user, navigate, showToast }) {
     try {
       setLoading(true);
       
-      // 1. Fetch Basic Stats
       const { count } = await supabase
         .from('completions')
         .select('*', { count: 'exact', head: true })
@@ -42,7 +40,6 @@ export default function Dashboard({ user, navigate, showToast }) {
       setStats({ completions: count || 0 });
       setFeaturedTasks(tasks || []);
 
-      // 2. Fetch History for Quotas & Cooldowns
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const todayMidnight = new Date();
       todayMidnight.setHours(0, 0, 0, 0);
@@ -60,12 +57,10 @@ export default function Dashboard({ user, navigate, showToast }) {
 
       (history || []).forEach(h => {
         const completedAt = new Date(h.created_at);
-        
         if (completedAt >= todayMidnight) {
           if (h.platform === 'blog') bCount++; 
           else vCount++;
         }
-
         if (completedAt >= twentyFourHoursAgo) {
           const hoursPassed = (new Date() - completedAt) / 3600000;
           cooldownMap[h.task_id] = Math.ceil(24 - hoursPassed);
@@ -83,7 +78,7 @@ export default function Dashboard({ user, navigate, showToast }) {
   }
 
   function copyReferralLink() {
-    navigator.clipboard.writeText(`https://taskivo.online/#auth?ref=${user.id}`);
+    navigator.clipboard.writeText(`${window.location.origin}/#auth?ref=${user.id}`);
     setReferralCopied(true);
     if (showToast) showToast('Invite link copied!', 'success');
     setTimeout(() => setReferralCopied(false), 3000);
@@ -99,9 +94,8 @@ export default function Dashboard({ user, navigate, showToast }) {
   }
 
   const minWithdrawal = 2000;
-  const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
+  const progressPercent = Math.min(((user.points || 0) / minWithdrawal) * 100, 100);
 
-  // ── THEME-AWARE PREMIUM STYLES ──
   const S = {
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
     glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', boxShadow: '0 16px 40px rgba(0,0,0,0.03)' },
@@ -124,17 +118,12 @@ export default function Dashboard({ user, navigate, showToast }) {
         <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400 }}>Your engagement portfolio and network analytics.</p>
       </div>
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <DailyRewardWidget session={{ user }} />
-      </div>
-
       {/* STATS GRID */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
-        
         <div style={S.glassCard}>
           <span style={S.label}>Available Balance</span>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
-            <div style={S.valueGlow}>{user.points.toLocaleString()}</div>
+            <div style={S.valueGlow}>{(user.points || 0).toLocaleString()}</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px' }}>PTS</div>
           </div>
           <div style={{ marginTop: 'auto' }}>
@@ -153,7 +142,7 @@ export default function Dashboard({ user, navigate, showToast }) {
           <div style={{ marginTop: 24, marginBottom: 32 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', fontWeight: 600, marginBottom: 12 }}>
               <span>Liquidity Target</span>
-              <span style={{ color: 'var(--ink)' }}>{user.points} / {minWithdrawal}</span>
+              <span style={{ color: 'var(--ink)' }}>{user.points || 0} / {minWithdrawal}</span>
             </div>
             <div style={{ height: 6, background: 'var(--surface)', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--line)' }}>
               <div style={{ width: `${progressPercent}%`, height: '100%', background: 'var(--lime)', borderRadius: 10 }}></div>
@@ -181,61 +170,6 @@ export default function Dashboard({ user, navigate, showToast }) {
         <button onClick={copyReferralLink} style={{ position: 'relative', zIndex: 2, background: referralCopied ? 'var(--surface)' : 'rgba(212, 175, 55, 0.1)', color: referralCopied ? 'var(--ink)' : '#D4AF37', border: `1px solid ${referralCopied ? 'var(--line)' : 'rgba(212, 175, 55, 0.4)'}`, borderRadius: 12, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif", letterSpacing: '0.5px', transition: 'all 0.3s' }}>
           {referralCopied ? 'LINK COPIED TO CLIPBOARD ✓' : 'COPY SECURE LINK'}
         </button>
-      </div>
-
-      {/* TASK LIST WITH SMART LOCKS */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.5px' }}>Active Opportunities</h2>
-          <span onClick={() => navigate('tasks')} style={{ color: 'var(--slate)', fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>View Directory →</span>
-        </div>
-        
-        {featuredTasks.length === 0 ? (
-          <div style={{ ...S.glassCard, padding: 60, alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--slate)', letterSpacing: '0.5px' }}>No active campaigns available at this moment.</div>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {featuredTasks.map(task => {
-              const isBlog = task.platform === 'blog';
-              const quotaHit = (isBlog && quotas.blogs >= 20) || (!isBlog && quotas.videos >= 3);
-              const cooldownHours = cooldowns[task.id];
-              const isLocked = quotaHit || cooldownHours;
-
-              return (
-                <div key={task.id} style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, opacity: isLocked ? 0.6 : 1 }}>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                      {isBlog ? '📄' : '▶️'}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 4, letterSpacing: '-0.2px' }}>{task.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{task.watch_duration}s Verification</div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Yield</div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: isLocked ? 'var(--slate)' : 'var(--lime)' }}>+{task.reward_points} PTS</div>
-                    </div>
-                    
-                    {/* 🔥 THE FRONT DOOR LOCKS 🔥 */}
-                    {quotaHit ? (
-                      <button disabled style={S.btnLocked}>LIMIT REACHED</button>
-                    ) : cooldownHours ? (
-                      <button disabled style={S.btnLocked}>🔒 {cooldownHours}H COOLDOWN</button>
-                    ) : (
-                      <button onClick={() => navigate(`player/${task.id}`)} style={{ ...S.btnGhost, padding: '10px 20px', fontSize: 12 }}>Initiate</button>
-                    )}
-                  </div>
-
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
     </div>
   );
