@@ -6,7 +6,7 @@ export async function enforceDeviceFingerprint(userId) {
   // 1. Check if the device already has a permanent tracker
   let deviceId = localStorage.getItem('taskivo_device_hash');
   
-  // 2. Generate one based on their hardware/browser footprint
+  // 2. Generate one based on their hardware/browser footprint if missing
   if (!deviceId) {
     const footprint = navigator.userAgent + screen.width + screen.height + navigator.hardwareConcurrency;
     let hash = 0;
