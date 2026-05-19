@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase.js";
+import PhoneVerification from "../components/PhoneVerification";
 
 export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mode, setMode] = useState(function() {
@@ -21,12 +22,16 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mounted, setMounted] = useState(false);
   var [form, setForm] = useState({ name: "", email: "", password: "" });
 
+  // 🔥 FRONT-DOOR SECURITY STATES 🔥
+  var [showPhoneGate, setShowPhoneGate] = useState(false);
+  var [currentUser, setCurrentUser] = useState(null);
+
   useEffect(function () {
     var t = setTimeout(function () { setMounted(true); }, 50);
     return function () { clearTimeout(t); };
   }, []);
 
-  // 🔥 PROCESS REFERRALS & GRANTS ON GOOGLE LOGIN 🔥
+  // ── AUTH LISTENER: INTERCEPTS LOGIN FOR PHONE VERIFICATION ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
@@ -36,8 +41,8 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
         var updates = {};
 
         if (storedRef) {
-          var { data: currentUser } = await supabase.from("profiles").select("referred_by").eq("id", session.user.id).single();
-          if (currentUser && !currentUser.referred_by) {
+          var { data: dbUser } = await supabase.from("profiles").select("referred_by").eq("id", session.user.id).single();
+          if (dbUser && !dbUser.referred_by) {
             updates.referred_by = storedRef;
           }
           localStorage.removeItem("taskivo_ref");
@@ -53,7 +58,13 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           await supabase.from("profiles").update(updates).eq("id", session.user.id);
         }
 
-        if (loadProfile) await loadProfile(session.user);
+        // 🔥 THE PHONE GATE CHECK 🔥
+        if (!session.user.phone) {
+          setCurrentUser(session.user);
+          setShowPhoneGate(true); // Freeze the app and show SMS verification
+        } else {
+          if (loadProfile) await loadProfile(session.user); // Let them in
+        }
       }
     });
     
@@ -104,13 +115,19 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       setLoading(false);
       return;
     }
-    if (result.data && result.data.user && loadProfile) {
-      await loadProfile(result.data.user);
+    
+    // Check if they bypassed the listener somehow
+    if (result.data && result.data.user) {
+      if (!result.data.user.phone) {
+        setCurrentUser(result.data.user);
+        setShowPhoneGate(true);
+      } else if (loadProfile) {
+        await loadProfile(result.data.user);
+      }
     }
     setLoading(false);
   }
 
-  // 🔥 APPLY GRANT FOR EMAIL SIGNUPS 🔥
   async function handleEmailRegister() {
     setLoading(true);
     setError("");
@@ -222,81 +239,79 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     );
   }
 
-  var isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-
-  if (isMobile) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#0D0D14", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px", position: "relative", fontFamily: "'DM Sans', sans-serif" }}>
-        <div style={gridStyle} />
-        <div style={overlayStyle} />
-        <div style={{ zIndex: 1, marginBottom: 32, textAlign: "center" }}>
-          <div onClick={function() { if(navigate) navigate(''); }} style={{ ...logoTextStyle, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: 'pointer' }}>⚡ Taskivo <span style={logoBadgeStyle}>BETA</span></div>
+  // ── MAIN RENDER (Mobile & Desktop) ──
+  const AuthCard = () => (
+    <div style={{ ...cardStyle, zIndex: 1, width: "100%" }}>
+      <div style={{ ...cardTitleStyle, fontSize: 22, marginBottom: 4 }}>{mode === "login" ? "Welcome back" : "Join Taskivo"}</div>
+      <div style={{ ...cardSubStyle, marginBottom: 24 }}>{mode === "login" ? "Sign in to your account" : "Start participating today"}</div>
+      {mode === "register" && (
+        <div style={{ display: "flex", background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 4, marginBottom: 20, gap: 4 }}>
+          {["earner", "creator"].map(function (r) { return <button key={r} onClick={function () { handleRoleChange(r); }} style={roleTabStyle(role === r)}>{r === "earner" ? "🎯 Contributor" : "✦ Business"}</button>; })}
         </div>
-        <div style={{ ...cardStyle, zIndex: 1, width: "100%" }}>
-          <div style={{ ...cardTitleStyle, fontSize: 22, marginBottom: 4 }}>{mode === "login" ? "Welcome back" : "Join Taskivo"}</div>
-          <div style={{ ...cardSubStyle, marginBottom: 24 }}>{mode === "login" ? "Sign in to your account" : "Start participating today"}</div>
-          {mode === "register" && (
-            <div style={{ display: "flex", background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 4, marginBottom: 20, gap: 4 }}>
-              {["earner", "creator"].map(function (r) { return <button key={r} onClick={function () { handleRoleChange(r); }} style={roleTabStyle(role === r)}>{r === "earner" ? "🎯 Contributor" : "✦ Business"}</button>; })}
-            </div>
-          )}
-          <button style={googleBtnStyle} onClick={handleGoogle} disabled={loading}><img src="https://www.google.com/favicon.ico" width={16} height={16} alt="G" /> Continue with Google</button>
-          <div style={dividerStyle}><div style={dividerLineStyle} /><span style={dividerTextStyle}>OR</span><div style={dividerLineStyle} /></div>
-          {mode === "register" && <div><label style={labelStyle}>Full Name</label><input style={inputStyle} type="text" name="name" placeholder="Your full name" value={form.name} onChange={handleChange} /></div>}
-          <div><label style={labelStyle}>Email</label><input style={inputStyle} type="email" name="email" placeholder="you@example.com" value={form.email} onChange={handleChange} /></div>
-          <div><label style={labelStyle}>Password</label><input style={inputStyle} type="password" name="password" placeholder={mode === "register" ? "Min 8 chars, 1 Upper, 1 Number" : "••••••••"} value={form.password} onChange={handleChange} /></div>
-          {error && <div style={errorStyle}>{error}</div>}
-          <button style={submitBtnStyle} onClick={handleSubmit} disabled={loading}>
-            {loading ? <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(0,0,0,0.3)", borderTopColor: "#0D0D14", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> : null}
-            {loading ? "Please wait..." : mode === "login" ? "Sign In →" : "Create Account →"}
-          </button>
-          <div style={switchStyle}>
-            {mode === "login" ? <>Don't have an account? <span style={switchLinkStyle} onClick={function () { setMode("register"); setError(""); }}>Sign up free</span></> : <>Already have an account? <span style={switchLinkStyle} onClick={function () { setMode("login"); setError(""); }}>Log in</span></>}
-          </div>
-        </div>
+      )}
+      <button style={googleBtnStyle} onClick={handleGoogle} disabled={loading}><img src="https://www.google.com/favicon.ico" width={16} height={16} alt="G" /> Continue with Google</button>
+      <div style={dividerStyle}><div style={dividerLineStyle} /><span style={dividerTextStyle}>OR</span><div style={dividerLineStyle} /></div>
+      {mode === "register" && <div><label style={labelStyle}>Full Name</label><input style={inputStyle} type="text" name="name" placeholder="Your full name" value={form.name} onChange={handleChange} /></div>}
+      <div><label style={labelStyle}>Email</label><input style={inputStyle} type="email" name="email" placeholder="you@example.com" value={form.email} onChange={handleChange} /></div>
+      <div><label style={labelStyle}>Password</label><input style={inputStyle} type="password" name="password" placeholder={mode === "register" ? "Min 8 chars, 1 Upper, 1 Number" : "••••••••"} value={form.password} onChange={handleChange} /></div>
+      {error && <div style={errorStyle}>{error}</div>}
+      <button style={submitBtnStyle} onClick={handleSubmit} disabled={loading}>
+        {loading ? <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(0,0,0,0.3)", borderTopColor: "#0D0D14", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> : null}
+        {loading ? "Please wait..." : mode === "login" ? "Sign In →" : "Create Account →"}
+      </button>
+      <div style={switchStyle}>
+        {mode === "login" ? <>Don't have an account? <span style={switchLinkStyle} onClick={function () { setMode("register"); setError(""); }}>Sign up free</span></> : <>Already have an account? <span style={switchLinkStyle} onClick={function () { setMode("login"); setError(""); }}>Log in</span></>}
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div style={pageStyle}>
       <div style={gridStyle} />
       <div style={overlayStyle} />
-      <div style={leftStyle}>
-        <div style={logoStyle} onClick={function() { if(navigate) navigate(''); }}><span style={logoTextStyle}>⚡ Taskivo</span><span style={logoBadgeStyle}>BETA</span></div>
-        <div style={headlineStyle}>Scale your reach.<br /><span style={{ color: "#A8FF3E" }}>Earn from real engagement.</span></div>
-        <div style={subStyle}>An omnichannel infrastructure connecting businesses with a global network of verified contributors.</div>
-        <div style={{ display: "flex", gap: 32, marginBottom: 48 }}>
-          {statData.map(function (s) { return <div key={s.label}><div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 800, color: "#A8FF3E" }}>{s.num}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{s.label}</div></div>; })}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {featuresData.map(function (f) { return <div key={f.label} style={{ display: "flex", alignItems: "center", gap: 14 }}><div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(168,255,62,0.1)", border: "1px solid rgba(168,255,62,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{f.icon}</div><div><div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{f.label}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>{f.desc}</div></div></div>; })}
-        </div>
-      </div>
-      <div style={rightStyle}>
-        <div style={cardStyle}>
-          <div style={{ ...cardTitleStyle, marginBottom: 4 }}>{mode === "login" ? "Welcome back" : "Create account"}</div>
-          <div style={{ ...cardSubStyle, marginBottom: 28 }}>{mode === "login" ? "Sign in to access the platform" : "Join the global engagement network"}</div>
-          {mode === "register" && (
-            <div style={{ display: "flex", background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 4, marginBottom: 24, gap: 4 }}>
-              {["earner", "creator"].map(function (r) { return <button key={r} onClick={function () { handleRoleChange(r); }} style={roleTabStyle(role === r)}>{r === "earner" ? "🎯 Contributor" : "✦ Business"}</button>; })}
-            </div>
-          )}
-          <button style={googleBtnStyle} onClick={handleGoogle} disabled={loading}><img src="https://www.google.com/favicon.ico" width={16} height={16} alt="G" /> Continue with Google</button>
-          <div style={dividerStyle}><div style={dividerLineStyle} /><span style={dividerTextStyle}>OR</span><div style={dividerLineStyle} /></div>
-          {mode === "register" && <div><label style={labelStyle}>Full Name</label><input style={inputStyle} type="text" name="name" placeholder="Your full name" value={form.name} onChange={handleChange} /></div>}
-          <div><label style={labelStyle}>Email</label><input style={inputStyle} type="email" name="email" placeholder="you@example.com" value={form.email} onChange={handleChange} /></div>
-          <div><label style={labelStyle}>Password</label><input style={inputStyle} type="password" name="password" placeholder={mode === "register" ? "Min 8 chars, 1 Upper, 1 Number" : "••••••••"} value={form.password} onChange={handleChange} /></div>
-          {error && <div style={errorStyle}>{error}</div>}
-          <button style={submitBtnStyle} onClick={handleSubmit} disabled={loading}>
-            {loading ? <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(0,0,0,0.3)", borderTopColor: "#0D0D14", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> : null}
-            {loading ? "Please wait..." : mode === "login" ? "Sign In →" : "Create Account →"}
-          </button>
-          <div style={switchStyle}>
-            {mode === "login" ? <>Don't have an account? <span style={switchLinkStyle} onClick={function () { setMode("register"); setError(""); }}>Sign up free</span></> : <>Already have an account? <span style={switchLinkStyle} onClick={function () { setMode("login"); setError(""); }}>Log in</span></>}
+      
+      {/* RENDER THE TWILIO GATEWAY OVER THE AUTH PAGE IF TRIGGERED */}
+      {showPhoneGate && currentUser ? (
+        <PhoneVerification 
+          user={currentUser} 
+          onVerified={async () => {
+            setShowPhoneGate(false);
+            if (loadProfile) await loadProfile(currentUser);
+          }} 
+          onCancel={() => {
+            // Kick them out if they refuse to verify
+            supabase.auth.signOut();
+            setShowPhoneGate(false);
+            setMode("login");
+          }} 
+        />
+      ) : typeof window !== "undefined" && window.innerWidth < 768 ? (
+        // Mobile Layout
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px", width: "100%", zIndex: 1 }}>
+          <div style={{ marginBottom: 32, textAlign: "center" }}>
+            <div onClick={function() { if(navigate) navigate(''); }} style={{ ...logoTextStyle, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: 'pointer' }}>⚡ Taskivo <span style={logoBadgeStyle}>BETA</span></div>
           </div>
+          <AuthCard />
         </div>
-      </div>
+      ) : (
+        // Desktop Layout
+        <>
+          <div style={leftStyle}>
+            <div style={logoStyle} onClick={function() { if(navigate) navigate(''); }}><span style={logoTextStyle}>⚡ Taskivo</span><span style={logoBadgeStyle}>BETA</span></div>
+            <div style={headlineStyle}>Scale your reach.<br /><span style={{ color: "#A8FF3E" }}>Earn from real engagement.</span></div>
+            <div style={subStyle}>An omnichannel infrastructure connecting businesses with a global network of verified contributors.</div>
+            <div style={{ display: "flex", gap: 32, marginBottom: 48 }}>
+              {statData.map(function (s) { return <div key={s.label}><div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 800, color: "#A8FF3E" }}>{s.num}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{s.label}</div></div>; })}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {featuresData.map(function (f) { return <div key={f.label} style={{ display: "flex", alignItems: "center", gap: 14 }}><div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(168,255,62,0.1)", border: "1px solid rgba(168,255,62,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{f.icon}</div><div><div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{f.label}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>{f.desc}</div></div></div>; })}
+            </div>
+          </div>
+          <div style={rightStyle}>
+            <AuthCard />
+          </div>
+        </>
+      )}
     </div>
   );
 }
