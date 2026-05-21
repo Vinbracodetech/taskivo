@@ -22,7 +22,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mounted, setMounted] = useState(false);
   var [form, setForm] = useState({ name: "", email: "", password: "" });
 
-  // 🔥 FRONT-DOOR SECURITY STATES 🔥
   var [showPhoneGate, setShowPhoneGate] = useState(false);
   var [currentUser, setCurrentUser] = useState(null);
 
@@ -31,7 +30,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     return function () { clearTimeout(t); };
   }, []);
 
-  // ── THE BOUNCER: ABSOLUTE SINGLE SOURCE OF TRUTH FOR ROUTING & DB SYNC ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
@@ -41,47 +39,37 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
         
         var updates = {};
 
-        // 1. Fetch current profile to see what's missing
         var { data: dbUser } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
 
         if (dbUser) {
-          // Sync Role (Crucial for Google OAuth users who bypass the standard form)
           if (!dbUser.role && storedRole) updates.role = storedRole;
-
-          // Sync Referral
           if (storedRef && !dbUser.referred_by) updates.referred_by = storedRef;
 
-          // 🔥 STRICT 10-SPOT GRANT CHECK 🔥
           if (hasGrant && !dbUser.pilot_claimed) {
             var { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).gt('free_credits', 0);
-            
             if (count < 10) {
-              updates.free_credits = 1; // Unlocks the 20-verification trial in dashboard
+              updates.free_credits = 1;
               updates.pilot_claimed = true;
             } else {
-              // Spots are full. Mark claimed so we don't run this check again.
               updates.pilot_claimed = true; 
             }
           }
 
-          // Apply all updates in a single network request
           if (Object.keys(updates).length > 0) {
             await supabase.from("profiles").update(updates).eq("id", session.user.id);
           }
         }
 
-        // 2. Clear Local Storage so it doesn't trigger on future logins
         localStorage.removeItem("taskivo_ref");
         localStorage.removeItem("taskivo_grant");
         localStorage.removeItem("taskivo_role");
 
-        // 3. 🔥 THE TWILIO PHONE GATE 🔥
         if (!session.user.phone) {
           setCurrentUser(session.user);
-          setShowPhoneGate(true); // Freeze app, block loadProfile, show SMS Gate
+          setShowPhoneGate(true);
         } else {
           setShowPhoneGate(false);
-          if (loadProfile) await loadProfile(session.user); // Let them in
+          if (loadProfile) await loadProfile(session.user);
         }
       }
     });
@@ -106,7 +94,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     }
   }
 
-  // Notice how clean these are now. They ONLY handle auth. The listener handles the rest.
   async function handleGoogle() {
     setLoading(true); setError("");
     var result = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
@@ -119,7 +106,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     
     var result = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
     if (result.error) { setError(result.error.message); setLoading(false); }
-    // No routing here. The listener catches the successful login.
   }
 
   async function handleEmailRegister() {
@@ -199,7 +185,8 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     );
   }
 
-  const AuthCard = () => (
+  // 🔥 CHANGED THIS FROM A COMPONENT `const AuthCard = () =>` TO A VARIABLE `var authCardContent =`
+  var authCardContent = (
     <div style={{ ...cardStyle, zIndex: 1, width: "100%" }}>
       <div style={{ ...cardTitleStyle, fontSize: 22, marginBottom: 4 }}>{mode === "login" ? "Welcome back" : "Join Taskivo"}</div>
       <div style={{ ...cardSubStyle, marginBottom: 24 }}>{mode === "login" ? "Sign in to your account" : "Start participating today"}</div>
@@ -233,7 +220,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
         <PhoneVerification 
           user={currentUser} 
           onVerified={async () => {
-            // Re-fetch the verified user session so it has the phone number attached
             const { data: { session } } = await supabase.auth.getSession();
             setShowPhoneGate(false);
             if (loadProfile && session) await loadProfile(session.user);
@@ -249,7 +235,8 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           <div style={{ marginBottom: 32, textAlign: "center" }}>
             <div onClick={function() { if(navigate) navigate(''); }} style={{ ...logoTextStyle, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: 'pointer' }}>⚡ Taskivo <span style={logoBadgeStyle}>BETA</span></div>
           </div>
-          <AuthCard />
+          {/* 🔥 INJECTED AS A VARIABLE INSTEAD OF A COMPONENT */}
+          {authCardContent}
         </div>
       ) : (
         <>
@@ -265,7 +252,8 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
             </div>
           </div>
           <div style={rightStyle}>
-            <AuthCard />
+            {/* 🔥 INJECTED AS A VARIABLE INSTEAD OF A COMPONENT */}
+            {authCardContent}
           </div>
         </>
       )}
