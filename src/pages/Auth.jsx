@@ -31,38 +31,56 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     return function () { clearTimeout(t); };
   }, []);
 
-  // ── AUTH LISTENER: INTERCEPTS LOGIN FOR PHONE VERIFICATION ──
+  // ── THE BOUNCER: ABSOLUTE SINGLE SOURCE OF TRUTH FOR ROUTING & DB SYNC ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
         var storedRef = localStorage.getItem("taskivo_ref");
         var hasGrant = localStorage.getItem("taskivo_grant");
+        var storedRole = localStorage.getItem("taskivo_role");
         
         var updates = {};
 
-        if (storedRef) {
-          var { data: dbUser } = await supabase.from("profiles").select("referred_by").eq("id", session.user.id).single();
-          if (dbUser && !dbUser.referred_by) {
-            updates.referred_by = storedRef;
+        // 1. Fetch current profile to see what's missing
+        var { data: dbUser } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+
+        if (dbUser) {
+          // Sync Role (Crucial for Google OAuth users who bypass the standard form)
+          if (!dbUser.role && storedRole) updates.role = storedRole;
+
+          // Sync Referral
+          if (storedRef && !dbUser.referred_by) updates.referred_by = storedRef;
+
+          // 🔥 STRICT 10-SPOT GRANT CHECK 🔥
+          if (hasGrant && !dbUser.pilot_claimed) {
+            var { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).gt('free_credits', 0);
+            
+            if (count < 10) {
+              updates.free_credits = 1; // Unlocks the 20-verification trial in dashboard
+              updates.pilot_claimed = true;
+            } else {
+              // Spots are full. Mark claimed so we don't run this check again.
+              updates.pilot_claimed = true; 
+            }
           }
-          localStorage.removeItem("taskivo_ref");
+
+          // Apply all updates in a single network request
+          if (Object.keys(updates).length > 0) {
+            await supabase.from("profiles").update(updates).eq("id", session.user.id);
+          }
         }
 
-        if (hasGrant) {
-          updates.free_credits = 1;
-          updates.pilot_claimed = true;
-          localStorage.removeItem("taskivo_grant");
-        }
+        // 2. Clear Local Storage so it doesn't trigger on future logins
+        localStorage.removeItem("taskivo_ref");
+        localStorage.removeItem("taskivo_grant");
+        localStorage.removeItem("taskivo_role");
 
-        if (Object.keys(updates).length > 0) {
-          await supabase.from("profiles").update(updates).eq("id", session.user.id);
-        }
-
-        // 🔥 THE PHONE GATE CHECK 🔥
+        // 3. 🔥 THE TWILIO PHONE GATE 🔥
         if (!session.user.phone) {
           setCurrentUser(session.user);
-          setShowPhoneGate(true); // Freeze the app and show SMS verification
+          setShowPhoneGate(true); // Freeze app, block loadProfile, show SMS Gate
         } else {
+          setShowPhoneGate(false);
           if (loadProfile) await loadProfile(session.user); // Let them in
         }
       }
@@ -88,60 +106,26 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     }
   }
 
+  // Notice how clean these are now. They ONLY handle auth. The listener handles the rest.
   async function handleGoogle() {
-    setLoading(true);
-    setError("");
-    var result = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
-    if (result.error) {
-      setError(result.error.message);
-      setLoading(false);
-    }
+    setLoading(true); setError("");
+    var result = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+    if (result.error) { setError(result.error.message); setLoading(false); }
   }
 
   async function handleEmailLogin() {
-    setLoading(true);
-    setError("");
-    if (!form.email || !form.password) {
-      setError("Please fill in all fields.");
-      setLoading(false);
-      return;
-    }
-    var result = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
-    if (result.error) {
-      setError(result.error.message);
-      setLoading(false);
-      return;
-    }
+    setLoading(true); setError("");
+    if (!form.email || !form.password) { setError("Please fill in all fields."); setLoading(false); return; }
     
-    // Check if they bypassed the listener somehow
-    if (result.data && result.data.user) {
-      if (!result.data.user.phone) {
-        setCurrentUser(result.data.user);
-        setShowPhoneGate(true);
-      } else if (loadProfile) {
-        await loadProfile(result.data.user);
-      }
-    }
-    setLoading(false);
+    var result = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
+    if (result.error) { setError(result.error.message); setLoading(false); }
+    // No routing here. The listener catches the successful login.
   }
 
   async function handleEmailRegister() {
-    setLoading(true);
-    setError("");
-    if (!form.name || !form.email || !form.password) {
-      setError("Please fill in all fields.");
-      setLoading(false);
-      return;
-    }
-    
-    if (form.password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      setLoading(false);
-      return;
-    }
+    setLoading(true); setError("");
+    if (!form.name || !form.email || !form.password) { setError("Please fill in all fields."); setLoading(false); return; }
+    if (form.password.length < 8) { setError("Password must be at least 8 characters."); setLoading(false); return; }
 
     var hasLowerCase = /[a-z]/.test(form.password);
     var hasUpperCase = /[A-Z]/.test(form.password);
@@ -149,8 +133,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
 
     if (!hasLowerCase || !hasUpperCase || !hasDigit) {
       setError("Password must include an uppercase letter, a lowercase letter, and a number.");
-      setLoading(false);
-      return;
+      setLoading(false); return;
     }
 
     var result = await supabase.auth.signUp({
@@ -161,30 +144,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     
     if (result.error) {
       setError(result.error.message);
-      setLoading(false);
-      return;
-    }
-    
-    if (result.data && result.data.user) {
-      var storedRef = localStorage.getItem("taskivo_ref");
-      var hasGrant = localStorage.getItem("taskivo_grant");
-      
-      var profileData = {
-        email: form.email,
-        role: role,
-        referred_by: storedRef || null
-      };
-
-      if (hasGrant) {
-        profileData.free_credits = 1;
-        profileData.pilot_claimed = true;
-      }
-
-      await supabase.from("profiles").update(profileData).eq("id", result.data.user.id);
-      
-      if (storedRef) localStorage.removeItem("taskivo_ref");
-      if (hasGrant) localStorage.removeItem("taskivo_grant");
-      localStorage.removeItem("taskivo_role"); 
+      setLoading(false); return;
     }
     
     setLoading(false);
@@ -239,7 +199,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     );
   }
 
-  // ── MAIN RENDER (Mobile & Desktop) ──
   const AuthCard = () => (
     <div style={{ ...cardStyle, zIndex: 1, width: "100%" }}>
       <div style={{ ...cardTitleStyle, fontSize: 22, marginBottom: 4 }}>{mode === "login" ? "Welcome back" : "Join Taskivo"}</div>
@@ -270,23 +229,22 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       <div style={gridStyle} />
       <div style={overlayStyle} />
       
-      {/* RENDER THE TWILIO GATEWAY OVER THE AUTH PAGE IF TRIGGERED */}
       {showPhoneGate && currentUser ? (
         <PhoneVerification 
           user={currentUser} 
           onVerified={async () => {
+            // Re-fetch the verified user session so it has the phone number attached
+            const { data: { session } } = await supabase.auth.getSession();
             setShowPhoneGate(false);
-            if (loadProfile) await loadProfile(currentUser);
+            if (loadProfile && session) await loadProfile(session.user);
           }} 
           onCancel={() => {
-            // Kick them out if they refuse to verify
             supabase.auth.signOut();
             setShowPhoneGate(false);
             setMode("login");
           }} 
         />
       ) : typeof window !== "undefined" && window.innerWidth < 768 ? (
-        // Mobile Layout
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px", width: "100%", zIndex: 1 }}>
           <div style={{ marginBottom: 32, textAlign: "center" }}>
             <div onClick={function() { if(navigate) navigate(''); }} style={{ ...logoTextStyle, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: 'pointer' }}>⚡ Taskivo <span style={logoBadgeStyle}>BETA</span></div>
@@ -294,7 +252,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           <AuthCard />
         </div>
       ) : (
-        // Desktop Layout
         <>
           <div style={leftStyle}>
             <div style={logoStyle} onClick={function() { if(navigate) navigate(''); }}><span style={logoTextStyle}>⚡ Taskivo</span><span style={logoBadgeStyle}>BETA</span></div>
