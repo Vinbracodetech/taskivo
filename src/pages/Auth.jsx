@@ -30,15 +30,21 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     return function () { clearTimeout(t); };
   }, []);
 
-  // ── THE BOUNCER: QUARANTINE ARCHITECTURE & CREATOR CHECK ──
+  // ── THE BOUNCER: HASH-LOCK & QUARANTINE ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
         
-        // 1. QUARANTINE CHECK: No phone? Freeze the app.
+        // 1. QUARANTINE CHECK: No phone? Freeze the app ON THE AUTH PAGE.
         if (!session.user.phone) {
           setCurrentUser(session.user);
           setShowPhoneGate(true); 
+          
+          // 🔥 THE HASH-LOCK: If they are on #tasks or anywhere else, drag them back to #auth
+          if (typeof window !== "undefined" && window.location.hash !== "#auth" && window.location.hash !== "") {
+            window.location.hash = "auth";
+          }
+          
           return; // Stop execution. No grants or roles are processed yet.
         } 
 
@@ -53,13 +59,12 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
         var { data: dbUser } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
 
         if (dbUser) {
-          // Determine what their role actually is right now
           var finalRole = dbUser.role || storedRole || "earner";
 
           if (!dbUser.role && storedRole) updates.role = storedRole;
           if (storedRef && !dbUser.referred_by) updates.referred_by = storedRef;
 
-          // 🔥 CREATOR-ONLY 10-SPOT GRANT CHECK 🔥
+          // CREATOR-ONLY 10-SPOT GRANT CHECK
           if (hasGrant && !dbUser.pilot_claimed && finalRole === "creator") {
             var { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).gt('free_credits', 0);
             if (count < 10) {
@@ -75,12 +80,11 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           }
         }
 
-        // Clean up
         localStorage.removeItem("taskivo_ref");
         localStorage.removeItem("taskivo_grant");
         localStorage.removeItem("taskivo_role");
 
-        // Let them into the app
+        // Finally let them into the app
         if (loadProfile) await loadProfile(session.user);
       }
     });
@@ -133,6 +137,8 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       setLoading(false); return;
     }
 
+    // Call Supabase. If "Confirm Email" is off, this instantly logs them in, 
+    // triggering the listener above which instantly shows the Phone Gate.
     var result = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -144,8 +150,12 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       setLoading(false); return;
     }
     
+    // If they require email confirmation, show the confirm screen
+    if (result.data?.user && result.data.user.identities && result.data.user.identities.length === 0) {
+       setMode("confirm");
+    }
+    
     setLoading(false);
-    setMode("confirm");
   }
 
   function handleSubmit() {
@@ -196,7 +206,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     );
   }
 
-  // 🔥 Rendered as a variable to prevent focus loss
   var authCardContent = (
     <div style={{ ...cardStyle, zIndex: 1, width: "100%" }}>
       <div style={{ ...cardTitleStyle, fontSize: 22, marginBottom: 4 }}>{mode === "login" ? "Welcome back" : "Join Taskivo"}</div>
@@ -231,7 +240,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
         <PhoneVerification 
           user={currentUser} 
           onVerified={async () => {
-            // Force Supabase to refresh, triggering the listener to process grants
             await supabase.auth.refreshSession();
           }} 
           onCancel={() => {
