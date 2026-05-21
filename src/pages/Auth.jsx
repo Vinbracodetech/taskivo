@@ -30,22 +30,37 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     return function () { clearTimeout(t); };
   }, []);
 
+  // ── THE BOUNCER: QUARANTINE ARCHITECTURE & CREATOR CHECK ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
+        
+        // 1. QUARANTINE CHECK: No phone? Freeze the app.
+        if (!session.user.phone) {
+          setCurrentUser(session.user);
+          setShowPhoneGate(true); 
+          return; // Stop execution. No grants or roles are processed yet.
+        } 
+
+        // 2. ACTIVATION: Phone is verified. Safe to unpack local storage.
+        setShowPhoneGate(false);
+        
         var storedRef = localStorage.getItem("taskivo_ref");
         var hasGrant = localStorage.getItem("taskivo_grant");
         var storedRole = localStorage.getItem("taskivo_role");
         
         var updates = {};
-
         var { data: dbUser } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
 
         if (dbUser) {
+          // Determine what their role actually is right now
+          var finalRole = dbUser.role || storedRole || "earner";
+
           if (!dbUser.role && storedRole) updates.role = storedRole;
           if (storedRef && !dbUser.referred_by) updates.referred_by = storedRef;
 
-          if (hasGrant && !dbUser.pilot_claimed) {
+          // 🔥 CREATOR-ONLY 10-SPOT GRANT CHECK 🔥
+          if (hasGrant && !dbUser.pilot_claimed && finalRole === "creator") {
             var { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).gt('free_credits', 0);
             if (count < 10) {
               updates.free_credits = 1;
@@ -60,17 +75,13 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           }
         }
 
+        // Clean up
         localStorage.removeItem("taskivo_ref");
         localStorage.removeItem("taskivo_grant");
         localStorage.removeItem("taskivo_role");
 
-        if (!session.user.phone) {
-          setCurrentUser(session.user);
-          setShowPhoneGate(true);
-        } else {
-          setShowPhoneGate(false);
-          if (loadProfile) await loadProfile(session.user);
-        }
+        // Let them into the app
+        if (loadProfile) await loadProfile(session.user);
       }
     });
     
@@ -185,7 +196,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     );
   }
 
-  // 🔥 CHANGED THIS FROM A COMPONENT `const AuthCard = () =>` TO A VARIABLE `var authCardContent =`
+  // 🔥 Rendered as a variable to prevent focus loss
   var authCardContent = (
     <div style={{ ...cardStyle, zIndex: 1, width: "100%" }}>
       <div style={{ ...cardTitleStyle, fontSize: 22, marginBottom: 4 }}>{mode === "login" ? "Welcome back" : "Join Taskivo"}</div>
@@ -220,9 +231,8 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
         <PhoneVerification 
           user={currentUser} 
           onVerified={async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setShowPhoneGate(false);
-            if (loadProfile && session) await loadProfile(session.user);
+            // Force Supabase to refresh, triggering the listener to process grants
+            await supabase.auth.refreshSession();
           }} 
           onCancel={() => {
             supabase.auth.signOut();
@@ -235,7 +245,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           <div style={{ marginBottom: 32, textAlign: "center" }}>
             <div onClick={function() { if(navigate) navigate(''); }} style={{ ...logoTextStyle, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: 'pointer' }}>⚡ Taskivo <span style={logoBadgeStyle}>BETA</span></div>
           </div>
-          {/* 🔥 INJECTED AS A VARIABLE INSTEAD OF A COMPONENT */}
           {authCardContent}
         </div>
       ) : (
@@ -252,7 +261,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
             </div>
           </div>
           <div style={rightStyle}>
-            {/* 🔥 INJECTED AS A VARIABLE INSTEAD OF A COMPONENT */}
             {authCardContent}
           </div>
         </>
