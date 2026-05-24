@@ -13,14 +13,16 @@ export default function Dashboard({ user, navigate, showToast }) {
   const [quotas, setQuotas] = useState({ videos: 0, blogs: 0 });
   const [cooldowns, setCooldowns] = useState({});
 
+  // 🔥 NEW PROFILE STATES 🔥
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ full_name: user.full_name || '', payout_account: user.payout_account || '' });
+  const [savingProfile, setSavingProfile] = useState(false);
+
   useEffect(() => {
     if (!user) return;
-    
     fetchDashboardData();
-    
-    // 🔥 SILENTLY TRIGGER THE DEVICE TRACKER 🔥
+    // SILENTLY TRIGGER THE DEVICE TRACKER
     enforceDeviceFingerprint(user.id);
-    
   }, [user]);
 
   async function fetchDashboardData() {
@@ -82,11 +84,43 @@ export default function Dashboard({ user, navigate, showToast }) {
     }
   }
 
+  // 🔥 NEW: SAVE PROFILE LOGIC 🔥
+  async function handleSaveProfile() {
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          full_name: editForm.full_name,
+          payout_account: editForm.payout_account 
+        })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      // Update local user object so the UI refreshes immediately
+      user.full_name = editForm.full_name;
+      user.payout_account = editForm.payout_account;
+      
+      if (showToast) showToast('Profile updated successfully', 'success');
+      setShowEditModal(false);
+    } catch (err) {
+      if (showToast) showToast(err.message, 'error');
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
   function copyReferralLink() {
     navigator.clipboard.writeText(`https://taskivo.online/#auth?ref=${user.id}`);
     setReferralCopied(true);
     if (showToast) showToast('Invite link copied!', 'success');
     setTimeout(() => setReferralCopied(false), 3000);
+  }
+
+  function getInitials(name) {
+    if (!name) return 'U';
+    return name.substring(0, 2).toUpperCase();
   }
 
   if (loading) {
@@ -100,6 +134,7 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   const minWithdrawal = 2000;
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
+  const isVerified = !!user.phone;
 
   // ── THEME-AWARE PREMIUM STYLES ──
   const S = {
@@ -110,18 +145,39 @@ export default function Dashboard({ user, navigate, showToast }) {
     valueGlow: { fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
     btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif" },
     btnLime: { background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif", boxShadow: '0 8px 16px rgba(168,255,62,0.2)' },
-    btnLocked: { background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px', fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif" }
+    btnLocked: { background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px', fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif" },
+    
+    // Profile Styles
+    avatarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: 20 },
+    avatarBlock: { display: 'flex', alignItems: 'center', gap: 16 },
+    avatar: { width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, var(--lime) 0%, #3d6600 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0D0D14', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", border: '2px solid var(--surface-card)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' },
+    badge: { fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6, letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' },
+    verified: { background: 'rgba(168,255,62,0.15)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.3)' },
+    unverified: { background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' },
+    
+    // Modal Styles
+    modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 },
+    modalCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 24px 48px rgba(0,0,0,0.2)' },
+    input: { width: '100%', padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 15, marginBottom: 16, outline: 'none', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif" }
   };
 
   return (
     <div style={S.page}>
       
-      {/* HEADER */}
-      <div style={{ marginBottom: 32, position: 'relative', zIndex: 1 }}>
-        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>
-          Welcome back, <span style={{ color: 'var(--lime)', textTransform: 'capitalize' }}>{user.full_name?.split(' ')[0] || 'Earner'}</span>.
-        </h1>
-        <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400 }}>Your engagement portfolio and network analytics.</p>
+      {/* HEADER WITH UPGRADED AVATAR PROFILE */}
+      <div style={S.avatarHeader}>
+        <div style={S.avatarBlock}>
+          <div style={S.avatar}>{getInitials(user.full_name)}</div>
+          <div>
+            <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: 'var(--ink)', margin: '0 0 4px', fontWeight: 800, letterSpacing: '-0.5px', textTransform: 'capitalize' }}>
+              {user.full_name || 'Earner'}
+            </h1>
+            <div style={{ ...S.badge, ...(isVerified ? S.verified : S.unverified) }}>
+              {isVerified ? '✓ Verified Network' : '⚠ Unverified Number'}
+            </div>
+          </div>
+        </div>
+        <button onClick={() => setShowEditModal(true)} style={S.btnGhost}>Edit Profile</button>
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -237,6 +293,51 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         )}
       </div>
+
+      {/* 🔥 THE EDIT PROFILE MODAL 🔥 */}
+      {showEditModal && (
+        <div style={S.modalOverlay}>
+          <div style={S.modalCard}>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: 'var(--ink)', marginBottom: 8, letterSpacing: '-0.5px' }}>Edit Profile</h2>
+            <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Update your network identity and payout configurations.</p>
+            
+            <label style={{ ...S.label, marginBottom: 8 }}>Full Name</label>
+            <input 
+              style={S.input} 
+              type="text" 
+              value={editForm.full_name} 
+              onChange={e => setEditForm({...editForm, full_name: e.target.value})} 
+            />
+
+            <label style={{ ...S.label, marginBottom: 8 }}>Payout Account Number</label>
+            <input 
+              style={S.input} 
+              type="text" 
+              placeholder="e.g. 0123456789"
+              value={editForm.payout_account} 
+              onChange={e => setEditForm({...editForm, payout_account: e.target.value})} 
+            />
+            <div style={{ fontSize: 11, color: 'var(--slate)', marginTop: -8, marginBottom: 24 }}>This account locks permanently upon your first withdrawal for security.</div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={() => setShowEditModal(false)} 
+                style={{ ...S.btnGhost, flex: 1, padding: '14px' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveProfile} 
+                disabled={savingProfile} 
+                style={{ ...S.btnLime, flex: 1, padding: '14px', opacity: savingProfile ? 0.5 : 1 }}
+              >
+                {savingProfile ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
