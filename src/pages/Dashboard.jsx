@@ -89,11 +89,10 @@ export default function Dashboard({ user, navigate, showToast }) {
     }
   }
 
-  // 🔥 NEW: SAVE FULL BANK DETAILS 🔥
+  // 🔥 SAVE FULL BANK DETAILS 🔥
   async function handleSaveProfile() {
     setSavingProfile(true);
     try {
-      // Basic validation
       if (!editForm.full_name) throw new Error("Full name is required");
       
       const { error } = await supabase
@@ -107,14 +106,12 @@ export default function Dashboard({ user, navigate, showToast }) {
         .eq('id', user.id);
       
       if (error) {
-        // Handle Supabase unique constraint error gracefully
         if (error.code === '23505' && error.message.includes('payout_account')) {
            throw new Error("This account number is already registered to another user.");
         }
         throw error;
       }
       
-      // Update local user object so the UI refreshes immediately
       user.full_name = editForm.full_name;
       user.payout_bank_name = editForm.payout_bank_name;
       user.payout_account = editForm.payout_account;
@@ -153,9 +150,10 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   const minWithdrawal = 2000;
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
-  const isVerified = !!user.phone;
+  
+  // 🔥 VERIFICATION IS NOW TIED TO PAYOUT SETUP INSTEAD OF PHONE 🔥
+  const isVerified = !!user.payout_account;
 
-  // ── THEME-AWARE PREMIUM STYLES ──
   const S = {
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
     glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', boxShadow: '0 16px 40px rgba(0,0,0,0.03)' },
@@ -165,16 +163,12 @@ export default function Dashboard({ user, navigate, showToast }) {
     btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif" },
     btnLime: { background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif", boxShadow: '0 8px 16px rgba(168,255,62,0.2)' },
     btnLocked: { background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px', fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif" },
-    
-    // Profile Styles
     avatarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: 20 },
     avatarBlock: { display: 'flex', alignItems: 'center', gap: 16 },
     avatar: { width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, var(--lime) 0%, #3d6600 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0D0D14', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", border: '2px solid var(--surface-card)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' },
     badge: { fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6, letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' },
     verified: { background: 'rgba(168,255,62,0.15)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.3)' },
     unverified: { background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' },
-    
-    // Modal Styles
     modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 },
     modalCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 24px 48px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' },
     modalLabel: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--slate)', marginBottom: 8, display: 'block', fontFamily: "'Inter', sans-serif" },
@@ -184,7 +178,6 @@ export default function Dashboard({ user, navigate, showToast }) {
   return (
     <div style={S.page}>
       
-      {/* HEADER WITH UPGRADED AVATAR PROFILE */}
       <div style={S.avatarHeader}>
         <div style={S.avatarBlock}>
           <div style={S.avatar}>{getInitials(user.full_name)}</div>
@@ -193,7 +186,7 @@ export default function Dashboard({ user, navigate, showToast }) {
               {user.full_name || 'Earner'}
             </h1>
             <div style={{ ...S.badge, ...(isVerified ? S.verified : S.unverified) }}>
-              {isVerified ? '✓ Verified Network' : '⚠ Unverified Number'}
+              {isVerified ? '✓ Verified Network' : '⚠ Action Required'}
             </div>
           </div>
         </div>
@@ -204,9 +197,7 @@ export default function Dashboard({ user, navigate, showToast }) {
         <DailyRewardWidget session={{ user }} />
       </div>
 
-      {/* STATS GRID */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
-        
         <div style={S.glassCard}>
           <span style={S.label}>Available Balance</span>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
@@ -242,7 +233,6 @@ export default function Dashboard({ user, navigate, showToast }) {
         </div>
       </div>
 
-      {/* LUXURY REFERRAL CARD */}
       <div style={{ ...S.premiumCard, marginBottom: 56, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
         <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid rgba(212, 175, 55, 0.5)', color: '#D4AF37', background: 'rgba(212, 175, 55, 0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>
@@ -259,7 +249,6 @@ export default function Dashboard({ user, navigate, showToast }) {
         </button>
       </div>
 
-      {/* TASK LIST WITH SMART LOCKS */}
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.5px' }}>Active Opportunities</h2>
@@ -297,7 +286,6 @@ export default function Dashboard({ user, navigate, showToast }) {
                       <div style={{ fontSize: 16, fontWeight: 800, color: isLocked ? 'var(--slate)' : 'var(--lime)' }}>+{task.reward_points} PTS</div>
                     </div>
                     
-                    {/* 🔥 THE FRONT DOOR LOCKS 🔥 */}
                     {quotaHit ? (
                       <button disabled style={S.btnLocked}>LIMIT REACHED</button>
                     ) : cooldownHours ? (
@@ -314,71 +302,33 @@ export default function Dashboard({ user, navigate, showToast }) {
         )}
       </div>
 
-      {/* 🔥 UPGRADED EDIT PROFILE MODAL 🔥 */}
       {showEditModal && (
         <div style={S.modalOverlay}>
           <div style={S.modalCard}>
             <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: 'var(--ink)', marginBottom: 8, letterSpacing: '-0.5px' }}>Edit Profile</h2>
             <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Update your network identity and payout configurations.</p>
             
-            {/* NAME */}
             <label style={S.modalLabel}>Full Name</label>
-            <input 
-              style={S.input} 
-              type="text" 
-              placeholder="Your legal name"
-              value={editForm.full_name} 
-              onChange={e => setEditForm({...editForm, full_name: e.target.value})} 
-            />
+            <input style={S.input} type="text" placeholder="Your legal name" value={editForm.full_name} onChange={e => setEditForm({...editForm, full_name: e.target.value})} />
 
             <div style={{ height: 1, background: 'var(--line)', margin: '8px 0 24px' }}></div>
             
-            {/* BANK NAME */}
-            <label style={S.modalLabel}>Bank Name</label>
-            <input 
-              style={S.input} 
-              type="text" 
-              placeholder="e.g. Access Bank, Opay, Palmpay"
-              value={editForm.payout_bank_name} 
-              onChange={e => setEditForm({...editForm, payout_bank_name: e.target.value})} 
-            />
+            <label style={S.modalLabel}>Bank / Institution Name</label>
+            <input style={S.input} type="text" placeholder="e.g. Chase, Paystack, PayPal" value={editForm.payout_bank_name} onChange={e => setEditForm({...editForm, payout_bank_name: e.target.value})} />
 
-            {/* ACCOUNT NAME */}
             <label style={S.modalLabel}>Account Name</label>
-            <input 
-              style={S.input} 
-              type="text" 
-              placeholder="e.g. John Doe"
-              value={editForm.payout_account_name} 
-              onChange={e => setEditForm({...editForm, payout_account_name: e.target.value})} 
-            />
+            <input style={S.input} type="text" placeholder="e.g. John Doe" value={editForm.payout_account_name} onChange={e => setEditForm({...editForm, payout_account_name: e.target.value})} />
 
-            {/* ACCOUNT NUMBER */}
-            <label style={S.modalLabel}>Account Number</label>
-            <input 
-              style={{...S.input, marginBottom: 8}} 
-              type="text" 
-              placeholder="e.g. 0123456789"
-              value={editForm.payout_account} 
-              onChange={e => setEditForm({...editForm, payout_account: e.target.value})} 
-            />
+            <label style={S.modalLabel}>Account Number / Email</label>
+            <input style={{...S.input, marginBottom: 8}} type="text" placeholder="e.g. 0123456789" value={editForm.payout_account} onChange={e => setEditForm({...editForm, payout_account: e.target.value})} />
+            
             <div style={{ fontSize: 11, color: 'var(--slate)', marginBottom: 24, lineHeight: 1.4 }}>
               This entire ledger locks permanently upon your first successful withdrawal to prevent network fraud.
             </div>
 
-            {/* ACTION BUTTONS */}
             <div style={{ display: 'flex', gap: 12 }}>
-              <button 
-                onClick={() => setShowEditModal(false)} 
-                style={{ ...S.btnGhost, flex: 1, padding: '14px' }}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleSaveProfile} 
-                disabled={savingProfile} 
-                style={{ ...S.btnLime, flex: 1, padding: '14px', opacity: savingProfile ? 0.5 : 1 }}
-              >
+              <button onClick={() => setShowEditModal(false)} style={{ ...S.btnGhost, flex: 1, padding: '14px' }}>Cancel</button>
+              <button onClick={handleSaveProfile} disabled={savingProfile} style={{ ...S.btnLime, flex: 1, padding: '14px', opacity: savingProfile ? 0.5 : 1 }}>
                 {savingProfile ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
