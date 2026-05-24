@@ -13,9 +13,14 @@ export default function Dashboard({ user, navigate, showToast }) {
   const [quotas, setQuotas] = useState({ videos: 0, blogs: 0 });
   const [cooldowns, setCooldowns] = useState({});
 
-  // 🔥 NEW PROFILE STATES 🔥
+  // 🔥 UPGRADED PROFILE STATES 🔥
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({ full_name: user.full_name || '', payout_account: user.payout_account || '' });
+  const [editForm, setEditForm] = useState({ 
+    full_name: user.full_name || '', 
+    payout_bank_name: user.payout_bank_name || '',
+    payout_account: user.payout_account || '',
+    payout_account_name: user.payout_account_name || ''
+  });
   const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
@@ -84,28 +89,42 @@ export default function Dashboard({ user, navigate, showToast }) {
     }
   }
 
-  // 🔥 NEW: SAVE PROFILE LOGIC 🔥
+  // 🔥 NEW: SAVE FULL BANK DETAILS 🔥
   async function handleSaveProfile() {
     setSavingProfile(true);
     try {
+      // Basic validation
+      if (!editForm.full_name) throw new Error("Full name is required");
+      
       const { error } = await supabase
         .from('profiles')
         .update({ 
           full_name: editForm.full_name,
-          payout_account: editForm.payout_account 
+          payout_bank_name: editForm.payout_bank_name,
+          payout_account: editForm.payout_account,
+          payout_account_name: editForm.payout_account_name
         })
         .eq('id', user.id);
       
-      if (error) throw error;
+      if (error) {
+        // Handle Supabase unique constraint error gracefully
+        if (error.code === '23505' && error.message.includes('payout_account')) {
+           throw new Error("This account number is already registered to another user.");
+        }
+        throw error;
+      }
       
       // Update local user object so the UI refreshes immediately
       user.full_name = editForm.full_name;
+      user.payout_bank_name = editForm.payout_bank_name;
       user.payout_account = editForm.payout_account;
+      user.payout_account_name = editForm.payout_account_name;
       
       if (showToast) showToast('Profile updated successfully', 'success');
       setShowEditModal(false);
     } catch (err) {
       if (showToast) showToast(err.message, 'error');
+      else alert(err.message);
     } finally {
       setSavingProfile(false);
     }
@@ -157,8 +176,9 @@ export default function Dashboard({ user, navigate, showToast }) {
     
     // Modal Styles
     modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 },
-    modalCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 24px 48px rgba(0,0,0,0.2)' },
-    input: { width: '100%', padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 15, marginBottom: 16, outline: 'none', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif" }
+    modalCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 24px 48px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' },
+    modalLabel: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--slate)', marginBottom: 8, display: 'block', fontFamily: "'Inter', sans-serif" },
+    input: { width: '100%', padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 15, marginBottom: 20, outline: 'none', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.2s' }
   };
 
   return (
@@ -294,31 +314,59 @@ export default function Dashboard({ user, navigate, showToast }) {
         )}
       </div>
 
-      {/* 🔥 THE EDIT PROFILE MODAL 🔥 */}
+      {/* 🔥 UPGRADED EDIT PROFILE MODAL 🔥 */}
       {showEditModal && (
         <div style={S.modalOverlay}>
           <div style={S.modalCard}>
             <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: 'var(--ink)', marginBottom: 8, letterSpacing: '-0.5px' }}>Edit Profile</h2>
             <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Update your network identity and payout configurations.</p>
             
-            <label style={{ ...S.label, marginBottom: 8 }}>Full Name</label>
+            {/* NAME */}
+            <label style={S.modalLabel}>Full Name</label>
             <input 
               style={S.input} 
               type="text" 
+              placeholder="Your legal name"
               value={editForm.full_name} 
               onChange={e => setEditForm({...editForm, full_name: e.target.value})} 
             />
 
-            <label style={{ ...S.label, marginBottom: 8 }}>Payout Account Number</label>
+            <div style={{ height: 1, background: 'var(--line)', margin: '8px 0 24px' }}></div>
+            
+            {/* BANK NAME */}
+            <label style={S.modalLabel}>Bank Name</label>
             <input 
               style={S.input} 
+              type="text" 
+              placeholder="e.g. Access Bank, Opay, Palmpay"
+              value={editForm.payout_bank_name} 
+              onChange={e => setEditForm({...editForm, payout_bank_name: e.target.value})} 
+            />
+
+            {/* ACCOUNT NAME */}
+            <label style={S.modalLabel}>Account Name</label>
+            <input 
+              style={S.input} 
+              type="text" 
+              placeholder="e.g. John Doe"
+              value={editForm.payout_account_name} 
+              onChange={e => setEditForm({...editForm, payout_account_name: e.target.value})} 
+            />
+
+            {/* ACCOUNT NUMBER */}
+            <label style={S.modalLabel}>Account Number</label>
+            <input 
+              style={{...S.input, marginBottom: 8}} 
               type="text" 
               placeholder="e.g. 0123456789"
               value={editForm.payout_account} 
               onChange={e => setEditForm({...editForm, payout_account: e.target.value})} 
             />
-            <div style={{ fontSize: 11, color: 'var(--slate)', marginTop: -8, marginBottom: 24 }}>This account locks permanently upon your first withdrawal for security.</div>
+            <div style={{ fontSize: 11, color: 'var(--slate)', marginBottom: 24, lineHeight: 1.4 }}>
+              This entire ledger locks permanently upon your first successful withdrawal to prevent network fraud.
+            </div>
 
+            {/* ACTION BUTTONS */}
             <div style={{ display: 'flex', gap: 12 }}>
               <button 
                 onClick={() => setShowEditModal(false)} 
