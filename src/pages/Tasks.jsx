@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import PhoneVerification from '../components/PhoneVerification';
 
 export default function Tasks({ session, navigate }) {
   const user = session?.user;
@@ -11,8 +12,19 @@ export default function Tasks({ session, navigate }) {
   // 🔥 THE NEW COOLDOWN MEMORY 🔥
   const [cooldowns, setCooldowns] = useState({});
 
+  // 🔥 PROGRESSIVE ONBOARDING STATE 🔥
+  const [needsPhoneVerification, setNeedsPhoneVerification] = useState(false);
+
   useEffect(() => {
     if (!user) return;
+    
+    // Check if they need phone verification before fetching tasks
+    if (!user.phone) {
+      setNeedsPhoneVerification(true);
+      setLoading(false);
+      return;
+    }
+
     fetchMarketplace();
   }, [user]);
 
@@ -44,7 +56,7 @@ export default function Tasks({ session, navigate }) {
       const { data: history } = await supabase
         .from('completions')
         .select('task_id, platform, created_at')
-        .eq('user_id', user.id) // Ensure this matches your DB (user_id or earner_id)
+        .eq('user_id', user.id) 
         .gte('created_at', fetchDate.toISOString());
 
       let vCount = 0, bCount = 0;
@@ -157,6 +169,25 @@ export default function Tasks({ session, navigate }) {
   };
 
   if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: 'var(--slate)' }}><div style={{ animation: 'pulse 1.5s infinite' }}>Syncing Network...</div></div>;
+
+  // 🔥 PROGRESSIVE ONBOARDING INTERCEPT 🔥
+  if (needsPhoneVerification) {
+    return (
+      <div style={{ position: 'relative', minHeight: '100vh', background: 'var(--surface)', paddingTop: 40 }}>
+         {/* We render the PhoneVerification component inline instead of as an overlay so it feels native to the page */}
+         <PhoneVerification 
+            user={user} 
+            onVerified={async () => {
+              // Refresh session so the new phone number is attached locally
+              await supabase.auth.refreshSession();
+              setNeedsPhoneVerification(false);
+              fetchMarketplace(); // Load the tasks
+            }} 
+            onCancel={() => navigate('user-dashboard')} // If they cancel, just send them back to the dashboard lobby
+          />
+      </div>
+    );
+  }
 
   if (lockout) {
     return (
