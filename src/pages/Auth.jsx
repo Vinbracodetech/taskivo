@@ -19,14 +19,13 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [loading, setLoading] = useState(false);
   var [error, setError] = useState("");
   var [mounted, setMounted] = useState(false);
-  var [form, setForm] = useState({ name: "", email: "", password: "" });
 
   useEffect(function () {
     var t = setTimeout(function () { setMounted(true); }, 50);
     return function () { clearTimeout(t); };
   }, []);
 
-  // ── THE GREETER: NO LOCKS, JUST PROCESS GRANTS AND LET THEM IN ──
+  // ── THE GREETER: PROCESS GRANTS AND LET THEM IN ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
@@ -77,12 +76,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     };
   }, [loadProfile]);
 
-  function handleChange(e) {
-    setForm(function (prev) {
-      return { ...prev, [e.target.name]: e.target.value };
-    });
-  }
-
   function handleRoleChange(newRole) {
     setRole(newRole);
     if (typeof window !== "undefined") {
@@ -94,52 +87,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
     setLoading(true); setError("");
     var result = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
     if (result.error) { setError(result.error.message); setLoading(false); }
-  }
-
-  async function handleEmailLogin() {
-    setLoading(true); setError("");
-    if (!form.email || !form.password) { setError("Please fill in all fields."); setLoading(false); return; }
-    
-    var result = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
-    if (result.error) { setError(result.error.message); setLoading(false); }
-  }
-
-  async function handleEmailRegister() {
-    setLoading(true); setError("");
-    if (!form.name || !form.email || !form.password) { setError("Please fill in all fields."); setLoading(false); return; }
-    if (form.password.length < 8) { setError("Password must be at least 8 characters."); setLoading(false); return; }
-
-    var hasLowerCase = /[a-z]/.test(form.password);
-    var hasUpperCase = /[A-Z]/.test(form.password);
-    var hasDigit = /\d/.test(form.password);
-
-    if (!hasLowerCase || !hasUpperCase || !hasDigit) {
-      setError("Password must include an uppercase letter, a lowercase letter, and a number.");
-      setLoading(false); return;
-    }
-
-    var result = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: { data: { full_name: form.name, role: role } },
-    });
-    
-    if (result.error) {
-      setError(result.error.message);
-      setLoading(false); return;
-    }
-    
-    // If they require email confirmation, show the confirm screen
-    if (result.data?.user && result.data.user.identities && result.data.user.identities.length === 0) {
-       setMode("confirm");
-    }
-    
-    setLoading(false);
-  }
-
-  function handleSubmit() {
-    if (mode === "login") handleEmailLogin();
-    else handleEmailRegister();
   }
 
   // ── STYLES ──
@@ -157,53 +104,35 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var featuresData = [ { icon: "🛡️", label: "Proof of Attention", desc: "Strict anti-cheat verification" }, { icon: "🌍", label: "Omnichannel Reach", desc: "YouTube, TikTok, & SEO Blogs" }, { icon: "📈", label: "Dynamic Rewards", desc: "Earn points based on genuine activity" } ];
   var statData = [ { num: "Beta", label: "Phase 1" }, { num: "2.0", label: "Infrastructure" }, { num: "100%", label: "Verified" } ];
   var cardTitleStyle = { fontFamily: "'Inter', sans-serif", fontSize: 26, fontWeight: 800, color: "#fff", letterSpacing: "-1px", marginBottom: 6 };
-  var cardSubStyle = { fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 28 };
-  var googleBtnStyle = { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "12px 20px", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, color: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", transition: "all 0.2s", marginBottom: 20 };
-  var dividerStyle = { display: "flex", alignItems: "center", gap: 12, marginBottom: 20 };
-  var dividerLineStyle = { flex: 1, height: 1, background: "rgba(255,255,255,0.08)" };
-  var dividerTextStyle = { fontSize: 12, color: "rgba(255,255,255,0.25)", fontWeight: 500, letterSpacing: "0.5px" };
-  var labelStyle = { display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: 8 };
-  var inputStyle = { width: "100%", padding: "13px 16px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#fff", fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", boxSizing: "border-box", transition: "border-color 0.2s", marginBottom: 16 };
-  var submitBtnStyle = { width: "100%", padding: "14px", background: loading ? "rgba(168,255,62,0.5)" : "#A8FF3E", border: "none", borderRadius: 12, color: "#0D0D14", fontSize: 15, fontWeight: 800, fontFamily: "'Inter', sans-serif", cursor: loading ? "not-allowed" : "pointer", letterSpacing: "0.2px", transition: "all 0.2s", marginTop: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 };
-  var switchStyle = { textAlign: "center", marginTop: 20, fontSize: 13, color: "rgba(255,255,255,0.35)" };
+  var cardSubStyle = { fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 32 };
+  var googleBtnStyle = { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "16px 20px", background: "#ffffff", border: "none", borderRadius: 12, color: "#0D0D14", fontSize: 15, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", transition: "all 0.2s", marginBottom: 20, boxShadow: "0 8px 16px rgba(255,255,255,0.1)" };
+  var switchStyle = { textAlign: "center", marginTop: 24, fontSize: 13, color: "rgba(255,255,255,0.35)" };
   var switchLinkStyle = { color: "#A8FF3E", fontWeight: 700, cursor: "pointer", textDecoration: "none" };
   var errorStyle = { background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#f87171", marginBottom: 16 };
   var roleTabStyle = function (active) { return { flex: 1, padding: "10px 0", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 13, background: active ? "#A8FF3E" : "transparent", color: active ? "#0D0D14" : "rgba(255,255,255,0.4)", transition: "all 0.2s" }; };
 
-  if (mode === "confirm") {
-    return (
-      <div style={{ ...pageStyle, alignItems: "center", justifyContent: "center" }}>
-        <div style={gridStyle} />
-        <div style={overlayStyle} />
-        <div style={{ ...cardStyle, maxWidth: 400, textAlign: "center", zIndex: 1, opacity: mounted ? 1 : 0, transition: "opacity 0.5s ease" }}>
-          <div style={{ fontSize: 52, marginBottom: 20 }}>📬</div>
-          <div style={{ ...cardTitleStyle, marginBottom: 10 }}>Check your inbox</div>
-          <div style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", lineHeight: 1.7, marginBottom: 28 }}>We sent a confirmation link to <span style={{ color: "#A8FF3E", fontWeight: 700 }}>{form.email}</span>. Click it to activate your account.</div>
-          <button style={submitBtnStyle} onClick={function () { setMode("login"); }}>Back to Login</button>
-        </div>
-      </div>
-    );
-  }
-
   var authCardContent = (
     <div style={{ ...cardStyle, zIndex: 1, width: "100%" }}>
-      <div style={{ ...cardTitleStyle, fontSize: 22, marginBottom: 4 }}>{mode === "login" ? "Welcome back" : "Join Taskivo"}</div>
-      <div style={{ ...cardSubStyle, marginBottom: 24 }}>{mode === "login" ? "Sign in to your account" : "Start participating today"}</div>
+      <div style={{ ...cardTitleStyle, fontSize: 24, marginBottom: 8 }}>{mode === "login" ? "Welcome back" : "Join Taskivo"}</div>
+      <div style={{ ...cardSubStyle }}>{mode === "login" ? "Access your engagement portfolio." : "Start participating today."}</div>
+      
       {mode === "register" && (
-        <div style={{ display: "flex", background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 4, marginBottom: 20, gap: 4 }}>
+        <div style={{ display: "flex", background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 4, marginBottom: 24, gap: 4 }}>
           {["earner", "creator"].map(function (r) { return <button key={r} onClick={function () { handleRoleChange(r); }} style={roleTabStyle(role === r)}>{r === "earner" ? "🎯 Contributor" : "✦ Business"}</button>; })}
         </div>
       )}
-      <button style={googleBtnStyle} onClick={handleGoogle} disabled={loading}><img src="https://www.google.com/favicon.ico" width={16} height={16} alt="G" /> Continue with Google</button>
-      <div style={dividerStyle}><div style={dividerLineStyle} /><span style={dividerTextStyle}>OR</span><div style={dividerLineStyle} /></div>
-      {mode === "register" && <div><label style={labelStyle}>Full Name</label><input style={inputStyle} type="text" name="name" placeholder="Your full name" value={form.name} onChange={handleChange} /></div>}
-      <div><label style={labelStyle}>Email</label><input style={inputStyle} type="email" name="email" placeholder="you@example.com" value={form.email} onChange={handleChange} /></div>
-      <div><label style={labelStyle}>Password</label><input style={inputStyle} type="password" name="password" placeholder={mode === "register" ? "Min 8 chars, 1 Upper, 1 Number" : "••••••••"} value={form.password} onChange={handleChange} /></div>
+
       {error && <div style={errorStyle}>{error}</div>}
-      <button style={submitBtnStyle} onClick={handleSubmit} disabled={loading}>
-        {loading ? <span style={{ display: "inline-block", width: 16, height: 16, border: "2px solid rgba(0,0,0,0.3)", borderTopColor: "#0D0D14", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> : null}
-        {loading ? "Please wait..." : mode === "login" ? "Sign In →" : "Create Account →"}
+
+      <button style={googleBtnStyle} onClick={handleGoogle} disabled={loading}>
+        <img src="https://www.google.com/favicon.ico" width={18} height={18} alt="G" /> 
+        {loading ? "Authenticating..." : "Continue with Google"}
       </button>
+      
+      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textAlign: "center", lineHeight: 1.5 }}>
+        By continuing, you agree to our strict anti-bot policies and Terms of Service.
+      </div>
+
       <div style={switchStyle}>
         {mode === "login" ? <>Don't have an account? <span style={switchLinkStyle} onClick={function () { setMode("register"); setError(""); }}>Sign up free</span></> : <>Already have an account? <span style={switchLinkStyle} onClick={function () { setMode("login"); setError(""); }}>Log in</span></>}
       </div>
