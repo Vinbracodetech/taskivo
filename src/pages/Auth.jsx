@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase.js";
-import PhoneVerification from "../components/PhoneVerification";
 
 export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mode, setMode] = useState(function() {
@@ -22,34 +21,15 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mounted, setMounted] = useState(false);
   var [form, setForm] = useState({ name: "", email: "", password: "" });
 
-  var [showPhoneGate, setShowPhoneGate] = useState(false);
-  var [currentUser, setCurrentUser] = useState(null);
-
   useEffect(function () {
     var t = setTimeout(function () { setMounted(true); }, 50);
     return function () { clearTimeout(t); };
   }, []);
 
-  // ── THE BOUNCER: HASH-LOCK & QUARANTINE ──
+  // ── THE GREETER: NO LOCKS, JUST PROCESS GRANTS AND LET THEM IN ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
-        
-        // 1. QUARANTINE CHECK: No phone? Freeze the app ON THE AUTH PAGE.
-        if (!session.user.phone) {
-          setCurrentUser(session.user);
-          setShowPhoneGate(true); 
-          
-          // 🔥 THE HASH-LOCK: If they are on #tasks or anywhere else, drag them back to #auth
-          if (typeof window !== "undefined" && window.location.hash !== "#auth" && window.location.hash !== "") {
-            window.location.hash = "auth";
-          }
-          
-          return; // Stop execution. No grants or roles are processed yet.
-        } 
-
-        // 2. ACTIVATION: Phone is verified. Safe to unpack local storage.
-        setShowPhoneGate(false);
         
         var storedRef = localStorage.getItem("taskivo_ref");
         var hasGrant = localStorage.getItem("taskivo_grant");
@@ -80,11 +60,12 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           }
         }
 
+        // Clean up
         localStorage.removeItem("taskivo_ref");
         localStorage.removeItem("taskivo_grant");
         localStorage.removeItem("taskivo_role");
 
-        // Finally let them into the app
+        // Immediately let them into the dashboard
         if (loadProfile) await loadProfile(session.user);
       }
     });
@@ -137,8 +118,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       setLoading(false); return;
     }
 
-    // Call Supabase. If "Confirm Email" is off, this instantly logs them in, 
-    // triggering the listener above which instantly shows the Phone Gate.
     var result = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -236,19 +215,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       <div style={gridStyle} />
       <div style={overlayStyle} />
       
-      {showPhoneGate && currentUser ? (
-        <PhoneVerification 
-          user={currentUser} 
-          onVerified={async () => {
-            await supabase.auth.refreshSession();
-          }} 
-          onCancel={() => {
-            supabase.auth.signOut();
-            setShowPhoneGate(false);
-            setMode("login");
-          }} 
-        />
-      ) : typeof window !== "undefined" && window.innerWidth < 768 ? (
+      {typeof window !== "undefined" && window.innerWidth < 768 ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px", width: "100%", zIndex: 1 }}>
           <div style={{ marginBottom: 32, textAlign: "center" }}>
             <div onClick={function() { if(navigate) navigate(''); }} style={{ ...logoTextStyle, fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: 'pointer' }}>⚡ Taskivo <span style={logoBadgeStyle}>BETA</span></div>
