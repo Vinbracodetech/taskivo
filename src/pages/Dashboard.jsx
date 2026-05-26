@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import DailyRewardWidget from '../components/DailyRewardWidget';
+import DailySpin from '../components/DailySpin';
 import { enforceDeviceFingerprint } from '../lib/security';
 
 export default function Dashboard({ user, navigate, showToast }) {
