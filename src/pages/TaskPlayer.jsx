@@ -5,269 +5,232 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const user = session?.user;
   const [loading, setLoading] = useState(true);
   const [task, setTask] = useState(null);
+  
+  // Timer States (For Automated Tasks)
   const [timer, setTimer] = useState(0);
   const [isLive, setIsLive] = useState(false);
   const [verification, setVerification] = useState(false);
+  
+  // Security & Input States
   const [cooldown, setCooldown] = useState(null);
   const [handle, setHandle] = useState('');
-  
+  const [proofUrl, setProofUrl] = useState('');
   const [gateUnlocked, setGateUnlocked] = useState(false);
   const [cheatWarning, setCheatWarning] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const ytPlayerRef = useRef(null);
 
   useEffect(() => {
     async function init() {
-      const { data: c } = await supabase
-        .from('completions')
-        .select('created_at')
-        .eq('task_id', taskId)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
+      // Check cooldown
+      const { data: c } = await supabase.from('completions').select('created_at').eq('task_id', taskId).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (c) {
         const h = (new Date() - new Date(c.created_at)) / 3600000;
-        if (h < 24) {
-          setCooldown(Math.ceil(24 - h));
-          setLoading(false);
-          return;
-        }
+        if (h < 24) { setCooldown(Math.ceil(24 - h)); setLoading(false); return; }
       }
-
-      const { data: t } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('id', taskId)
-        .single();
-
-      if (t) {
-        setTask(t);
-        setTimer(t.watch_duration);
+      
+      // Fetch task
+      const { data: t } = await supabase.from('tasks').select('*').eq('id', taskId).single();
+      if (t) { 
+        setTask(t); 
+        setTimer(t.watch_duration); 
       }
       setLoading(false);
     }
     if (user?.id) init();
   }, [taskId, user]);
 
+  const isManualTask = task?.platform === 'ugc' || task?.platform === 'qa_testing';
+  const isBlog = task?.platform === 'blog';
+
+  // 🔥 AUTOMATED TIMER LOGIC (Only runs if it's a Video/Blog task) 🔥
   useEffect(() => {
-    if (!task || cooldown || verification) return;
-
-    const loadPlayer = () => {
-      if (ytPlayerRef.current) return; 
-      
-      const vidMatch = task.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
-      const vidId = vidMatch ? vidMatch[1] : '';
-
-      ytPlayerRef.current = new window.YT.Player('yt-frame', {
-        videoId: vidId,
-        playerVars: { 
-          playsinline: 1, 
-          rel: 0,
-          controls: 0, 
-          disablekb: 1 
-        },
-        events: {
-          onReady: (e) => {
-             e.target.setPlaybackRate(1);
-          },
-          onStateChange: (e) => {
-            if (e.data === 1) {
-              setIsLive(true);
-              setCheatWarning("");
-              e.target.setPlaybackRate(1);
-            } else {
-              setIsLive(false);
-            }
-
-            if (e.data === 0) {
-              setTimer((currentTimer) => {
-                 if (currentTimer > 0) {
-                   setCheatWarning("⚠️ Fast-forwarding detected. Timer has been reset.");
-                   return task.watch_duration; 
-                 }
-                 return currentTimer;
-              });
+    if (!task || cooldown || verification || isManualTask) return;
+    
+    // For YouTube specifically
+    if (task.platform === 'youtube') {
+      const loadPlayer = () => {
+        if (ytPlayerRef.current) return; 
+        const vidMatch = task.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
+        const vidId = vidMatch ? vidMatch[1] : '';
+        ytPlayerRef.current = new window.YT.Player('yt-frame', {
+          videoId: vidId,
+          playerVars: { playsinline: 1, rel: 0, controls: 0, disablekb: 1 },
+          events: {
+            onReady: (e) => { e.target.setPlaybackRate(1); },
+            onStateChange: (e) => {
+              if (e.data === 1) {
+                setIsLive(true); setCheatWarning(""); e.target.setPlaybackRate(1);
+              } else { setIsLive(false); }
+              if (e.data === 0) {
+                setTimer((currentTimer) => {
+                   if (currentTimer > 0) { setCheatWarning("⚠️ Fast-forwarding detected. Timer reset."); return task.watch_duration; }
+                   return currentTimer;
+                });
+              }
             }
           }
-        }
-      });
-    };
-
-    if (!window.YT || !window.YT.Player) {
-      const s = document.createElement('script');
-      s.src = 'https://www.youtube.com/iframe_api';
-      window.onYouTubeIframeAPIReady = loadPlayer;
-      document.body.appendChild(s);
-    } else {
-      loadPlayer();
+        });
+      };
+      if (!window.YT || !window.YT.Player) {
+        const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; window.onYouTubeIframeAPIReady = loadPlayer; document.body.appendChild(s);
+      } else { loadPlayer(); }
+    } else if (isBlog) {
+        // Blog Logic: They must click to open tab, we monitor time
     }
-  }, [task, cooldown, verification]);
+  }, [task, cooldown, verification, isManualTask, isBlog]);
 
+  // Tab-Switch Detection
   useEffect(() => {
+    if (isManualTask) return; // Don't penalize UGC uploaders for switching tabs to get their link
     const handleVisibility = () => {
       if (document.hidden) {
         setIsLive(false);
-        if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') {
-          ytPlayerRef.current.pauseVideo();
-        }
-        if (!verification) {
-          setCheatWarning("⚠️ Playback paused. You must keep this tab open and visible.");
-        }
+        if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') ytPlayerRef.current.pauseVideo();
+        if (!verification) setCheatWarning("⚠️ Timer paused. You must keep this tab visible.");
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [verification]);
+  }, [verification, isManualTask]);
 
+  // Countdown execution
   useEffect(() => {
+    if (isManualTask) return;
     if (timer <= 0 && task && !verification) {
-      setVerification(true);
-      setIsLive(false);
-      setCheatWarning("");
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') {
-        ytPlayerRef.current.pauseVideo();
-      }
+      setVerification(true); setIsLive(false); setCheatWarning("");
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') ytPlayerRef.current.pauseVideo();
       return;
     }
-
     let interval;
-    if (isLive && !document.hidden && timer > 0) {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    
+    if (isLive && !document.hidden && timer > 0) { interval = setInterval(() => { setTimer((prev) => prev - 1); }, 1000); }
     return () => clearInterval(interval);
-  }, [isLive, timer, task, verification]);
+  }, [isLive, timer, task, verification, isManualTask]);
 
-  function handleOpenApp() {
-    window.open(task.url, '_blank');
-    setGateUnlocked(true); 
-  }
+  function handleOpenApp() { window.open(task.url, '_blank'); setGateUnlocked(true); setIsLive(true); }
 
-  async function claim() {
-    if (!handle.trim()) {
-      alert("Enter your platform handle to claim points.");
-      return;
-    }
+  async function claimTask() {
+    setSubmitting(true);
     
-    const { error } = await supabase
-      .from('completions')
-      .insert({
-        user_id: user.id,
-        earner_id: user.id,
-        task_id: task.id,
-        platform: task.platform,
-        social_handle: handle
-      });
-      
-    if (error) {
-      alert(`Database Error: ${error.message}`);
+    if (isManualTask && !proofUrl.trim()) { alert("Please provide a valid link to your proof."); setSubmitting(false); return; }
+    if (!isManualTask && !handle.trim()) { alert("Enter your platform handle to claim points."); setSubmitting(false); return; }
+    
+    const insertData = { 
+      user_id: user.id, 
+      earner_id: user.id, 
+      task_id: task.id, 
+      platform: task.platform, 
+      social_handle: handle,
+      proof_url: proofUrl,
+      status: isManualTask ? 'pending_review' : 'verified'
+    };
+
+    const { error } = await supabase.from('completions').insert(insertData);
+    
+    if (error) { 
+      alert(`Database Error: ${error.message}`); 
     } else {
-      alert("Verified! Points successfully deposited.");
-      
-      // 🔥 OPTIMISTIC UI UPDATE: Instant point reflection
-      if (user) {
-        user.points = (user.points || 0) + task.reward_points;
+      if (isManualTask) {
+        alert("Submitted! The Creator will review your proof and release the points shortly.");
+      } else {
+        alert("Verified! Points successfully deposited.");
+        if (user) user.points = (user.points || 0) + task.reward_points;
       }
-      
       navigate('tasks');
     }
+    setSubmitting(false);
   }
 
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Syncing...</div>;
-  if (cooldown) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>⏱️ Cooldown: {cooldown}h left</div>;
+  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Decrypting asset...</div>;
+  if (cooldown) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>⏱️ Cooldown Active: {cooldown}h left</div>;
 
+  // ── DYNAMIC UI STATES ──
   let statusText = 'PLAYBACK PAUSED';
-  let statusColor = '#ff4444';
+  let statusColor = '#ef4444';
 
-  if (verification) {
-    statusText = '✅ VERIFICATION READY';
-    statusColor = 'var(--lime)';
-  } else if (isLive) {
-    statusText = `TRACKING VIEW: ${timer}s`;
-    statusColor = 'var(--lime)';
-  } else if (timer === task?.watch_duration) {
-    statusText = 'TAP VIDEO TO START';
-    statusColor = '#fbbf24'; 
+  if (isManualTask) {
+    statusText = 'MANUAL UPLOAD REQUIRED'; statusColor = '#fbbf24';
+  } else if (verification) { 
+    statusText = '✅ VERIFICATION READY'; statusColor = 'var(--lime)'; 
+  } else if (isLive) { 
+    statusText = `TRACKING ACTIVE: ${timer}s`; statusColor = 'var(--lime)'; 
+  } else if (timer === task?.watch_duration) { 
+    statusText = 'INITIATE TASK TO START'; statusColor = '#fbbf24'; 
   }
 
-  const wrapStyle = { padding: 20, maxWidth: 600, margin: 'auto', fontFamily: "'Inter', sans-serif" };
-  const cardStyle = { background: '#000', borderRadius: 16, overflow: 'hidden', marginBottom: 20, border: '1px solid var(--line)', position: 'relative' };
-  const headerStyle = { padding: 15, background: '#111', color: statusColor, fontWeight: 800, textAlign: 'center' };
-  const verifBox = { padding: 40, background: 'var(--surface-card)', textAlign: 'center' };
-  const inputStyle = { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)' };
-  const btnRed = { background: '#ff4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 13, letterSpacing: '0.5px' };
-  const btnGreen = { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16 };
-  const warningBox = { background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 16, marginBottom: 24, textAlign: 'left' };
-  const cheatToast = { background: '#ff4444', color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' };
+  const S = {
+    wrap: { padding: 20, maxWidth: 600, margin: 'auto', fontFamily: "var(--font-body)" },
+    card: { background: 'var(--surface)', borderRadius: 16, overflow: 'hidden', marginBottom: 20, border: '1px solid var(--line)', position: 'relative' },
+    header: { padding: 15, background: 'var(--surface-card)', borderBottom: '1px solid var(--line)', color: statusColor, fontWeight: 800, textAlign: 'center', fontFamily: "var(--font-display)", letterSpacing: '1px' },
+    verifBox: { padding: 40, background: 'var(--surface-card)', textAlign: 'center' },
+    input: { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)' },
+    btnRed: { background: '#ef4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 13, letterSpacing: '0.5px' },
+    btnGreen: { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16, fontFamily: "var(--font-display)" },
+    warningBox: { background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 16, marginBottom: 24, textAlign: 'left' },
+    cheatToast: { background: '#ef4444', color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' }
+  };
 
   return (
-    <div style={wrapStyle}>
-      <div style={cardStyle}>
+    <div style={S.wrap}>
+      <div style={S.card}>
+        <div style={S.header}>{statusText}</div>
+        {cheatWarning && !verification && <div style={S.cheatToast}>{cheatWarning}</div>}
         
-        <div style={headerStyle}>
-          {statusText}
-        </div>
-
-        {cheatWarning && !verification && (
-          <div style={cheatToast}>
-            {cheatWarning}
+        {/* ── AUTOMATED YOUTUBE RENDERER ── */}
+        {!isManualTask && task.platform === 'youtube' && (
+          <div style={{ display: verification ? 'none' : 'block', pointerEvents: isLive ? 'none' : 'auto' }}>
+            <div id="yt-frame" style={{ width: '100%', height: 350 }}></div>
           </div>
         )}
+
+        {/* ── BLOG RENDERER ── */}
+        {!isManualTask && task.platform === 'blog' && !verification && (
+          <div style={{ padding: 40, textAlign: 'center' }}>
+             <button onClick={handleOpenApp} style={S.btnRed}>▶ OPEN SECURE BROWSER TAB</button>
+             <p style={{ color: 'var(--slate)', fontSize: 13 }}>You must keep the new tab open for {task.watch_duration} seconds to bypass the firewall.</p>
+          </div>
+        )}
+
+        {/* ── MANUAL UGC / QA PORTAL ── */}
+        {isManualTask && (
+           <div style={S.verifBox}>
+              <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 12, fontFamily: "var(--font-display)" }}>Manual Submission Required</h3>
+              <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24 }}>
+                Review the campaign guidelines below. Once complete, upload your proof (Google Drive, Dropbox, Imgur) and paste the public link here.
+              </p>
+              
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', padding: 16, borderRadius: 8, marginBottom: 24, textAlign: 'left', wordBreak: 'break-all' }}>
+                <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Campaign Brief / URL</div>
+                <a href={task.url} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}>{task.url}</a>
+              </div>
+
+              <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Public Link to Proof</div>
+              <input placeholder="https://drive.google.com/..." value={proofUrl} onChange={e => setProofUrl(e.target.value)} style={S.input} />
+              
+              <button onClick={claimTask} disabled={submitting} style={{ ...S.btnGreen, opacity: submitting ? 0.5 : 1 }}>
+                {submitting ? 'UPLOADING...' : 'SUBMIT FOR REVIEW'}
+              </button>
+           </div>
+        )}
         
-        <div style={{ display: verification ? 'none' : 'block', pointerEvents: isLive ? 'none' : 'auto' }}>
-          <div id="yt-frame" style={{ width: '100%', height: 350 }}></div>
-        </div>
-        
-        {verification && (
-          <div style={verifBox}>
-            <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 24 }}>
-              Engagement Required
-            </h3>
-            
-            <button onClick={handleOpenApp} style={btnRed}>
-              ▶ 1. OPEN APP TO LIKE, COMMENT & SUBSCRIBE
-            </button>
+        {/* ── AUTOMATED CLAIM FORM (Unlocked after timer) ── */}
+        {verification && !isManualTask && (
+          <div style={S.verifBox}>
+            <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 24, fontFamily: "var(--font-display)" }}>Engagement Required</h3>
+            <button onClick={handleOpenApp} style={S.btnRed}>▶ 1. OPEN APP TO LIKE, COMMENT & SUBSCRIBE</button>
             
             {gateUnlocked ? (
               <>
-                <div style={warningBox}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.5px' }}>
-                    ⚠️ Strict Verification Warning
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--slate)', lineHeight: 1.5 }}>
-                    Creators actively audit this network. If a Creator reports your engagement as fake or missing, you will immediately face a <strong style={{ color: '#ef4444' }}>50 PTS deduction</strong> and risk permanent suspension.
-                  </div>
+                <div style={S.warningBox}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.5px' }}>⚠️ Strict Verification Warning</div>
+                  <div style={{ fontSize: 13, color: 'var(--slate)', lineHeight: 1.5 }}>Creators actively audit this network. If a Creator reports your engagement as fake or missing, you will face a <strong style={{ color: '#ef4444' }}>50 PTS deduction</strong>.</div>
                 </div>
-
-                <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>
-                  2. Drop your handle for audit
-                </div>
-                
-                <input 
-                  placeholder="e.g., @YourUsername" 
-                  value={handle} 
-                  onChange={e => setHandle(e.target.value)} 
-                  style={inputStyle} 
-                />
-                
-                <button onClick={claim} style={btnGreen}>
-                  3. CLAIM {task.reward_points} POINTS
+                <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>2. Drop your handle for audit</div>
+                <input placeholder="e.g., @YourUsername" value={handle} onChange={e => setHandle(e.target.value)} style={S.input} />
+                <button onClick={claimTask} disabled={submitting} style={{ ...S.btnGreen, opacity: submitting ? 0.5 : 1 }}>
+                  {submitting ? 'CLAIMING...' : `3. CLAIM ${task.reward_points} POINTS`}
                 </button>
               </>
             ) : (
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: 20, color: 'var(--slate)', fontSize: 14, marginTop: 16 }}>
-                🔒 Click the red button above to open the video. The claim form will unlock automatically.
-              </div>
-            )}
-            
-          </div>
-        )}
-        
-      </div>
-    </div>
-  );
-}
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: 20, color: 'var
