@@ -87,7 +87,8 @@ export default function Wallet({ user, navigate, showToast }) {
       const { error: updateError } = await supabase.from('profiles').update({ points: user.points - amountNum }).eq('id', user.id);
       if (updateError) throw updateError;
 
-      if (showToast) showToast('Transfer initiated successfully.', 'success');
+      // 🔥 UPDATED SUCCESS MESSAGE TO REINFORCE 24H SLA 🔥
+      if (showToast) showToast('Transfer initiated. Funds will arrive within 24 hours.', 'success');
       setAmount('');
       user.points -= amountNum; 
       fetchLedger();
@@ -166,7 +167,6 @@ export default function Wallet({ user, navigate, showToast }) {
             <span style={{ ...S.label, marginBottom: 0, color: 'var(--ink)' }}>Secure Payout Terminal</span>
           </div>
 
-          {/* 🔥 LOCKED DESTINATION UI 🔥 */}
           {lockedDestination ? (
              <div style={{ background: 'rgba(168,255,62,0.05)', border: '1px solid rgba(168,255,62,0.2)', padding: 16, borderRadius: 12, marginBottom: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -202,6 +202,12 @@ export default function Wallet({ user, navigate, showToast }) {
             <button type="submit" disabled={!isEligible || submitting || !lockedDestination} style={isEligible && lockedDestination ? S.btnLime : S.btnDisabled}>
               {submitting ? 'Processing...' : isEligible && lockedDestination ? 'Initiate Transfer' : 'Transfer Locked'}
             </button>
+
+            {/* 🔥 NEW 24H SLA MICROCOPY 🔥 */}
+            <div style={{ fontSize: 12, color: 'var(--slate)', textAlign: 'center', marginTop: 14, fontWeight: 500 }}>
+              ⏱️ Approved payouts are processed and disbursed within 24 hours.
+            </div>
+            
           </form>
         </div>
       </div>
