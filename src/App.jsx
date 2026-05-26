@@ -12,7 +12,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Tasks from "./pages/Tasks.jsx";
 import TaskPlayer from "./pages/TaskPlayer.jsx";
 import Wallet from "./pages/Wallet.jsx";
-import History from "./pages/History.jsx"; // 🔥 ADDED HISTORY IMPORT
+import History from "./pages/History.jsx"; 
 
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
@@ -27,6 +27,7 @@ import {
   AdminUsers as AdminUsersComp,
   AdminTasks as AdminTasksComp,
   AdminWithdrawals as AdminWithdrawalsComp,
+  AdminBlog as AdminBlogComp // 🔥 ADDED BLOG CMS IMPORT
 } from "./pages/AdminPanel.jsx";
 
 // ── GLOBAL STICKY HEADER ──
@@ -61,7 +62,10 @@ function TopNav({ navigate, user, setAuthMode }) {
             {user.points.toLocaleString()} PTS
           </div>
         ) : (
-          <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', color: 'var(--slate)', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, fontFamily: "'Inter', sans-serif" }}>
+          <div 
+            onClick={() => { if(user.role === 'admin') navigate("admin-dashboard"); }}
+            style={{ cursor: user.role === 'admin' ? 'pointer' : 'default', background: user.role === 'admin' ? 'rgba(212,175,55,0.1)' : 'var(--surface-card)', border: user.role === 'admin' ? '1px solid rgba(212,175,55,0.3)' : '1px solid var(--line)', color: user.role === 'admin' ? '#D4AF37' : 'var(--slate)', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, fontFamily: "'Inter', sans-serif" }}
+          >
             {user.role}
           </div>
         )}
@@ -236,6 +240,17 @@ export default function App() {
           
           <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} />
 
+          {/* 🔥 ADMIN SECONDARY NAVIGATION (Auto-appears when in Admin pages) 🔥 */}
+          {user && user.role === 'admin' && view.startsWith('admin-') && (
+            <div style={{ background: 'var(--surface-card)', borderBottom: '1px solid var(--line)', padding: '12px 5%', display: 'flex', gap: 16, overflowX: 'auto', whiteSpace: 'nowrap', zIndex: 89, position: 'sticky', top: 72 }}>
+              <button onClick={() => navigate('admin-dashboard')} style={{ background: 'transparent', border: 'none', color: view === 'admin-dashboard' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Overview</button>
+              <button onClick={() => navigate('admin-users')} style={{ background: 'transparent', border: 'none', color: view === 'admin-users' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Identity</button>
+              <button onClick={() => navigate('admin-tasks')} style={{ background: 'transparent', border: 'none', color: view === 'admin-tasks' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Campaigns</button>
+              <button onClick={() => navigate('admin-withdrawals')} style={{ background: 'transparent', border: 'none', color: view === 'admin-withdrawals' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Treasury</button>
+              <button onClick={() => navigate('admin-blog')} style={{ background: 'transparent', border: 'none', color: view === 'admin-blog' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Blog CMS</button>
+            </div>
+          )}
+
           <div className="animate-fadeIn" key={view}>
             {view === "landing" && <Landing navigate={navigate} setAuthMode={setAuthMode} />}
             {view === "auth" && <Auth authMode={authMode} setAuthMode={setAuthMode} navigate={navigate} loadProfile={loadProfile} />}
@@ -249,7 +264,7 @@ export default function App() {
             {view === "tasks" && user && <Tasks session={{user}} navigate={navigate} />}
             {view.startsWith("player/") && user && <TaskPlayer session={{user}} navigate={navigate} taskId={view.split('/')[1]} />}
             {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
-            {view === "history" && user && <History session={{user}} />} {/* 🔥 ADDED HISTORY ROUTE */}
+            {view === "history" && user && <History session={{user}} />}
 
             {view === "creator-dashboard" && user && <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />}
             {view === "create-task" && user && <CreateTask session={{user}} navigate={navigate} />}
@@ -261,6 +276,7 @@ export default function App() {
             {view === "admin-users" && user && <AdminUsersComp showToast={showToast} currentUser={user} />}
             {view === "admin-tasks" && user && <AdminTasksComp showToast={showToast} />}
             {view === "admin-withdrawals" && user && <AdminWithdrawalsComp showToast={showToast} />}
+            {view === "admin-blog" && user && <AdminBlogComp showToast={showToast} />} {/* 🔥 ADDED ADMIN BLOG ROUTE */}
           </div>
         </div>
 
