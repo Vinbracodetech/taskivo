@@ -14,6 +14,7 @@ export default function History({ session }) {
   async function fetchHistory() {
     try {
       setLoading(true);
+      setHistoryData([]); // Clear previous data while loading
 
       if (activeTab === 'engagements') {
         // Fetch completed tasks
@@ -29,16 +30,17 @@ export default function History({ session }) {
           .order('created_at', { ascending: false })
           .limit(50);
 
-        if (!error && data) {
-          setHistoryData(data);
-        }
-      } else {
-        // Fetch financial transactions (Placeholder for future Paystack/Withdrawal logs)
-        // For now, we'll fetch profile updates or create a mock structure so the UI is ready
-        setHistoryData([
-          { id: '1', type: 'daily_spin', amount: 5, date: new Date().toISOString(), status: 'completed' },
-          { id: '2', type: 'signup_bonus', amount: 50, date: new Date(Date.now() - 86400000).toISOString(), status: 'completed' }
-        ]);
+        if (!error && data) setHistoryData(data);
+        
+      } else if (activeTab === 'wallet') {
+        // Fetch real withdrawal requests
+        const { data, error } = await supabase
+          .from('withdrawals')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) setHistoryData(data);
       }
     } catch (err) {
       console.error("Failed to fetch ledger", err);
@@ -48,6 +50,7 @@ export default function History({ session }) {
   }
 
   function formatDate(isoString) {
+    if (!isoString) return 'Processing...';
     const date = new Date(isoString);
     return new Intl.DateTimeFormat('en-US', {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -57,20 +60,20 @@ export default function History({ session }) {
   const S = {
     page: { padding: '40px 5%', maxWidth: 800, margin: '0 auto', fontFamily: "var(--font-body)", minHeight: '80vh' },
     headerWrap: { marginBottom: 32, borderBottom: '1px solid var(--line)', paddingBottom: 24 },
-    tabWrap: { display: 'flex', gap: 12, marginBottom: 32, background: 'var(--surface-card)', padding: 6, borderRadius: 12, border: '1px solid var(--line)', width: 'fit-content' },
+    tabWrap: { display: 'flex', gap: 12, marginBottom: 32, background: 'var(--surface-card)', padding: 6, borderRadius: 12, border: '1px solid var(--line)', width: 'fit-content', flexWrap: 'wrap' },
     tab: (isActive) => ({
       padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "var(--font-display)",
       background: isActive ? 'var(--ink)' : 'transparent',
       color: isActive ? 'var(--surface)' : 'var(--slate)',
-      border: 'none'
+      border: 'none', flex: 1, textAlign: 'center'
     }),
     timelineWrap: { display: 'flex', flexDirection: 'column', gap: 16 },
-    card: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, transition: 'transform 0.2s' },
+    card: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' },
     iconBox: { width: 44, height: 44, borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 },
     title: { fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 4, fontFamily: "var(--font-display)" },
     date: { fontSize: 12, color: 'var(--slate)', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' },
-    points: { fontSize: 16, fontWeight: 800, color: 'var(--lime)', fontFamily: "var(--font-display)", textAlign: 'right' },
-    status: { fontSize: 10, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginTop: 4, textAlign: 'right' }
+    points: { fontSize: 16, fontWeight: 800, fontFamily: "var(--font-display)", textAlign: 'right' },
+    status: { fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginTop: 4, textAlign: 'right' }
   };
 
   return (
@@ -104,7 +107,7 @@ export default function History({ session }) {
         <div style={S.timelineWrap}>
           {historyData.map((item) => {
             
-            // Logic for Network Engagements Tab
+            // ── NETWORK ENGAGEMENTS TAB ──
             if (activeTab === 'engagements') {
               const taskTitle = item.tasks?.title || 'Verified Campaign Task';
               const pts = item.tasks?.reward_points || 0;
@@ -120,32 +123,46 @@ export default function History({ session }) {
                     </div>
                   </div>
                   <div>
-                    <div style={S.points}>+{pts} PTS</div>
-                    <div style={S.status}>Verified ✓</div>
+                    <div style={{ ...S.points, color: 'var(--lime)' }}>+{pts} PTS</div>
+                    <div style={{ ...S.status, color: 'var(--slate)' }}>Verified ✓</div>
                   </div>
                 </div>
               );
             }
 
-            // Logic for Wallet Transactions Tab
-            const isDeposit = item.type === 'daily_spin' || item.type === 'signup_bonus';
-            const icon = item.type === 'daily_spin' ? '🎰' : '🎁';
-            const title = item.type === 'daily_spin' ? 'Cryptographic Extraction' : 'Network Induction Grant';
+            // ── WALLET TRANSACTIONS TAB ──
+            const title = 'Fiat Withdrawal Request';
+            const amount = item.amount || 0;
+            const status = item.status || 'pending';
+            
+            let statusColor = 'var(--slate)';
+            let statusText = status;
+            
+            if (status === 'completed') {
+              statusColor = 'var(--lime)';
+              statusText = 'SETTLED ✓';
+            } else if (status === 'rejected') {
+              statusColor = '#ef4444'; // Red
+              statusText = 'REJECTED ✕';
+            } else {
+              statusColor = '#fbbf24'; // Yellow
+              statusText = 'PROCESSING ⏱️';
+            }
 
             return (
               <div key={item.id} style={S.card}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={S.iconBox}>{icon}</div>
+                  <div style={S.iconBox}>💳</div>
                   <div>
                     <div style={S.title}>{title}</div>
-                    <div style={S.date}>{formatDate(item.date)}</div>
+                    <div style={S.date}>{formatDate(item.created_at)}</div>
                   </div>
                 </div>
                 <div>
-                  <div style={{ ...S.points, color: isDeposit ? 'var(--lime)' : 'var(--ink)' }}>
-                    {isDeposit ? '+' : '-'}{item.amount} PTS
+                  <div style={{ ...S.points, color: 'var(--ink)' }}>
+                    -{amount.toLocaleString()} PTS
                   </div>
-                  <div style={S.status}>Settled ✓</div>
+                  <div style={{ ...S.status, color: statusColor }}>{statusText}</div>
                 </div>
               </div>
             );
