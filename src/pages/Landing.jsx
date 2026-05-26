@@ -94,6 +94,30 @@ export default function Landing({ navigate, setAuthMode }) {
   
   const unitLabel = (pricingMode === 'qa' || pricingMode === 'ugc') ? 'Manual Submissions' : 'Verified Engagements';
 
+  // 🔥 DYNAMIC SERVICE EXPLAINERS 🔥
+  const serviceDetails = {
+    social: {
+      title: 'YouTube & Social Engagement',
+      icon: '▶️',
+      desc: 'Boost your algorithmic reach. Real humans will watch your videos, like, and engage, signaling to platform algorithms that your content is highly valuable. Every view is verified by our strict anti-cheat timers.'
+    },
+    seo: {
+      title: 'SEO Web Traffic',
+      icon: '🔍',
+      desc: 'Dominate search rankings. Our network navigates to your blog or website and maintains a guaranteed 2+ minute dwell time, drastically reducing bounce rates and signaling high relevance to Google.'
+    },
+    qa: {
+      title: 'App QA Testing',
+      icon: '🐛',
+      desc: 'Crowdsourced bug hunting. Deploy real users to download your app, test specific features, and upload manual feedback or screenshots to identify UX friction before your official launch.'
+    },
+    ugc: {
+      title: 'Authentic UGC (User-Generated Content)',
+      icon: '🤳',
+      desc: 'Commission real people to record authentic, selfie-style video testimonials or product demos. You get full commercial rights to use these high-converting videos in your TikTok, Instagram, or Facebook ad campaigns.'
+    }
+  };
+
   // 🔥 EXPANDED MEGA FAQ 🔥
   const faqs = [
     { q: 'Who is Taskivo?', a: 'Taskivo is a global attention network bridging the gap between enterprise marketing and distributed human contributors. We provide a secure infrastructure for real people to monetize their digital footprint while helping businesses grow.' },
@@ -302,12 +326,22 @@ export default function Landing({ navigate, setAuthMode }) {
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Predictable growth packages.</h2>
           <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Purchase secure campaign slots using traditional payment rails. We handle the point distributions.</p>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, background: C.off, padding: 6, borderRadius: 24, border: `1px solid ${C.line}` }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, background: C.off, padding: 6, borderRadius: 24, border: `1px solid ${C.line}`, marginBottom: 32 }}>
             <button onClick={() => setPricingMode('social')} style={{ background: pricingMode === 'social' ? C.ink : 'transparent', color: pricingMode === 'social' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>YouTube & Social</button>
             <button onClick={() => setPricingMode('seo')} style={{ background: pricingMode === 'seo' ? C.ink : 'transparent', color: pricingMode === 'seo' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>SEO Web Traffic</button>
             <button onClick={() => setPricingMode('qa')} style={{ background: pricingMode === 'qa' ? C.ink : 'transparent', color: pricingMode === 'qa' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>App QA Testing</button>
             <button onClick={() => setPricingMode('ugc')} style={{ background: pricingMode === 'ugc' ? C.ink : 'transparent', color: pricingMode === 'ugc' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>Authentic UGC</button>
           </div>
+
+          {/* 🔥 DYNAMIC SERVICE EXPLAINER BOX 🔥 */}
+          <div style={{ maxWidth: 800, margin: '0 auto 40px', padding: 24, background: C.ink, borderRadius: 16, border: `1px solid ${C.darkLine}`, color: C.white, textAlign: 'left', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+            <div style={{ fontSize: 24 }}>{serviceDetails[pricingMode].icon}</div>
+            <div>
+               <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, color: C.lime }}>{serviceDetails[pricingMode].title}</div>
+               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>{serviceDetails[pricingMode].desc}</div>
+            </div>
+          </div>
+
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
