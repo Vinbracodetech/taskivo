@@ -18,6 +18,7 @@ import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
 import CreatorTasks from "./pages/CreatorTasks.jsx";
 import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
+import CreatorApprovals from "./pages/CreatorApprovals.jsx";
 
 import { About, Terms, Privacy } from "./pages/StaticPages.jsx";
 import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
@@ -254,6 +255,7 @@ export default function App() {
             {view === "create-task" && user && <CreateTask session={{user}} navigate={navigate} />}
             {view === "creator-tasks" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />}
             {view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
+            {view === "creator-approvals" && user && <CreatorApprovals user={user} navigate={navigate} showToast={showToast} />}
 
             {view === "admin-dashboard" && user && <AdminOverview navigate={navigate} showToast={showToast} />}
             {view === "admin-users" && user && <AdminUsersComp showToast={showToast} currentUser={user} />}
