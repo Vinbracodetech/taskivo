@@ -35,18 +35,23 @@ export default function CreateTask({ session, navigate, showToast }) {
     if (user?.id) checkGrants();
   }, [user]);
 
+  // 🔥 PRICING ENGINE 🔥
+  // We show USD to the user for premium branding, but process in NGN Kobo via Paystack
+  // Assuming Exchange Rate: $1 = ₦1,500
+  const EXCHANGE_RATE = 1500;
+
   const packages = {
     social: {
-      starter: { label: 'Starter Tier', views: 50, price: '$5', numericPrice: 5 },
-      traction: { label: 'Traction Tier', views: 200, price: '$15', numericPrice: 15 },
-      scale: { label: 'Scale Tier', views: 500, price: '$35', numericPrice: 35 },
-      enterprise: { label: 'Enterprise Tier', views: 1000, price: '$68', numericPrice: 68 }
+      starter: { label: 'Starter Tier', views: 50, priceUSD: 5 },
+      traction: { label: 'Traction Tier', views: 200, priceUSD: 15 },
+      scale: { label: 'Scale Tier', views: 500, priceUSD: 35 },
+      enterprise: { label: 'Enterprise Tier', views: 1000, priceUSD: 68 }
     },
     seo: {
-      starter: { label: 'Starter SEO', views: 100, price: '$8', numericPrice: 8 },
-      traction: { label: 'Traction SEO', views: 300, price: '$24', numericPrice: 24 },
-      scale: { label: 'Scale SEO', views: 800, price: '$55', numericPrice: 55 },
-      enterprise: { label: 'Enterprise SEO', views: 2000, price: '$120', numericPrice: 120 }
+      starter: { label: 'Starter SEO', views: 100, priceUSD: 8 },
+      traction: { label: 'Traction SEO', views: 300, priceUSD: 24 },
+      scale: { label: 'Scale SEO', views: 800, priceUSD: 55 },
+      enterprise: { label: 'Enterprise SEO', views: 2000, priceUSD: 120 }
     }
   };
 
@@ -54,14 +59,57 @@ export default function CreateTask({ session, navigate, showToast }) {
   const activePackages = packages[currentPlatformType];
   const hasFreeCredit = freeCredits > 0;
   
-  // Create a special Pilot Package object for logic
-  const pilotPackage = { label: 'Pilot Grant', views: 20, price: 'FREE', numericPrice: 0 };
-  
   // Determine which package data we are actually using
-  const selectedPackageData = form.package === 'pilot' ? pilotPackage : activePackages[form.package];
+  const selectedPackageData = form.package === 'pilot' 
+    ? { label: 'Pilot Grant', views: 20, priceUSD: 0 } 
+    : activePackages[form.package];
 
   function handleInput(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function deployTaskToNetwork(isUsingPilot, amountPaid = 0) {
+    const earnerPayout = form.platform === 'blog' ? 50 : 30;
+
+    // 1. Insert the task directly as ACTIVE
+    const { data: newTask, error: insertErr } = await supabase.from('tasks').insert({
+      creator_id: user.id, 
+      title: form.title, 
+      platform: form.platform, 
+      url: form.url,
+      watch_duration: parseInt(form.watch_duration, 10), 
+      target_views: selectedPackageData.views, 
+      current_views: 0, 
+      status: 'active', // Instantly live on the Earner network
+      reward_points: earnerPayout
+    }).select().single();
+
+    if (insertErr) throw new Error(`Database Insert Error: ${insertErr.message}`);
+
+    // 2. Record the Fiat Transaction in the new Ledger (For Creator's History)
+    if (!isUsingPilot) {
+        await supabase.from('transactions').insert({
+            user_id: user.id,
+            type: 'campaign_purchase',
+            amount: amountPaid,
+            currency: 'NGN',
+            status: 'completed',
+            reference_id: newTask.id
+        });
+    }
+
+    if (isUsingPilot) {
+      // Deduct their 1 and only credit
+      const { error: deductErr } = await supabase
+        .from('profiles')
+        .update({ free_credits: 0 })
+        .eq('id', user.id);
+        
+      if (deductErr) throw new Error(`Failed to deduct grant: ${deductErr.message}`);
+    }
+
+    if (showToast) showToast('Campaign is LIVE on the network!', 'success');
+    navigate('creator-dashboard');
   }
 
   async function handleSubmit(e) {
@@ -75,58 +123,37 @@ export default function CreateTask({ session, navigate, showToast }) {
 
     try {
       setLoading(true);
-      
-      const earnerPayout = form.platform === 'blog' ? 50 : 30;
       const isUsingPilot = form.package === 'pilot';
-      const initialStatus = isUsingPilot ? 'active' : 'pending_payment';
 
-      // 1. Insert the task
-      const { data: newTask, error: insertErr } = await supabase.from('tasks').insert({
-        creator_id: user.id, 
-        title: form.title, 
-        platform: form.platform, 
-        url: form.url,
-        watch_duration: parseInt(form.watch_duration, 10), 
-        target_views: selectedPackageData.views, 
-        current_views: 0, 
-        status: initialStatus, 
-        reward_points: earnerPayout
-      }).select().single();
-
-      if (insertErr) throw new Error(`Database Insert Error: ${insertErr.message}`);
-
-      // 2. Routing Logic: Free vs Paid
       if (isUsingPilot) {
-        
-        // Deduct their 1 and only credit
-        const { error: deductErr } = await supabase
-          .from('profiles')
-          .update({ free_credits: 0 })
-          .eq('id', user.id);
-          
-        if (deductErr) throw new Error(`Failed to deduct grant: ${deductErr.message}`);
-
-        if (showToast) showToast('Pilot Grant Applied! Campaign is LIVE.', 'success');
-        navigate('/creator-dashboard');
-        
+        await deployTaskToNetwork(true);
       } else {
-        if (form.paymentGateway === 'paystack') {
-           const paystack = new PaystackPop();
-           paystack.newTransaction({
-             key: 'pk_test_dbc405eee8b6b7e9c5723a2f984a6c395a355902',
-             email: user.email,
-             amount: selectedPackageData.numericPrice * 1500 * 100, 
-             metadata: { task_id: newTask.id },
-             onSuccess: () => navigate('/creator-dashboard'),
-             onCancel: () => {
-               setLocalError('Payment was cancelled by the user.');
-               setLoading(false);
-             }
-           });
-        } else {
-           setLocalError('Stripe integration is not currently active.');
-           setLoading(false);
-        }
+        // 🔥 TRIGGER PAYSTACK CHECKOUT 🔥
+        const amountInNGN = selectedPackageData.priceUSD * EXCHANGE_RATE;
+        const amountInKobo = amountInNGN * 100; // Paystack requires Kobo
+
+        const paystack = new PaystackPop();
+        paystack.newTransaction({
+          key: 'pk_test_dbc405eee8b6b7e9c5723a2f984a6c395a355902', // Your Test Key
+          email: user.email,
+          amount: amountInKobo, 
+          currency: 'NGN',
+          // Metadata is crucial. If you ever upgrade to Webhooks, this is how you identify the payment.
+          metadata: { 
+            custom_fields: [
+                { display_name: "Campaign Title", variable_name: "campaign_title", value: form.title },
+                { display_name: "Target Views", variable_name: "target_views", value: selectedPackageData.views }
+            ]
+          },
+          onSuccess: (transaction) => {
+            // Payment Successful! Push the task live.
+            deployTaskToNetwork(false, amountInNGN);
+          },
+          onCancel: () => {
+            setLocalError('Payment was cancelled.');
+            setLoading(false);
+          }
+        });
       }
       
     } catch (err) {
@@ -137,26 +164,26 @@ export default function CreateTask({ session, navigate, showToast }) {
 
   // ── THEME-AWARE STYLES ──
   const S = {
-    page: { padding: '40px 5%', maxWidth: 900, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
+    page: { padding: '40px 5%', maxWidth: 900, margin: '0 auto', fontFamily: "var(--font-body)", position: 'relative' },
     glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 40, boxShadow: 'var(--shadow)' },
-    label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 12, display: 'block', fontFamily: "'Inter', sans-serif" },
-    input: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', marginBottom: 24 },
-    select: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', appearance: 'none', marginBottom: 24 },
-    btnPrimary: { width: '100%', background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '18px', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 16 },
-    packageCard: (isActive) => ({ padding: 20, borderRadius: 16, cursor: 'pointer', transition: 'all 0.2s', background: isActive ? 'var(--ink)' : 'var(--surface)', border: `1px solid ${isActive ? 'var(--ink)' : 'var(--line)'}`, color: isActive ? 'var(--surface)' : 'var(--ink)', boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.1)' : 'none' }),
+    label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 12, display: 'block', fontFamily: "var(--font-display)" },
+    input: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: "var(--font-body)", outline: 'none', boxSizing: 'border-box', marginBottom: 24 },
+    select: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: "var(--font-body)", outline: 'none', boxSizing: 'border-box', appearance: 'none', marginBottom: 24 },
+    btnPrimary: { width: '100%', background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '18px', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "var(--font-display)", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 16 },
+    packageCard: (isActive) => ({ padding: 20, borderRadius: 16, cursor: 'pointer', transition: 'all 0.2s', background: isActive ? 'var(--ink)' : 'var(--surface)', border: `1px solid ${isActive ? 'var(--ink)' : 'var(--line)'}`, color: isActive ? 'var(--surface)' : 'var(--ink)', boxShadow: isActive ? 'var(--shadow)' : 'none' }),
     gatewayCard: (isActive) => ({ padding: '16px', borderRadius: '12px', cursor: 'pointer', border: `1px solid ${isActive ? 'var(--lime)' : 'var(--line)'}`, background: isActive ? 'var(--lime-dim)' : 'var(--surface)', flex: 1, display: 'flex', alignItems: 'center', gap: '12px' })
   };
 
   return (
     <div style={S.page}>
       <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', margin: 0, fontWeight: 800, letterSpacing: '-0.5px' }}>Campaign Deployment</h1>
-        <button onClick={() => navigate('/creator-dashboard')} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>← Dashboard</button>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, color: 'var(--ink)', margin: 0, fontWeight: 800, letterSpacing: '-0.5px' }}>Campaign Deployment</h1>
+        <button onClick={() => navigate('creator-dashboard')} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>← Dashboard</button>
       </div>
 
       <div style={S.glassCard}>
         {localError && (
-          <div style={{ padding: '16px', background: '#fee2e2', border: '1px solid #ef4444', color: '#991b1b', borderRadius: '12px', marginBottom: '24px', fontSize: '14px', fontWeight: '600' }}>
+          <div style={{ padding: '16px', background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '12px', marginBottom: '24px', fontSize: '14px', fontWeight: '600' }}>
             🚨 {localError}
           </div>
         )}
@@ -217,11 +244,14 @@ export default function CreateTask({ session, navigate, showToast }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <div style={{ fontSize: 13, fontWeight: 700 }}>{pkg.label}</div>
                     <div style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 100, border: `1px solid ${form.package === key ? 'var(--surface)' : 'var(--line)'}` }}>
-                      {pkg.price}
+                      ${pkg.priceUSD}
                     </div>
                   </div>
                   <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
                     {pkg.views} <span style={{ fontSize: 12, fontWeight: 600 }}>VERIFICATIONS</span>
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', marginTop: 4 }}>
+                    Est. ₦{(pkg.priceUSD * EXCHANGE_RATE).toLocaleString()}
                   </div>
                 </div>
               ))}
@@ -237,7 +267,7 @@ export default function CreateTask({ session, navigate, showToast }) {
                   <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `5px solid ${form.paymentGateway === 'paystack' ? 'var(--lime)' : 'var(--slate)'}` }}></div>
                   <div>
                     <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--ink)' }}>Paystack (Africa)</div>
-                    <div style={{ fontSize: '12px', color: 'var(--slate)' }}>NGN, ZAR, GHS, USD</div>
+                    <div style={{ fontSize: '12px', color: 'var(--slate)' }}>Secure NGN Checkout</div>
                   </div>
                 </div>
               </div>
@@ -245,7 +275,7 @@ export default function CreateTask({ session, navigate, showToast }) {
           )}
 
           <button type="submit" disabled={loading} style={{ ...S.btnPrimary, opacity: loading ? 0.5 : 1 }}>
-            {loading ? 'Processing...' : form.package === 'pilot' ? `Deploy Pilot Campaign (Free)` : `Pay ${selectedPackageData.price} & Deploy`}
+            {loading ? 'Processing...' : form.package === 'pilot' ? `Deploy Pilot Campaign (Free)` : `Pay ₦${(selectedPackageData.priceUSD * EXCHANGE_RATE).toLocaleString()} & Deploy`}
           </button>
         </form>
       </div>
