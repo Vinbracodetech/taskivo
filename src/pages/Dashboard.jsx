@@ -149,14 +149,13 @@ export default function Dashboard({ user, navigate, showToast }) {
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
   const isVerified = !!user.payout_account;
 
-  // 🔥 ALL STYLES MAPPED TO GLOBAL THEME.JS VARIABLES 🔥
   const S = {
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "var(--font-body)", position: 'relative' },
     glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow)' },
     premiumCard: { background: 'var(--surface-card)', border: '1px solid var(--gold)', borderRadius: 24, padding: 32, boxShadow: 'var(--shadow)', position: 'relative', overflow: 'hidden' },
     label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 16, display: 'block', fontFamily: "var(--font-display)" },
     valueGlow: { fontFamily: "var(--font-display)", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
-    btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "var(--font-display)" },
+    btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "var(--font-display)", transition: 'all 0.2s' },
     btnLime: { background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "var(--font-display)", boxShadow: '0 8px 16px rgba(168,255,62,0.2)' },
     btnLocked: { background: 'var(--surface)', color: 'var(--slate)', border: '1px solid var(--line)', borderRadius: 12, padding: '10px 20px', fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "var(--font-display)" },
     avatarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: 20 },
@@ -186,7 +185,11 @@ export default function Dashboard({ user, navigate, showToast }) {
             </div>
           </div>
         </div>
-        <button onClick={() => setShowEditModal(true)} style={S.btnGhost}>Edit Profile</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          {/* 🔥 ADDED HISTORY QUICK LINK */}
+          <button onClick={() => navigate('history')} style={S.btnGhost}>Activity Ledger</button>
+          <button onClick={() => setShowEditModal(true)} style={S.btnGhost}>Edit Profile</button>
+        </div>
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
@@ -200,8 +203,11 @@ export default function Dashboard({ user, navigate, showToast }) {
             <div style={S.valueGlow}>{user.points.toLocaleString()}</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px' }}>PTS</div>
           </div>
-          <div style={{ marginTop: 'auto' }}>
-            <button onClick={() => navigate('wallet')} style={{ ...S.btnGhost, width: '100%' }}>Manage Portfolio</button>
+          
+          {/* 🔥 UPDATED WALLET/HISTORY BUTTONS */}
+          <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
+            <button onClick={() => navigate('wallet')} style={{ ...S.btnGhost, flex: 1 }}>Wallet</button>
+            <button onClick={() => navigate('history')} style={{ ...S.btnGhost, flex: 1 }}>Ledger</button>
           </div>
         </div>
 
