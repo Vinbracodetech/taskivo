@@ -24,7 +24,7 @@ export default function Landing({ navigate, setAuthMode }) {
         const { count, error } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
-          .gt('free_credits', 0); // Count everyone holding a credit
+          .gt('free_credits', 0); 
         if (!error && count !== null) setClaimedSpots(count);
       } catch (err) {
         console.error("Error fetching pilot data:", err);
@@ -65,26 +65,30 @@ export default function Landing({ navigate, setAuthMode }) {
   }, []);
 
   const socialPricing = [
-    { name: 'Starter', price: '$5', slots: 50, useCase: 'Baseline algorithmic test', features: ['Social Algorithm Verification', 'Guaranteed Like & Comment', 'Anti-Cheat Protection', 'Algorithmic Safety Protocols'] },
-    { name: 'Traction', price: '$15', slots: 200, useCase: 'Best Value (Most Popular)', features: ['Social Algorithm Verification', 'Guaranteed Like & Comment', 'Anti-Cheat Protection', 'Algorithmic Safety Protocols'], isPopular: true },
-    { name: 'Scale', price: '$35', slots: 500, useCase: 'Sustained engagement', features: ['Social Algorithm Verification', 'Guaranteed Like & Comment', 'Anti-Cheat Protection', 'Algorithmic Safety Protocols', 'Priority Network Routing'] },
-    { name: 'Enterprise', price: '$68', slots: 1000, useCase: 'Maximum velocity', features: ['Social Algorithm Verification', 'Guaranteed Like & Comment', 'Anti-Cheat Protection', 'Algorithmic Safety Protocols', 'Priority Network Routing'] },
+    { name: 'Starter', price: '$15', slots: 100, useCase: 'Baseline algorithmic test', features: ['Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Global Audience Distribution'] },
+    { name: 'Traction', price: '$45', slots: 350, useCase: 'Best Value (Most Popular)', features: ['Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Global Audience Distribution', 'Priority Network Routing'], isPopular: true },
+    { name: 'Scale', price: '$99', slots: 800, useCase: 'Sustained engagement', features: ['Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Targeted Audience Segmentation', 'Priority Network Routing'] },
+    { name: 'Enterprise', price: '$249', slots: 2500, useCase: 'Maximum velocity', features: ['Dedicated Account Manager', 'Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Custom QA Survey Add-ons'] },
   ];
 
   const seoPricing = [
-    { name: 'Starter SEO', price: '$8', slots: 100, useCase: 'Initial Search Visibility', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Simulation', 'Anti-Cheat Protection', 'Safe Search Protocols'] },
-    { name: 'Traction SEO', price: '$24', slots: 300, useCase: 'Best Value (Most Popular)', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Simulation', 'Anti-Cheat Protection', 'Safe Search Protocols'], isPopular: true },
-    { name: 'Scale SEO', price: '$55', slots: 800, useCase: 'Domain Authority Boost', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Simulation', 'Anti-Cheat Protection', 'Safe Search Protocols', 'Priority Network Routing'] },
-    { name: 'Enterprise SEO', price: '$120', slots: 2000, useCase: 'Maximum Organic Reach', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Simulation', 'Anti-Cheat Protection', 'Safe Search Protocols', 'Priority Network Routing'] },
+    { name: 'Starter Traffic', price: '$12', slots: 100, useCase: 'Initial Search Visibility', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Verification', 'Real Human Web Navigators'] },
+    { name: 'Traction Traffic', price: '$35', slots: 350, useCase: 'Best Value (Most Popular)', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Verification', 'Real Human Web Navigators', 'Priority Search Routing'], isPopular: true },
+    { name: 'Scale Traffic', price: '$75', slots: 800, useCase: 'Domain Authority Boost', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Verification', 'Multi-Page Session Tracking', 'Priority Search Routing'] },
+    { name: 'Enterprise SEO', price: '$199', slots: 2500, useCase: 'Maximum Organic Reach', features: ['Dedicated Account Manager', 'Guaranteed 5+ Min Dwell Time', 'Multi-Page Session Tracking', 'Competitor Analysis Traffic'] },
   ];
 
   const activePricing = pricingMode === 'social' ? socialPricing : seoPricing;
 
   const faqs = [
-    { q: 'How do rewards work?', a: 'Contributors accumulate reward points based on active task completion, platform engagement, and maintaining activity streaks. Points reflect your overall participation quality.' },
-    { q: 'How do I withdraw?', a: 'Once you accumulate enough reward points to meet the platform threshold, you can request a secure withdrawal to your configured payment method.' },
-    { q: 'Who can use Taskivo?', a: 'Taskivo is built for global businesses seeking genuine digital engagement across social and web properties, and individuals worldwide looking for structured micro-earning opportunities.' },
+    { q: 'How does Taskivo prevent bot traffic?', a: 'Taskivo utilizes Layer 3 Financial Verification. Every contributor must bind a real, globally recognized bank account to their identity before accessing the network. We pair this with strict pointer-lock technology and tab-switch detection to ensure 100% human attention.' },
+    { q: 'How do Contributors get paid?', a: 'Earners accumulate network Points (PTS) for completing verified tasks. Once the liquidity threshold is met, points are converted and withdrawn instantly to their locked payout destination.' },
+    { q: 'What services does Taskivo offer businesses?', a: 'Currently, we provide verified YouTube attention tracking and High-Dwell SEO Traffic. Our roadmap includes expanding into Authentic UGC Bounties, Market Research Surveys, and App QA Testing.' },
   ];
+
+  function toggleFaq(i) {
+    setOpenFaq(openFaq === i ? null : i);
+  }
 
   function goRegisterEarner() {
     localStorage.setItem('taskivo_role', 'earner');
@@ -113,19 +117,21 @@ export default function Landing({ navigate, setAuthMode }) {
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.darkLine}`, color: C.white, fontSize: 12, fontWeight: 600, padding: '6px 16px', borderRadius: 100, marginBottom: 32 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.lime, animation: 'pulse 2s infinite' }}></span>
-            Taskivo Beta Platform
+            Taskivo B2B Network Live
           </div>
           
-          <h1 className="lp-hero-title heading" style={{ color: C.white, marginBottom: 24 }}>Scale your reach.<br /><span style={{ color: C.lime }}>Earn from real engagement.</span></h1>
-          <p className="lp-hero-sub body-text" style={{ color: 'rgba(255,255,255,0.7)', maxWidth: 540, fontWeight: 400, lineHeight: 1.6 }}>An omnichannel engagement infrastructure connecting businesses with a global network of verified contributors.</p>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 44, fontStyle: 'italic', letterSpacing: 0.5 }}>Empowering digital participation and micro-earning opportunities across emerging markets.</p>
+          <h1 className="lp-hero-title heading" style={{ color: C.white, marginBottom: 24 }}>Tap into a global.<br /><span style={{ color: C.lime }}>human workforce.</span></h1>
+          <p className="lp-hero-sub body-text" style={{ color: 'rgba(255,255,255,0.7)', maxWidth: 540, fontWeight: 400, lineHeight: 1.6 }}>The world's most secure omnichannel engagement infrastructure. Connecting businesses with verified human attention.</p>
           
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterEarner}>Join as Founding Contributor</button>
-              <button style={{ background: 'transparent', color: C.white, border: `1px solid ${C.darkLine}`, borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>Launch a Campaign</button>
+              <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: 8 }} onClick={goRegisterCreator}>
+                <img src="https://www.google.com/favicon.ico" width={14} height={14} alt="G" style={{ filter: 'grayscale(100%) brightness(0)' }}/> 
+                Launch a Campaign
+              </button>
+              <button style={{ background: 'transparent', color: C.white, border: `1px solid ${C.darkLine}`, borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterEarner}>Monetize Your Attention</button>
             </div>
-            <div style={{ color: C.lime, fontSize: 12, fontWeight: 600, letterSpacing: 0.5 }}>🔥 Only 50 Founding Contributor spots available for Phase 1.</div>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 500, letterSpacing: 0.5 }}>Frictionless 1-Click Google Authentication. Zero Passwords.</div>
           </div>
         </div>
       </div>
@@ -135,7 +141,7 @@ export default function Landing({ navigate, setAuthMode }) {
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
           <div style={{ flex: '1 1 300px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ display: 'inline-block', background: C.limeDim, color: C.lime, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 8px', borderRadius: 4 }}>Live Beta</span>
+              <span style={{ display: 'inline-block', background: C.limeDim, color: C.lime, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 8px', borderRadius: 4 }}>B2B Beta</span>
               <span className="heading" style={{ color: C.white, fontSize: 18 }}>Early Adopter Grant</span>
             </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>We are gifting 20 free campaign slots to our first 10 businesses to stress-test the network.</div>
@@ -163,29 +169,31 @@ export default function Landing({ navigate, setAuthMode }) {
       {/* VALUE PROP */}
       <section className="lp-section-pad" style={{ background: C.off }}>
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Two perspectives.<br />One infrastructure.</h2>
-          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>Taskivo abstracts the complexity of digital growth and distributed micro-earnings into a single, seamless platform.</p>
+          <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Two markets.<br />One infrastructure.</h2>
+          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>Taskivo seamlessly bridges the gap between enterprise marketing demands and global micro-earning liquidity.</p>
         </div>
         <div className="lp-grid-2" style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, padding: 40 }}>
             <div style={{ display: 'inline-block', background: C.ink, color: C.lime, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Businesses</div>
-            <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Drive verifiable digital actions.</h3>
+            <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Outsource digital friction.</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Omnichannel reach: YouTube, TikTok, FB, & SEO Blog Traffic</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Get high-retention engagement from real users</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Predictable and scalable algorithmic growth</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Secure high-retention YouTube & SEO metrics</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Deploy QA testers to identify application bugs</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Commission authentic User-Generated Content (UGC)</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Purchase campaigns securely via fiat checkout</li>
             </ul>
-            <button style={{ background: C.ink, color: C.white, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterCreator}>Create Campaign</button>
+            <button style={{ background: C.ink, color: C.white, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterCreator}>Explore B2B Solutions</button>
           </div>
           <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, padding: 40 }}>
             <div style={{ display: 'inline-block', background: C.limeDim, color: '#3d6600', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Contributors</div>
-            <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Turn participation into value.</h3>
+            <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Monetize your attention.</h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Read articles, engage with blogs, and watch videos</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Earn dynamic reward points for your verified attention</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Build consistency streaks for internal bonuses</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Execute verifiable micro-tasks daily</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Accumulate dynamic Point (PTS) allocations</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Access gamified daily check-ins and streaks</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Withdraw directly to global bank infrastructures</li>
             </ul>
-            <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterEarner}>Join Network</button>
+            <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterEarner}>Access Earner Dashboard</button>
           </div>
         </div>
       </section>
@@ -193,22 +201,25 @@ export default function Landing({ navigate, setAuthMode }) {
       {/* TRUST LAYER */}
       <section className="lp-section-pad" style={{ background: C.ink, color: C.white }}>
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.lime, marginBottom: 12 }}>Platform Strictness</div>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.lime, marginBottom: 12 }}>Military-Grade Architecture</div>
           <h2 className="lp-section-title heading" style={{ marginBottom: 16 }}>Proof of attention, built-in.</h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', maxWidth: 600, margin: '0 auto', lineHeight: 1.6 }}>We do not just deliver clicks. We guarantee sustained human focus through strict, automated verification protocols. You only pay for verified engagement.</p>
+          <p style={{ color: 'rgba(255,255,255,0.6)', maxWidth: 600, margin: '0 auto', lineHeight: 1.6 }}>We do not sell bot traffic. We guarantee sustained human focus through strict, automated anti-cheat protocols. You only pay for verified engagement.</p>
         </div>
         <div className="lp-grid-3" style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.darkLine}`, padding: 32, borderRadius: 16 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: C.white, marginBottom: 12 }}>Tab-Switch Detection</div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 1.6 }}>If a contributor switches tabs or minimizes their browser, the watch or read timer instantly pauses. Guaranteed active screen time, not background noise.</p>
+            <div style={{ fontSize: 24, marginBottom: 16 }}>🏦</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: C.white, marginBottom: 12 }}>Layer 3 KYC Financials</div>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 1.6 }}>Every earner must permanently bind a verified payout institution to their account. Attempting to run a bot farm or multiple accounts instantly flags the network.</p>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.darkLine}`, padding: 32, borderRadius: 16 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: C.white, marginBottom: 12 }}>Strict Verification Gates</div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 1.6 }}>Actions remain locked until contributors pass a context-specific quiz about your campaign with a strict 3-attempt limit. Zero bots. Zero lazy clicks.</p>
+            <div style={{ fontSize: 24, marginBottom: 16 }}>🎯</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: C.white, marginBottom: 12 }}>Pointer-Lock Technology</div>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 1.6 }}>During video and ad-playback, native browser controls are hidden and the UI is locked. Skipping, scrubbing, or fast-forwarding triggers an automatic penalty reset.</p>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${C.darkLine}`, padding: 32, borderRadius: 16 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: C.white, marginBottom: 12 }}>Guaranteed Session Minimums</div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 1.6 }}>Every campaign enforces platform-specific read/watch durations to ensure algorithmic safety and high-retention metrics for your content.</p>
+            <div style={{ fontSize: 24, marginBottom: 16 }}>👁️</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: C.white, marginBottom: 12 }}>Visibility Assertions</div>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, lineHeight: 1.6 }}>If a contributor switches tabs or minimizes their browser to multitask, the verification timer is instantly severed. Guaranteed active screen time, not background noise.</p>
           </div>
         </div>
       </section>
@@ -218,11 +229,11 @@ export default function Landing({ navigate, setAuthMode }) {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Campaign Pricing</div>
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Predictable growth packages.</h2>
-          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Purchase secure campaign slots. Select your target distribution network below.</p>
+          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Purchase secure campaign slots using traditional payment rails. We handle the point distributions.</p>
 
           <div style={{ display: 'inline-flex', background: C.off, padding: 6, borderRadius: 100, border: `1px solid ${C.line}` }}>
-            <button onClick={() => setPricingMode('social')} style={{ background: pricingMode === 'social' ? C.ink : 'transparent', color: pricingMode === 'social' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>Video & Social</button>
-            <button onClick={() => setPricingMode('seo')} style={{ background: pricingMode === 'seo' ? C.ink : 'transparent', color: pricingMode === 'seo' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>SEO & Web Traffic</button>
+            <button onClick={() => setPricingMode('social')} style={{ background: pricingMode === 'social' ? C.ink : 'transparent', color: pricingMode === 'social' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>YouTube & Social</button>
+            <button onClick={() => setPricingMode('seo')} style={{ background: pricingMode === 'seo' ? C.ink : 'transparent', color: pricingMode === 'seo' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>SEO Web Traffic</button>
           </div>
         </div>
 
@@ -239,7 +250,7 @@ export default function Landing({ navigate, setAuthMode }) {
                     return <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: plan.isPopular ? 'rgba(255,255,255,0.7)' : C.slate, fontWeight: 500 }}><span style={{ color: plan.isPopular ? C.lime : C.ink, fontWeight: 'bold' }}>✓</span> {feat}</li>;
                   })}
                 </ul>
-                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>Select Package</button>
+                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>Deploy Campaign</button>
               </div>
             );
           })}
@@ -250,8 +261,8 @@ export default function Landing({ navigate, setAuthMode }) {
       <section className="lp-section-pad" style={{ background: C.off }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <h2 className="heading" style={{ fontSize: 28, color: C.ink, marginBottom: 12 }}>Frequently Asked Questions</h2>
-            <p style={{ color: C.slate, fontSize: 14 }}>Built for transparency and fairness. Rewards are based on verifiable engagement.</p>
+            <h2 className="heading" style={{ fontSize: 28, color: C.ink, marginBottom: 12 }}>Platform Architecture & FAQs</h2>
+            <p style={{ color: C.slate, fontSize: 14 }}>Built for transparency and absolute fairness.</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {faqs.map(function(faq, i) {
@@ -283,7 +294,6 @@ export default function Landing({ navigate, setAuthMode }) {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={goRegisterEarner}>For Contributors</span></li>
               <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={goRegisterCreator}>For Businesses</span></li>
-              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={goRegisterCreator}>Pricing</span></li>
             </ul>
           </div>
           <div>
@@ -302,10 +312,10 @@ export default function Landing({ navigate, setAuthMode }) {
           </div>
         </div>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${C.line}`, paddingTop: 24, color: C.slate, fontSize: 13 }}>
-          <div>© {new Date().getFullYear()} Taskivo. All rights reserved. Beta Platform.</div>
-          <div style={{ display: 'flex', gap: 16 }}><span>Built for transparency.</span></div>
+          <div>© {new Date().getFullYear()} Taskivo. All rights reserved. B2B Beta Platform.</div>
+          <div style={{ display: 'flex', gap: 16 }}><span>Built for verifiable engagement.</span></div>
         </div>
       </footer>
     </div>
   );
-}0
+}
