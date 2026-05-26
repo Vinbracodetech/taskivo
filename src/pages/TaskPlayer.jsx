@@ -12,6 +12,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [handle, setHandle] = useState('');
   
   const [gateUnlocked, setGateUnlocked] = useState(false);
+  const [cheatWarning, setCheatWarning] = useState("");
 
   const ytPlayerRef = useRef(null);
 
@@ -61,12 +62,37 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
       ytPlayerRef.current = new window.YT.Player('yt-frame', {
         videoId: vidId,
-        playerVars: { playsinline: 1, rel: 0 },
+        playerVars: { 
+          playsinline: 1, 
+          rel: 0,
+          controls: 0, // Hide native controls to discourage scrubbing
+          disablekb: 1 // Disable keyboard shortcuts (like arrow keys to skip)
+        },
         events: {
+          onReady: (e) => {
+             // Force 1x speed to prevent speed-hack extensions
+             e.target.setPlaybackRate(1);
+          },
           onStateChange: (e) => {
-            setIsLive(e.data === 1);
+            // 1 = Playing, 2 = Paused, 0 = Ended
+            if (e.data === 1) {
+              setIsLive(true);
+              setCheatWarning("");
+              e.target.setPlaybackRate(1); // Enforce normal speed constantly
+            } else {
+              setIsLive(false);
+            }
+
+            // 🔥 ANTI-CHEAT: Did the video end before the timer finished?
             if (e.data === 0) {
-              setTimer(0);
+              // Since the interval relies on state closures, we use the current timer state indirectly via a check
+              setTimer((currentTimer) => {
+                 if (currentTimer > 0) {
+                   setCheatWarning("⚠️ Fast-forwarding detected. Timer has been reset.");
+                   return task.watch_duration; // Reset timer back to max
+                 }
+                 return currentTimer;
+              });
             }
           }
         }
@@ -83,6 +109,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
   }, [task, cooldown, verification]);
 
+  // 🔥 ANTI-CHEAT: TAB SWITCHING
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
@@ -90,16 +117,20 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') {
           ytPlayerRef.current.pauseVideo();
         }
+        if (!verification) {
+          setCheatWarning("⚠️ Playback paused. You must keep this tab open and visible.");
+        }
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+  }, [verification]);
 
   useEffect(() => {
     if (timer <= 0 && task && !verification) {
       setVerification(true);
       setIsLive(false);
+      setCheatWarning("");
       if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') {
         ytPlayerRef.current.pauseVideo();
       }
@@ -163,13 +194,14 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   }
 
   const wrapStyle = { padding: 20, maxWidth: 600, margin: 'auto', fontFamily: "'Inter', sans-serif" };
-  const cardStyle = { background: '#000', borderRadius: 16, overflow: 'hidden', marginBottom: 20, border: '1px solid var(--line)' };
+  const cardStyle = { background: '#000', borderRadius: 16, overflow: 'hidden', marginBottom: 20, border: '1px solid var(--line)', position: 'relative' };
   const headerStyle = { padding: 15, background: '#111', color: statusColor, fontWeight: 800, textAlign: 'center' };
   const verifBox = { padding: 40, background: 'var(--surface-card)', textAlign: 'center' };
   const inputStyle = { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)' };
   const btnRed = { background: '#ff4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 13, letterSpacing: '0.5px' };
   const btnGreen = { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16 };
   const warningBox = { background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 16, marginBottom: 24, textAlign: 'left' };
+  const cheatToast = { background: '#ff4444', color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' };
 
   return (
     <div style={wrapStyle}>
@@ -178,8 +210,15 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         <div style={headerStyle}>
           {statusText}
         </div>
+
+        {cheatWarning && !verification && (
+          <div style={cheatToast}>
+            {cheatWarning}
+          </div>
+        )}
         
-        <div style={{ display: verification ? 'none' : 'block' }}>
+        <div style={{ display: verification ? 'none' : 'block', pointerEvents: isLive ? 'none' : 'auto' }}>
+           {/* By disabling pointerEvents while live, they can't click the timeline to skip */}
           <div id="yt-frame" style={{ width: '100%', height: 350 }}></div>
         </div>
         
