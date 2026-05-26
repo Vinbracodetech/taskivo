@@ -13,7 +13,7 @@ export default function Landing({ navigate, setAuthMode }) {
   const [claimedSpots, setClaimedSpots] = useState(0);
   const TOTAL_SPOTS = 10;
   const remainingSpots = Math.max(0, TOTAL_SPOTS - claimedSpots);
-  const [pricingMode, setPricingMode] = useState('social');
+  const [pricingMode, setPricingMode] = useState('social'); // 'social', 'seo', 'qa', 'ugc'
 
   useEffect(() => { document.title = 'Taskivo — Digital Engagement Infrastructure'; }, []);
 
@@ -78,7 +78,21 @@ export default function Landing({ navigate, setAuthMode }) {
     { name: 'Enterprise SEO', price: '$199', slots: 2500, useCase: 'Maximum Organic Reach', features: ['Dedicated Account Manager', 'Guaranteed 5+ Min Dwell Time', 'Multi-Page Session Tracking', 'Competitor Analysis Traffic'] },
   ];
 
-  const activePricing = pricingMode === 'social' ? socialPricing : seoPricing;
+  const qaPricing = [
+    { name: 'Beta QA', price: '$25', slots: 10, useCase: 'Initial app stress-test', features: ['Real Human Testers', 'Manual Bug & UX Reports', 'Verified Screenshots'] },
+    { name: 'Scale QA', price: '$100', slots: 50, useCase: 'Comprehensive Audit', features: ['Real Human Testers', 'Manual Bug & UX Reports', 'Verified Screenshots', 'Priority Placement'], isPopular: true },
+  ];
+
+  const ugcPricing = [
+    { name: 'Starter UGC', price: '$45', slots: 5, useCase: 'Baseline video testimonials', features: ['Authentic Creator Videos', 'Full Usage Rights', 'Manual Verification & Escrow'] },
+    { name: 'Scale UGC', price: '$160', slots: 20, useCase: 'Ad creative library', features: ['Authentic Creator Videos', 'Full Usage Rights', 'Manual Verification & Escrow', 'High-Tier Creators'], isPopular: true },
+  ];
+
+  const activePricing = pricingMode === 'social' ? socialPricing : 
+                        pricingMode === 'seo' ? seoPricing : 
+                        pricingMode === 'qa' ? qaPricing : ugcPricing;
+  
+  const unitLabel = (pricingMode === 'qa' || pricingMode === 'ugc') ? 'Manual Submissions' : 'Verified Engagements';
 
   // 🔥 EXPANDED MEGA FAQ 🔥
   const faqs = [
@@ -86,7 +100,7 @@ export default function Landing({ navigate, setAuthMode }) {
     { q: 'How does Taskivo prevent bot traffic?', a: 'We utilize Layer 3 Financial Verification. Every contributor must bind a real, globally recognized bank account to their identity before accessing the network. We pair this with strict pointer-lock technology and tab-switch detection to ensure 100% human attention.' },
     { q: 'Are the engagements from real humans?', a: 'Yes. Every view, click, and UGC submission comes from a verified human in our network. We do not use server farms or automated headless browsers.' },
     { q: 'How do Earners get paid?', a: 'Earners accumulate network Points (PTS) for completing verified tasks. Once the liquidity threshold is met, points are converted and withdrawn instantly to their local bank or Paystack account.' },
-    { q: 'What happens if an Earner submits fake proof for a UGC task?', a: 'For premium manual tasks (like UGC or QA Testing), the points are held in escrow. The Creator manually reviews the uploaded proof and clicks "Approve" before the Earner is paid. If the proof is invalid, it can be rejected.' },
+    { q: 'What happens if an Earner submits fake proof for a UGC or QA task?', a: 'For premium manual tasks, the points are held in escrow. The Creator manually reviews the uploaded proof and clicks "Approve" before the Earner is paid. If the proof is invalid, it can be rejected.' },
     { q: 'How do Creators fund their campaigns?', a: 'Creators can securely fund their campaigns using fiat currency via Paystack (supporting NGN, ZAR, GHS, USD). Once payment clears, your task is injected into the network instantly.' }
   ];
 
@@ -281,16 +295,18 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </section>
 
-      {/* DYNAMIC PRICING TOGGLE */}
+      {/* DYNAMIC PRICING TOGGLE WITH ALL 4 SERVICES */}
       <section className="lp-section-pad" style={{ background: C.white }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Campaign Pricing</div>
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Predictable growth packages.</h2>
           <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Purchase secure campaign slots using traditional payment rails. We handle the point distributions.</p>
 
-          <div style={{ display: 'inline-flex', background: C.off, padding: 6, borderRadius: 100, border: `1px solid ${C.line}` }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, background: C.off, padding: 6, borderRadius: 24, border: `1px solid ${C.line}` }}>
             <button onClick={() => setPricingMode('social')} style={{ background: pricingMode === 'social' ? C.ink : 'transparent', color: pricingMode === 'social' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>YouTube & Social</button>
             <button onClick={() => setPricingMode('seo')} style={{ background: pricingMode === 'seo' ? C.ink : 'transparent', color: pricingMode === 'seo' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>SEO Web Traffic</button>
+            <button onClick={() => setPricingMode('qa')} style={{ background: pricingMode === 'qa' ? C.ink : 'transparent', color: pricingMode === 'qa' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>App QA Testing</button>
+            <button onClick={() => setPricingMode('ugc')} style={{ background: pricingMode === 'ugc' ? C.ink : 'transparent', color: pricingMode === 'ugc' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>Authentic UGC</button>
           </div>
         </div>
 
@@ -301,7 +317,7 @@ export default function Landing({ navigate, setAuthMode }) {
                 {plan.isPopular && <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: C.lime, color: C.ink, fontSize: 11, fontWeight: 700, padding: '6px 16px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1 }}>Best Value</div>}
                 <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{plan.name}</div>
                 <div className="heading" style={{ fontSize: 40, color: plan.isPopular ? C.lime : C.ink, marginBottom: 8 }}>{plan.price}</div>
-                <div style={{ fontSize: 14, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>{plan.slots.toLocaleString()} Verified Engagements</div>
+                <div style={{ fontSize: 14, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>{plan.slots.toLocaleString()} {unitLabel}</div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 14, flexGrow: 1 }}>
                   {plan.features.map(function(feat, idx) {
                     return <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: plan.isPopular ? 'rgba(255,255,255,0.7)' : C.slate, fontWeight: 500 }}><span style={{ color: plan.isPopular ? C.lime : C.ink, fontWeight: 'bold' }}>✓</span> {feat}</li>;
