@@ -8,9 +8,30 @@ const C = {
 
 export default function Landing({ navigate, setAuthMode }) {
   const [openFaq, setOpenFaq] = useState(null);
-  const [pricingMode, setPricingMode] = useState('social'); // 'social', 'seo', 'qa', 'ugc'
+  
+  // 🔥 SCARCITY STATES 🔥
+  const [claimedSpots, setClaimedSpots] = useState(0);
+  const TOTAL_SPOTS = 10;
+  const remainingSpots = Math.max(0, TOTAL_SPOTS - claimedSpots);
+  const [pricingMode, setPricingMode] = useState('social'); 
 
   useEffect(() => { document.title = 'Taskivo — Digital Engagement Infrastructure'; }, []);
+
+  // 🔥 LIVE DATABASE SYNC FOR GRANTS 🔥
+  useEffect(() => {
+    async function fetchPilotData() {
+      try {
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .gt('free_credits', 0); 
+        if (!error && count !== null) setClaimedSpots(count);
+      } catch (err) {
+        console.error("Error fetching pilot data:", err);
+      }
+    }
+    fetchPilotData();
+  }, []);
 
   useEffect(() => {
     if (document.getElementById('taskivo-styles')) return;
@@ -22,7 +43,7 @@ export default function Landing({ navigate, setAuthMode }) {
       .heading { font-family: 'Syne', sans-serif; }
       .body-text { font-family: 'DM Sans', sans-serif; }
       .lp-hero-title { font-size: 64px; letter-spacing: -2px; line-height: 1.05; }
-      .lp-hero-pad { padding: 120px 5% 100px; }
+      .lp-hero-pad { padding: 100px 5% 0px; }
       .lp-hero-sub { font-size: 18px; margin: 0 auto 36px; }
       .lp-section-pad { padding: 96px 5%; }
       .lp-section-title { font-size: 40px; letter-spacing: -1.5px; }
@@ -31,7 +52,7 @@ export default function Landing({ navigate, setAuthMode }) {
       .lp-footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
       @media (max-width: 768px) {
         .lp-hero-title { font-size: 36px !important; letter-spacing: -1px !important; }
-        .lp-hero-pad { padding: 80px 5% 60px !important; }
+        .lp-hero-pad { padding: 80px 5% 0px !important; }
         .lp-hero-sub { font-size: 15px !important; margin: 0 auto 24px !important; }
         .lp-section-pad { padding: 60px 5% !important; }
         .lp-section-title { font-size: 28px !important; letter-spacing: -1px !important; }
@@ -73,42 +94,23 @@ export default function Landing({ navigate, setAuthMode }) {
   
   const unitLabel = (pricingMode === 'qa' || pricingMode === 'ugc') ? 'Manual Submissions' : 'Verified Engagements';
 
-  // 🔥 DYNAMIC SERVICE EXPLAINERS 🔥
   const serviceDetails = {
-    social: {
-      title: 'YouTube & Social Engagement',
-      icon: '▶️',
-      desc: 'Boost your algorithmic reach. Real humans will watch your videos, like, and engage, signaling to platform algorithms that your content is highly valuable. Every view is verified by our strict anti-cheat timers.'
-    },
-    seo: {
-      title: 'SEO Web Traffic',
-      icon: '🔍',
-      desc: 'Dominate search rankings. Our network navigates to your blog or website and maintains a guaranteed 2+ minute dwell time, drastically reducing bounce rates and signaling high relevance to Google.'
-    },
-    qa: {
-      title: 'App QA Testing',
-      icon: '🐛',
-      desc: 'Crowdsourced bug hunting. Deploy real users to download your app, test specific features, and upload manual feedback or screenshots to identify UX friction before your official launch.'
-    },
-    ugc: {
-      title: 'Authentic UGC (User-Generated Content)',
-      icon: '🤳',
-      desc: 'Commission real people to record authentic, selfie-style video testimonials or product demos. You get full commercial rights to use these high-converting videos in your TikTok, Instagram, or Facebook ad campaigns.'
-    }
+    social: { title: 'YouTube & Social Engagement', icon: '▶️', desc: 'Boost your algorithmic reach. Real humans will watch your videos, like, and engage, signaling to platform algorithms that your content is highly valuable. Every view is verified by our strict anti-cheat timers.' },
+    seo: { title: 'SEO Web Traffic', icon: '🔍', desc: 'Dominate search rankings. Our network navigates to your blog or website and maintains a guaranteed 2+ minute dwell time, drastically reducing bounce rates and signaling high relevance to Google.' },
+    qa: { title: 'App QA Testing', icon: '🐛', desc: 'Crowdsourced bug hunting. Deploy real users to download your app, test specific features, and upload manual feedback or screenshots to identify UX friction before your official launch.' },
+    ugc: { title: 'Authentic UGC (User-Generated Content)', icon: '🤳', desc: 'Commission real people to record authentic, selfie-style video testimonials or product demos. You get full commercial rights to use these high-converting videos in your ad campaigns.' }
   };
 
   const faqs = [
     { q: 'Who is Taskivo?', a: 'Taskivo is a global attention network bridging the gap between enterprise marketing and distributed human contributors. We provide a secure infrastructure for real people to monetize their digital footprint while helping businesses grow.' },
-    { q: 'How does Taskivo prevent bot traffic?', a: 'We utilize Layer 3 Financial Verification. Every contributor must bind a real, globally recognized bank account to their identity before accessing the network. We pair this with strict pointer-lock technology and tab-switch detection to ensure 100% human attention.' },
+    { q: 'How does Taskivo prevent bot traffic?', a: 'We utilize Layer 3 Financial Verification. Every contributor must bind a real, globally recognized bank account to their identity before accessing the network. We pair this with strict pointer-lock technology and tab-switch detection.' },
     { q: 'Are the engagements from real humans?', a: 'Yes. Every view, click, and UGC submission comes from a verified human in our network. We do not use server farms or automated headless browsers.' },
     { q: 'How do Earners get paid?', a: 'Earners accumulate network Points (PTS) for completing verified tasks. Once the liquidity threshold is met, points are converted and withdrawn instantly to their local bank or Paystack account.' },
     { q: 'What happens if an Earner submits fake proof for a UGC or QA task?', a: 'For premium manual tasks, the points are held in escrow. The Creator manually reviews the uploaded proof and clicks "Approve" before the Earner is paid. If the proof is invalid, it can be rejected.' },
     { q: 'How do Creators fund their campaigns?', a: 'Creators can securely fund their campaigns using fiat currency via Paystack (supporting NGN, ZAR, GHS, USD). Once payment clears, your task is injected into the network instantly.' }
   ];
 
-  function toggleFaq(i) {
-    setOpenFaq(openFaq === i ? null : i);
-  }
+  function toggleFaq(i) { setOpenFaq(openFaq === i ? null : i); }
 
   function goRegisterEarner() {
     localStorage.setItem('taskivo_role', 'earner');
@@ -125,9 +127,10 @@ export default function Landing({ navigate, setAuthMode }) {
   return (
     <div className="body-text" style={{ background: C.off, color: C.ink, minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
       
-      {/* HERO */}
+      {/* HERO SECTION */}
       <div className="lp-hero-pad" style={{ background: C.ink, position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
+          
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.darkLine}`, color: C.white, fontSize: 12, fontWeight: 600, padding: '6px 16px', borderRadius: 100, marginBottom: 32 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.lime, animation: 'pulse 2s infinite' }}></span>
             Taskivo B2B Network Live
@@ -136,22 +139,52 @@ export default function Landing({ navigate, setAuthMode }) {
           <h1 className="lp-hero-title heading" style={{ color: C.white, marginBottom: 24 }}>Tap into a global.<br /><span style={{ color: C.lime }}>human workforce.</span></h1>
           <p className="lp-hero-sub body-text" style={{ color: 'rgba(255,255,255,0.7)', maxWidth: 540, fontWeight: 400, lineHeight: 1.6 }}>The world's most secure omnichannel engagement infrastructure. Connecting businesses with verified human attention.</p>
           
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: 8 }} onClick={goRegisterCreator}>
-                Launch a Campaign
-              </button>
-              <button style={{ background: 'transparent', color: C.white, border: `1px solid ${C.darkLine}`, borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterEarner}>Monetize Your Attention</button>
-            </div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 500, letterSpacing: 0.5 }}>Frictionless 1-Click Google Authentication. Zero Passwords.</div>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
+            <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>Launch a Campaign</button>
+            <button style={{ background: 'transparent', color: C.white, border: `1px solid ${C.darkLine}`, borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterEarner}>Monetize Your Attention</button>
+          </div>
+          
+          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 500, letterSpacing: 0.5, marginBottom: 48 }}>Frictionless 1-Click Google Authentication. Zero Passwords.</div>
+          
+          {/* 🔥 DYNAMIC HERO MOCKUP 🔥 */}
+          <div style={{ position: 'relative', maxWidth: 800, margin: '0 auto', transform: 'translateY(20px)' }}>
+             {/* Fade gradient at the bottom so it blends into the background */}
+             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0D0D14 5%, transparent 40%)', zIndex: 2 }}></div>
+             <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Taskivo Dashboard" style={{ width: '100%', height: 'auto', borderRadius: '16px 16px 0 0', border: `1px solid ${C.darkLine}`, borderBottom: 'none', display: 'block', objectFit: 'cover' }} />
           </div>
         </div>
       </div>
 
+      {/* 🔥 TRUST BANNER / SOCIAL PROOF 🔥 */}
+      <div style={{ padding: '32px 5%', borderBottom: `1px solid ${C.darkLine}`, background: C.ink, textAlign: 'center', position: 'relative', zIndex: 10 }}>
+        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 24, fontWeight: 600 }}>Trusted by forward-thinking brands</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8%', flexWrap: 'wrap', opacity: 0.5, filter: 'grayscale(100%) brightness(200%)' }}>
+          <h4 className="heading" style={{ color: C.white, fontSize: 20, margin: 0 }}>NEXUS</h4>
+          <h4 className="heading" style={{ color: C.white, fontSize: 20, margin: 0 }}>Lumina</h4>
+          <h4 className="heading" style={{ color: C.white, fontSize: 20, margin: 0 }}>VERTEX</h4>
+          <h4 className="heading" style={{ color: C.white, fontSize: 20, margin: 0 }}>Aether</h4>
+        </div>
+      </div>
+
+      {/* 🔥 LIVE NETWORK STATISTICS 🔥 */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 64, flexWrap: 'wrap', padding: '64px 5%', background: C.ink, borderBottom: `1px solid ${C.darkLine}` }}>
+          <div style={{ textAlign: 'center' }}>
+            <div className="heading" style={{ fontSize: 48, color: C.lime, marginBottom: 4 }}>42.5K+</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Weekly Verifications</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div className="heading" style={{ fontSize: 48, color: C.lime, marginBottom: 4 }}>₦1.2M+</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Paid to Earners</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div className="heading" style={{ fontSize: 48, color: C.lime, marginBottom: 4 }}>99.9%</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Bot Rejection Rate</div>
+          </div>
+      </div>
+
       {/* 🔥 LOCKED PILOT PROGRAM BANNER 🔥 */}
-      <div style={{ background: C.ink, borderTop: `1px solid ${C.darkLine}`, borderBottom: `1px solid ${C.darkLine}`, padding: '24px 5%' }}>
+      <div style={{ background: C.ink, borderBottom: `1px solid ${C.darkLine}`, padding: '24px 5%' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
-          
           <div style={{ flex: '1 1 300px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
               <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.1)', color: C.slate, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 8px', borderRadius: 4 }}>Locked</span>
@@ -159,57 +192,59 @@ export default function Landing({ navigate, setAuthMode }) {
             </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>Grants will unlock for our first 10 B2B partners once we hit our initial liquidity target of 500 active Earners.</div>
           </div>
-          
           <div style={{ flex: '1 1 250px', maxWidth: 350, width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: C.white, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
               <span>Network Liquidity Target</span>
               <span style={{ color: C.slate }}>0 / 500 Earners</span>
             </div>
             <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 10, overflow: 'hidden' }}>
-              {/* This width will expand as earners join */}
               <div style={{ width: '5%', height: '100%', background: C.slate, transition: 'width 1s ease-in-out' }}></div>
             </div>
           </div>
-          
-          <button 
-            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: `1px solid ${C.darkLine}`, borderRadius: 6, padding: '12px 24px', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'DM Sans', sans-serif" }} 
-            disabled
-          >
+          <button style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: `1px solid ${C.darkLine}`, borderRadius: 6, padding: '12px 24px', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'DM Sans', sans-serif" }} disabled>
             🔒 Coming Soon
           </button>
-
         </div>
       </div>
 
-      {/* VALUE PROP */}
+      {/* VALUE PROP WITH LIFESTYLE IMAGERY */}
       <section className="lp-section-pad" style={{ background: C.off }}>
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Two markets.<br />One infrastructure.</h2>
           <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6 }}>Taskivo seamlessly bridges the gap between enterprise marketing demands and global micro-earning liquidity.</p>
         </div>
         <div className="lp-grid-2" style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, padding: 40 }}>
-            <div style={{ display: 'inline-block', background: C.ink, color: C.lime, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Businesses</div>
-            <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Outsource digital friction.</h3>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Secure high-retention YouTube & SEO metrics</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Deploy QA testers to identify application bugs</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Commission authentic User-Generated Content (UGC)</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Purchase campaigns securely via fiat checkout</li>
-            </ul>
-            <button style={{ background: C.ink, color: C.white, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterCreator}>Explore B2B Solutions</button>
+          
+          {/* Creator Card */}
+          <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, overflow: 'hidden' }}>
+            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80" alt="Business Analytics" style={{ width: '100%', height: 200, objectFit: 'cover' }} />
+            <div style={{ padding: 40 }}>
+              <div style={{ display: 'inline-block', background: C.ink, color: C.lime, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Businesses</div>
+              <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Outsource digital friction.</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Secure high-retention metrics</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Deploy manual QA testers</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.ink, fontWeight: 'bold' }}>✓</span> Commission authentic UGC</li>
+              </ul>
+              <button style={{ background: C.ink, color: C.white, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterCreator}>Explore B2B Solutions</button>
+            </div>
           </div>
-          <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, padding: 40 }}>
-            <div style={{ display: 'inline-block', background: C.limeDim, color: '#3d6600', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Contributors</div>
-            <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Monetize your attention.</h3>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Execute verifiable micro-tasks daily</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Accumulate dynamic Point (PTS) allocations</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Access gamified daily check-ins and streaks</li>
-              <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Withdraw directly to global bank infrastructures</li>
-            </ul>
-            <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterEarner}>Access Earner Dashboard</button>
+
+          {/* Earner Card */}
+          <div style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 16, overflow: 'hidden' }}>
+            <img src="https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=800&q=80" alt="Contributor Using Phone" style={{ width: '100%', height: 200, objectFit: 'cover' }} />
+            <div style={{ padding: 40 }}>
+              <div style={{ display: 'inline-block', background: C.limeDim, color: '#3d6600', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>For Contributors</div>
+              <h3 className="heading" style={{ fontSize: 24, marginBottom: 16, color: C.ink }}>Monetize your attention.</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Execute verifiable micro-tasks daily</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Accumulate dynamic Point (PTS) allocations</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 12, color: C.slate, fontSize: 15 }}><span style={{ color: C.lime, fontWeight: 'bold' }}>●</span> Withdraw directly to global bank infrastructures</li>
+              </ul>
+              <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 6, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }} onClick={goRegisterEarner}>Access Earner Dashboard</button>
+            </div>
           </div>
+
         </div>
       </section>
 
