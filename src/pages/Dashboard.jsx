@@ -34,7 +34,6 @@ export default function Dashboard({ user, navigate, showToast }) {
     try {
       setLoading(true);
       
-      // 1. Fetch Basic Stats
       const { count } = await supabase
         .from('completions')
         .select('*', { count: 'exact', head: true })
@@ -49,7 +48,6 @@ export default function Dashboard({ user, navigate, showToast }) {
       setStats({ completions: count || 0 });
       setFeaturedTasks(tasks || []);
 
-      // 2. Fetch History for Quotas & Cooldowns
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const todayMidnight = new Date();
       todayMidnight.setHours(0, 0, 0, 0);
@@ -89,7 +87,6 @@ export default function Dashboard({ user, navigate, showToast }) {
     }
   }
 
-  // 🔥 SAVE FULL BANK DETAILS 🔥
   async function handleSaveProfile() {
     setSavingProfile(true);
     try {
@@ -141,7 +138,7 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   if (loading) {
     return (
-      <div style={{ padding: '80px 5%', textAlign: 'center', color: 'var(--slate)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
+      <div style={{ padding: '80px 5%', textAlign: 'center', color: 'var(--slate)', fontFamily: "var(--font-body)", fontSize: 14 }}>
         <div style={{ width: 24, height: 24, border: '2px solid var(--line)', borderTopColor: 'var(--lime)', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
         Decrypting profile data...
       </div>
@@ -150,29 +147,28 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   const minWithdrawal = 2000;
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
-  
-  // 🔥 VERIFICATION IS NOW TIED TO PAYOUT SETUP INSTEAD OF PHONE 🔥
   const isVerified = !!user.payout_account;
 
+  // 🔥 ALL STYLES MAPPED TO GLOBAL THEME.JS VARIABLES 🔥
   const S = {
-    page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
-    glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', boxShadow: '0 16px 40px rgba(0,0,0,0.03)' },
-    premiumCard: { background: 'var(--surface-card)', border: '1px solid rgba(212, 175, 55, 0.4)', borderRadius: 24, padding: 32, boxShadow: '0 24px 48px rgba(0,0,0,0.05)', position: 'relative', overflow: 'hidden' },
-    label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 16, display: 'block', fontFamily: "'Inter', sans-serif" },
-    valueGlow: { fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
-    btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif" },
-    btnLime: { background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "'Inter', sans-serif", boxShadow: '0 8px 16px rgba(168,255,62,0.2)' },
-    btnLocked: { background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 20px', fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif" },
+    page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "var(--font-body)", position: 'relative' },
+    glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow)' },
+    premiumCard: { background: 'var(--surface-card)', border: '1px solid var(--gold)', borderRadius: 24, padding: 32, boxShadow: 'var(--shadow)', position: 'relative', overflow: 'hidden' },
+    label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 16, display: 'block', fontFamily: "var(--font-display)" },
+    valueGlow: { fontFamily: "var(--font-display)", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
+    btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "var(--font-display)" },
+    btnLime: { background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "var(--font-display)", boxShadow: '0 8px 16px rgba(168,255,62,0.2)' },
+    btnLocked: { background: 'var(--surface)', color: 'var(--slate)', border: '1px solid var(--line)', borderRadius: 12, padding: '10px 20px', fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "var(--font-display)" },
     avatarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: 20 },
     avatarBlock: { display: 'flex', alignItems: 'center', gap: 16 },
-    avatar: { width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(135deg, var(--lime) 0%, #3d6600 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0D0D14', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", border: '2px solid var(--surface-card)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' },
+    avatar: { width: 64, height: 64, borderRadius: '50%', background: 'var(--lime)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: 24, fontWeight: 800, fontFamily: "var(--font-display)", border: '2px solid var(--surface-card)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' },
     badge: { fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6, letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 4, display: 'inline-block' },
-    verified: { background: 'rgba(168,255,62,0.15)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.3)' },
+    verified: { background: 'var(--lime-dim)', color: 'var(--lime)', border: '1px solid var(--lime)' },
     unverified: { background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' },
     modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 },
-    modalCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 24px 48px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' },
-    modalLabel: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--slate)', marginBottom: 8, display: 'block', fontFamily: "'Inter', sans-serif" },
-    input: { width: '100%', padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 15, marginBottom: 20, outline: 'none', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.2s' }
+    modalCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: 'var(--shadow)', maxHeight: '90vh', overflowY: 'auto' },
+    modalLabel: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--slate)', marginBottom: 8, display: 'block', fontFamily: "var(--font-display)" },
+    input: { width: '100%', padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 15, marginBottom: 20, outline: 'none', boxSizing: 'border-box', fontFamily: "var(--font-body)", transition: 'border-color 0.2s' }
   };
 
   return (
@@ -182,7 +178,7 @@ export default function Dashboard({ user, navigate, showToast }) {
         <div style={S.avatarBlock}>
           <div style={S.avatar}>{getInitials(user.full_name)}</div>
           <div>
-            <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: 'var(--ink)', margin: '0 0 4px', fontWeight: 800, letterSpacing: '-0.5px', textTransform: 'capitalize' }}>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, color: 'var(--ink)', margin: '0 0 4px', fontWeight: 800, letterSpacing: '-0.5px', textTransform: 'capitalize' }}>
               {user.full_name || 'Earner'}
             </h1>
             <div style={{ ...S.badge, ...(isVerified ? S.verified : S.unverified) }}>
@@ -233,25 +229,26 @@ export default function Dashboard({ user, navigate, showToast }) {
         </div>
       </div>
 
+      {/* PREMIUM GOLD CARD */}
       <div style={{ ...S.premiumCard, marginBottom: 56, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
         <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid rgba(212, 175, 55, 0.5)', color: '#D4AF37', background: 'rgba(212, 175, 55, 0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--gold)', color: 'var(--gold)', background: 'var(--surface)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>
             ✦ VIP Network Bonus
           </div>
-          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Expand Your Network. Earn 50 Points.</h2>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Expand Your Network. Earn 50 Points.</h2>
           <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: 0 }}>
             Distribute your unique cryptographic invite link. Upon a successful registration and first verified task completion from your referral, your account is instantly credited.
           </p>
         </div>
         
-        <button onClick={copyReferralLink} style={{ position: 'relative', zIndex: 2, background: referralCopied ? 'var(--surface)' : 'rgba(212, 175, 55, 0.1)', color: referralCopied ? 'var(--ink)' : '#D4AF37', border: `1px solid ${referralCopied ? 'var(--line)' : 'rgba(212, 175, 55, 0.4)'}`, borderRadius: 12, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif", letterSpacing: '0.5px', transition: 'all 0.3s' }}>
+        <button onClick={copyReferralLink} style={{ position: 'relative', zIndex: 2, background: referralCopied ? 'var(--surface)' : 'var(--surface-card)', color: referralCopied ? 'var(--ink)' : 'var(--gold)', border: `1px solid ${referralCopied ? 'var(--line)' : 'var(--gold)'}`, borderRadius: 12, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "var(--font-display)", letterSpacing: '0.5px', transition: 'all 0.3s' }}>
           {referralCopied ? 'LINK COPIED TO CLIPBOARD ✓' : 'COPY SECURE LINK'}
         </button>
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.5px' }}>Active Opportunities</h2>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.5px' }}>Active Opportunities</h2>
           <span onClick={() => navigate('tasks')} style={{ color: 'var(--slate)', fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>View Directory →</span>
         </div>
         
@@ -305,7 +302,7 @@ export default function Dashboard({ user, navigate, showToast }) {
       {showEditModal && (
         <div style={S.modalOverlay}>
           <div style={S.modalCard}>
-            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: 'var(--ink)', marginBottom: 8, letterSpacing: '-0.5px' }}>Edit Profile</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, color: 'var(--ink)', marginBottom: 8, letterSpacing: '-0.5px' }}>Edit Profile</h2>
             <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Update your network identity and payout configurations.</p>
             
             <label style={S.modalLabel}>Full Name</label>
