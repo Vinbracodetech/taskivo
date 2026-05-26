@@ -13,8 +13,8 @@ const S = {
   btnAction: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
   btnDanger: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
   btnSuccess: { background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
-  input: { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--ink)', padding: '8px 12px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' },
-  select: { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--ink)', padding: '8px 12px', fontSize: 13, outline: 'none' }
+  input: { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--ink)', padding: '12px 16px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' },
+  select: { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--ink)', padding: '12px 16px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
 };
 
 // ── 1. ADMIN OVERVIEW MODULE ──
@@ -177,8 +177,8 @@ export function AdminUsers({ showToast, currentUser }) {
                 </select>
                 <input style={S.input} type="number" value={editForm.points} onChange={e => setEditForm({...editForm, points: e.target.value})} />
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                  <button onClick={() => saveEdit(u.id)} style={S.btnSuccess}>Save</button>
-                  <button onClick={() => setEditingId(null)} style={S.btnAction}>Cancel</button>
+                  <button onClick={() => saveEdit(u.id)} style={{ ...S.btnSuccess, padding: '12px 16px' }}>Save</button>
+                  <button onClick={() => setEditingId(null)} style={{ ...S.btnAction, padding: '12px 16px' }}>Cancel</button>
                 </div>
               </>
             ) : (
@@ -380,6 +380,89 @@ export function AdminWithdrawals({ showToast }) {
             </div>
           ))
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── 5. ADMIN BLOG (CONTENT ENGINE) MODULE ──
+export function AdminBlog({ showToast }) {
+  const [form, setForm] = useState({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
+  const [loading, setLoading] = useState(false);
+
+  // Auto-generate URL-friendly slug
+  function handleTitleChange(e) {
+    const newTitle = e.target.value;
+    const autoSlug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    setForm({ ...form, title: newTitle, slug: autoSlug });
+  }
+
+  // Quick HTML wrapper helpers for mobile writing
+  function wrapText(tag) {
+    setForm({ ...form, content: form.content + `\n<${tag}></${tag}>\n` });
+  }
+
+  async function publishPost() {
+    if (!form.title || !form.content) {
+      if (showToast) showToast('Title and Content are required.', 'error');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('posts').insert([form]);
+      if (error) throw error;
+      if (showToast) showToast(`Article saved as ${form.status}.`, 'success');
+      setForm({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
+    } catch (err) {
+      if (showToast) showToast('Failed to save article. Check slug uniqueness.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={S.page}>
+      <h1 style={S.header}>Content Engine</h1>
+      <p style={S.subHeader}>Deploy SEO-optimized articles.</p>
+
+      <div style={S.glassCard}>
+        <input style={{ ...S.input, marginBottom: 16 }} placeholder="Article Meta Title (e.g., Top 5 Ways to Earn...)" value={form.title} onChange={handleTitleChange} />
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
+          <input style={S.input} placeholder="url-slug" value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} />
+          <select style={S.select} value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+            <option value="earner">Target: Earners</option>
+            <option value="creator">Target: B2B Creators</option>
+          </select>
+        </div>
+
+        <input style={{ ...S.input, marginBottom: 16 }} placeholder="Meta Description (For Google SEO, max 160 chars)" value={form.meta_desc} onChange={e => setForm({...form, meta_desc: e.target.value})} maxLength={160} />
+        
+        {/* Mobile-friendly HTML helpers */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, overflowX: 'auto' }}>
+          <button onClick={() => wrapText('h2')} style={S.btnAction}>+ Header</button>
+          <button onClick={() => wrapText('p')} style={S.btnAction}>+ Paragraph</button>
+          <button onClick={() => wrapText('strong')} style={S.btnAction}>+ Bold</button>
+          <button onClick={() => wrapText('ul')} style={S.btnAction}>+ List</button>
+        </div>
+
+        <textarea 
+          style={{ ...S.input, minHeight: 300, fontFamily: 'monospace', resize: 'vertical' }} 
+          placeholder="Write your article here..." 
+          value={form.content} 
+          onChange={e => setForm({...form, content: e.target.value})} 
+        />
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 16 }}>
+          <select style={{ ...S.select, width: 'auto' }} value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+            <option value="draft">Save as Draft</option>
+            <option value="published">Publish Live</option>
+          </select>
+          <button onClick={publishPost} disabled={loading} style={{ ...S.btnSuccess, padding: '12px 24px', fontSize: 14 }}>
+            {loading ? 'DEPLOYING...' : 'DEPLOY ARTICLE'}
+          </button>
+        </div>
       </div>
     </div>
   );
