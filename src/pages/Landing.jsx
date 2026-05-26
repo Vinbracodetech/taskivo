@@ -8,30 +8,9 @@ const C = {
 
 export default function Landing({ navigate, setAuthMode }) {
   const [openFaq, setOpenFaq] = useState(null);
-  
-  // 🔥 SCARCITY STATES 🔥
-  const [claimedSpots, setClaimedSpots] = useState(0);
-  const TOTAL_SPOTS = 10;
-  const remainingSpots = Math.max(0, TOTAL_SPOTS - claimedSpots);
-  const [pricingMode, setPricingMode] = useState('social'); 
+  const [pricingMode, setPricingMode] = useState('social'); // 'social', 'seo', 'qa', 'ugc'
 
   useEffect(() => { document.title = 'Taskivo — Digital Engagement Infrastructure'; }, []);
-
-  // 🔥 LIVE DATABASE SYNC FOR GRANTS 🔥
-  useEffect(() => {
-    async function fetchPilotData() {
-      try {
-        const { count, error } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .gt('free_credits', 0); 
-        if (!error && count !== null) setClaimedSpots(count);
-      } catch (err) {
-        console.error("Error fetching pilot data:", err);
-      }
-    }
-    fetchPilotData();
-  }, []);
 
   useEffect(() => {
     if (document.getElementById('taskivo-styles')) return;
@@ -65,27 +44,27 @@ export default function Landing({ navigate, setAuthMode }) {
   }, []);
 
   const socialPricing = [
-    { name: 'Starter', price: '$15', slots: 100, useCase: 'Baseline algorithmic test', features: ['Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Global Audience Distribution'] },
-    { name: 'Traction', price: '$45', slots: 350, useCase: 'Best Value (Most Popular)', features: ['Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Global Audience Distribution', 'Priority Network Routing'], isPopular: true },
-    { name: 'Scale', price: '$99', slots: 800, useCase: 'Sustained engagement', features: ['Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Targeted Audience Segmentation', 'Priority Network Routing'] },
-    { name: 'Enterprise', price: '$249', slots: 2500, useCase: 'Maximum velocity', features: ['Dedicated Account Manager', 'Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Custom QA Survey Add-ons'] },
+    { name: 'Starter', price: '$15', slots: 100, features: ['Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Global Audience Distribution'] },
+    { name: 'Traction', price: '$45', slots: 350, features: ['Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Global Audience Distribution', 'Priority Network Routing'], isPopular: true },
+    { name: 'Scale', price: '$99', slots: 800, features: ['Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Targeted Audience Segmentation', 'Priority Network Routing'] },
+    { name: 'Enterprise', price: '$249', slots: 2500, features: ['Dedicated Account Manager', 'Guaranteed Social Engagement', 'Military-Grade Anti-Cheat', 'Custom QA Survey Add-ons'] },
   ];
 
   const seoPricing = [
-    { name: 'Starter Traffic', price: '$12', slots: 100, useCase: 'Initial Search Visibility', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Verification', 'Real Human Web Navigators'] },
-    { name: 'Traction Traffic', price: '$35', slots: 350, useCase: 'Best Value (Most Popular)', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Verification', 'Real Human Web Navigators', 'Priority Search Routing'], isPopular: true },
-    { name: 'Scale Traffic', price: '$75', slots: 800, useCase: 'Domain Authority Boost', features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Verification', 'Multi-Page Session Tracking', 'Priority Search Routing'] },
-    { name: 'Enterprise SEO', price: '$199', slots: 2500, useCase: 'Maximum Organic Reach', features: ['Dedicated Account Manager', 'Guaranteed 5+ Min Dwell Time', 'Multi-Page Session Tracking', 'Competitor Analysis Traffic'] },
+    { name: 'Starter Traffic', price: '$12', slots: 100, features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Verification', 'Real Human Web Navigators'] },
+    { name: 'Traction Traffic', price: '$35', slots: 350, features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Verification', 'Real Human Web Navigators', 'Priority Search Routing'], isPopular: true },
+    { name: 'Scale Traffic', price: '$75', slots: 800, features: ['Guaranteed 2+ Min Dwell Time', 'Low Bounce Rate Verification', 'Multi-Page Session Tracking', 'Priority Search Routing'] },
+    { name: 'Enterprise SEO', price: '$199', slots: 2500, features: ['Dedicated Account Manager', 'Guaranteed 5+ Min Dwell Time', 'Multi-Page Session Tracking', 'Competitor Analysis Traffic'] },
   ];
 
   const qaPricing = [
-    { name: 'Beta QA', price: '$25', slots: 10, useCase: 'Initial app stress-test', features: ['Real Human Testers', 'Manual Bug & UX Reports', 'Verified Screenshots'] },
-    { name: 'Scale QA', price: '$100', slots: 50, useCase: 'Comprehensive Audit', features: ['Real Human Testers', 'Manual Bug & UX Reports', 'Verified Screenshots', 'Priority Placement'], isPopular: true },
+    { name: 'Beta QA', price: '$25', slots: 10, features: ['Real Human Testers', 'Manual Bug & UX Reports', 'Verified Screenshots'] },
+    { name: 'Scale QA', price: '$100', slots: 50, features: ['Real Human Testers', 'Manual Bug & UX Reports', 'Verified Screenshots', 'Priority Placement'], isPopular: true },
   ];
 
   const ugcPricing = [
-    { name: 'Starter UGC', price: '$45', slots: 5, useCase: 'Baseline video testimonials', features: ['Authentic Creator Videos', 'Full Usage Rights', 'Manual Verification & Escrow'] },
-    { name: 'Scale UGC', price: '$160', slots: 20, useCase: 'Ad creative library', features: ['Authentic Creator Videos', 'Full Usage Rights', 'Manual Verification & Escrow', 'High-Tier Creators'], isPopular: true },
+    { name: 'Starter UGC', price: '$45', slots: 5, features: ['Authentic Creator Videos', 'Full Usage Rights', 'Manual Verification & Escrow'] },
+    { name: 'Scale UGC', price: '$160', slots: 20, features: ['Authentic Creator Videos', 'Full Usage Rights', 'Manual Verification & Escrow', 'High-Tier Creators'], isPopular: true },
   ];
 
   const activePricing = pricingMode === 'social' ? socialPricing : 
@@ -127,7 +106,7 @@ export default function Landing({ navigate, setAuthMode }) {
   return (
     <div className="body-text" style={{ background: C.off, color: C.ink, minHeight: '100vh', WebkitFontSmoothing: 'antialiased' }}>
       
-      {/* HERO SECTION */}
+      {/* ── HERO SECTION ── */}
       <div className="lp-hero-pad" style={{ background: C.ink, position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
           
@@ -148,41 +127,43 @@ export default function Landing({ navigate, setAuthMode }) {
           
           {/* 🔥 DYNAMIC HERO MOCKUP 🔥 */}
           <div style={{ position: 'relative', maxWidth: 800, margin: '0 auto', transform: 'translateY(20px)' }}>
-             {/* Fade gradient at the bottom so it blends into the background */}
              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0D0D14 5%, transparent 40%)', zIndex: 2 }}></div>
              <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80" alt="Taskivo Dashboard" style={{ width: '100%', height: 'auto', borderRadius: '16px 16px 0 0', border: `1px solid ${C.darkLine}`, borderBottom: 'none', display: 'block', objectFit: 'cover' }} />
           </div>
         </div>
       </div>
 
-      {/* 🔥 TRUST BANNER / SOCIAL PROOF 🔥 */}
+      {/* ── AUTHENTIC INFRASTRUCTURE BANNER ── */}
       <div style={{ padding: '32px 5%', borderBottom: `1px solid ${C.darkLine}`, background: C.ink, textAlign: 'center', position: 'relative', zIndex: 10 }}>
-        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 24, fontWeight: 600 }}>Trusted by forward-thinking brands</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8%', flexWrap: 'wrap', opacity: 0.5, filter: 'grayscale(100%) brightness(200%)' }}>
-          <h4 className="heading" style={{ color: C.white, fontSize: 20, margin: 0 }}>NEXUS</h4>
-          <h4 className="heading" style={{ color: C.white, fontSize: 20, margin: 0 }}>Lumina</h4>
-          <h4 className="heading" style={{ color: C.white, fontSize: 20, margin: 0 }}>VERTEX</h4>
-          <h4 className="heading" style={{ color: C.white, fontSize: 20, margin: 0 }}>Aether</h4>
+        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 24, fontWeight: 600 }}>Integrated with global infrastructure</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8%', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ color: C.white, fontSize: 18, fontWeight: 700, opacity: 0.7, fontFamily: "var(--font-display)" }}>Google <span style={{ fontWeight: 400, fontSize: 14 }}>Auth</span></div>
+          <div style={{ color: C.white, fontSize: 18, fontWeight: 700, opacity: 0.7, fontFamily: "var(--font-display)" }}>Paystack <span style={{ fontWeight: 400, fontSize: 14 }}>Payments</span></div>
+          <div style={{ color: C.white, fontSize: 18, fontWeight: 700, opacity: 0.7, fontFamily: "var(--font-display)" }}>YouTube <span style={{ fontWeight: 400, fontSize: 14 }}>Player</span></div>
+          <div style={{ color: C.white, fontSize: 18, fontWeight: 700, opacity: 0.7, fontFamily: "var(--font-display)" }}>Supabase <span style={{ fontWeight: 400, fontSize: 14 }}>Ledger</span></div>
         </div>
       </div>
 
-      {/* 🔥 LIVE NETWORK STATISTICS 🔥 */}
+      {/* ── PLATFORM GUARANTEES ── */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 64, flexWrap: 'wrap', padding: '64px 5%', background: C.ink, borderBottom: `1px solid ${C.darkLine}` }}>
-          <div style={{ textAlign: 'center' }}>
-            <div className="heading" style={{ fontSize: 48, color: C.lime, marginBottom: 4 }}>42.5K+</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Weekly Verifications</div>
+          <div style={{ textAlign: 'center', maxWidth: 200 }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>🛡️</div>
+            <div className="heading" style={{ fontSize: 20, color: C.lime, marginBottom: 8 }}>0% Bot Tolerance</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>Our pointer-lock technology ensures every single engagement is from a verified human.</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div className="heading" style={{ fontSize: 48, color: C.lime, marginBottom: 4 }}>₦1.2M+</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Paid to Earners</div>
+          <div style={{ textAlign: 'center', maxWidth: 200 }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>⚡</div>
+            <div className="heading" style={{ fontSize: 20, color: C.lime, marginBottom: 8 }}>Instant Liquidity</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>Contributors withdraw their yields instantly to traditional bank accounts via Paystack.</div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div className="heading" style={{ fontSize: 48, color: C.lime, marginBottom: 4 }}>99.9%</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>Bot Rejection Rate</div>
+          <div style={{ textAlign: 'center', maxWidth: 200 }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>🤝</div>
+            <div className="heading" style={{ fontSize: 20, color: C.lime, marginBottom: 8 }}>Escrow Protection</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>For premium manual tasks, funds are locked until the Creator explicitly approves the work.</div>
           </div>
       </div>
 
-      {/* 🔥 LOCKED PILOT PROGRAM BANNER 🔥 */}
+      {/* ── LOCKED PILOT PROGRAM BANNER ── */}
       <div style={{ background: C.ink, borderBottom: `1px solid ${C.darkLine}`, padding: '24px 5%' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
           <div style={{ flex: '1 1 300px' }}>
@@ -207,7 +188,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </div>
 
-      {/* VALUE PROP WITH LIFESTYLE IMAGERY */}
+      {/* ── VALUE PROP WITH LIFESTYLE IMAGERY ── */}
       <section className="lp-section-pad" style={{ background: C.off }}>
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Two markets.<br />One infrastructure.</h2>
@@ -248,7 +229,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </section>
 
-      {/* 🔥 HOW IT WORKS VISUALIZER 🔥 */}
+      {/* ── HOW IT WORKS VISUALIZER ── */}
       <section className="lp-section-pad" style={{ background: C.white, borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>How the ecosystem works.</h2>
@@ -300,7 +281,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </section>
 
-      {/* TRUST LAYER (About / Who We Are) */}
+      {/* ── TRUST LAYER (Architecture) ── */}
       <section className="lp-section-pad" style={{ background: C.ink, color: C.white }}>
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.lime, marginBottom: 12 }}>Military-Grade Architecture</div>
@@ -326,7 +307,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </section>
 
-      {/* DYNAMIC PRICING TOGGLE WITH EXPLAINERS */}
+      {/* ── DYNAMIC PRICING TOGGLE ── */}
       <section className="lp-section-pad" style={{ background: C.white }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Campaign Pricing</div>
@@ -340,7 +321,7 @@ export default function Landing({ navigate, setAuthMode }) {
             <button onClick={() => setPricingMode('ugc')} style={{ background: pricingMode === 'ugc' ? C.ink : 'transparent', color: pricingMode === 'ugc' ? C.white : C.slate, border: 'none', padding: '10px 24px', borderRadius: 100, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>Authentic UGC</button>
           </div>
 
-          {/* 🔥 DYNAMIC SERVICE EXPLAINER BOX 🔥 */}
+          {/* DYNAMIC SERVICE EXPLAINER BOX */}
           <div style={{ maxWidth: 800, margin: '0 auto 40px', padding: 24, background: C.ink, borderRadius: 16, border: `1px solid ${C.darkLine}`, color: C.white, textAlign: 'left', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
             <div style={{ fontSize: 24 }}>{serviceDetails[pricingMode].icon}</div>
             <div>
@@ -371,7 +352,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </section>
 
-      {/* FAQ */}
+      {/* ── FAQ ── */}
       <section className="lp-section-pad" style={{ background: C.off }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
@@ -395,7 +376,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* ── FOOTER ── */}
       <footer style={{ background: C.white, borderTop: `1px solid ${C.line}`, padding: '64px 5% 32px' }}>
         <div className="lp-footer-grid" style={{ maxWidth: 1100, margin: '0 auto', marginBottom: 48 }}>
           <div className="lp-footer-brand-span">
