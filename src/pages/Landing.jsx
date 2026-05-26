@@ -8,30 +8,9 @@ const C = {
 
 export default function Landing({ navigate, setAuthMode }) {
   const [openFaq, setOpenFaq] = useState(null);
-  
-  // 🔥 SCARCITY STATES 🔥
-  const [claimedSpots, setClaimedSpots] = useState(0);
-  const TOTAL_SPOTS = 10;
-  const remainingSpots = Math.max(0, TOTAL_SPOTS - claimedSpots);
   const [pricingMode, setPricingMode] = useState('social'); // 'social', 'seo', 'qa', 'ugc'
 
   useEffect(() => { document.title = 'Taskivo — Digital Engagement Infrastructure'; }, []);
-
-  // 🔥 LIVE DATABASE SYNC FOR GRANTS 🔥
-  useEffect(() => {
-    async function fetchPilotData() {
-      try {
-        const { count, error } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .gt('free_credits', 0); 
-        if (!error && count !== null) setClaimedSpots(count);
-      } catch (err) {
-        console.error("Error fetching pilot data:", err);
-      }
-    }
-    fetchPilotData();
-  }, []);
 
   useEffect(() => {
     if (document.getElementById('taskivo-styles')) return;
@@ -118,7 +97,6 @@ export default function Landing({ navigate, setAuthMode }) {
     }
   };
 
-  // 🔥 EXPANDED MEGA FAQ 🔥
   const faqs = [
     { q: 'Who is Taskivo?', a: 'Taskivo is a global attention network bridging the gap between enterprise marketing and distributed human contributors. We provide a secure infrastructure for real people to monetize their digital footprint while helping businesses grow.' },
     { q: 'How does Taskivo prevent bot traffic?', a: 'We utilize Layer 3 Financial Verification. Every contributor must bind a real, globally recognized bank account to their identity before accessing the network. We pair this with strict pointer-lock technology and tab-switch detection to ensure 100% human attention.' },
@@ -140,13 +118,6 @@ export default function Landing({ navigate, setAuthMode }) {
 
   function goRegisterCreator() {
     localStorage.setItem('taskivo_role', 'creator');
-    if (setAuthMode) setAuthMode("register");
-    navigate("auth");
-  }
-
-  function claimFreeGrant() {
-    localStorage.setItem('taskivo_role', 'creator');
-    localStorage.setItem('taskivo_grant', 'true');
     if (setAuthMode) setAuthMode("register");
     navigate("auth");
   }
@@ -177,33 +148,36 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </div>
 
-      {/* 🔥 PILOT PROGRAM BANNER 🔥 */}
+      {/* 🔥 LOCKED PILOT PROGRAM BANNER 🔥 */}
       <div style={{ background: C.ink, borderTop: `1px solid ${C.darkLine}`, borderBottom: `1px solid ${C.darkLine}`, padding: '24px 5%' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+          
           <div style={{ flex: '1 1 300px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ display: 'inline-block', background: C.limeDim, color: C.lime, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 8px', borderRadius: 4 }}>B2B Beta</span>
-              <span className="heading" style={{ color: C.white, fontSize: 18 }}>Early Adopter Grant</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.1)', color: C.slate, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '4px 8px', borderRadius: 4 }}>Locked</span>
+              <span className="heading" style={{ color: C.white, fontSize: 18 }}>Early Adopter Grants</span>
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>We are gifting 20 free campaign slots to our first 10 businesses to stress-test the network.</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>Grants will unlock for our first 10 B2B partners once we hit our initial liquidity target of 500 active Earners.</div>
           </div>
           
           <div style={{ flex: '1 1 250px', maxWidth: 350, width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: C.white, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-              <span>Grants Remaining</span>
-              <span style={{ color: C.lime }}>{remainingSpots} / {TOTAL_SPOTS}</span>
+              <span>Network Liquidity Target</span>
+              <span style={{ color: C.slate }}>0 / 500 Earners</span>
             </div>
             <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 10, overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min((claimedSpots / TOTAL_SPOTS) * 100, 100)}%`, height: '100%', background: C.lime, transition: 'width 1s ease-in-out' }}></div>
+              {/* This width will expand as earners join */}
+              <div style={{ width: '5%', height: '100%', background: C.slate, transition: 'width 1s ease-in-out' }}></div>
             </div>
           </div>
           
           <button 
-            style={{ background: remainingSpots === 0 ? 'rgba(255,255,255,0.1)' : C.lime, color: remainingSpots === 0 ? 'rgba(255,255,255,0.4)' : C.ink, border: 'none', borderRadius: 6, padding: '12px 24px', fontSize: 13, fontWeight: 700, cursor: remainingSpots === 0 ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif" }} 
-            onClick={function() { if (remainingSpots > 0) claimFreeGrant(); }}
+            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: `1px solid ${C.darkLine}`, borderRadius: 6, padding: '12px 24px', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'DM Sans', sans-serif" }} 
+            disabled
           >
-            {remainingSpots === 0 ? 'Cohort Full' : 'Claim Free Slots'}
+            🔒 Coming Soon
           </button>
+
         </div>
       </div>
 
@@ -247,7 +221,6 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 48 }}>
           
-          {/* Creator Timeline */}
           <div style={{ background: C.off, border: `1px solid ${C.line}`, borderRadius: 24, padding: 40 }}>
             <h3 className="heading" style={{ fontSize: 18, color: C.ink, marginBottom: 24, borderBottom: `1px solid ${C.line}`, paddingBottom: 16 }}>The B2B Pipeline</h3>
             <div className="lp-grid-3">
@@ -269,7 +242,6 @@ export default function Landing({ navigate, setAuthMode }) {
             </div>
           </div>
 
-          {/* Earner Timeline */}
           <div style={{ background: C.off, border: `1px solid ${C.line}`, borderRadius: 24, padding: 40 }}>
             <h3 className="heading" style={{ fontSize: 18, color: '#3d6600', marginBottom: 24, borderBottom: `1px solid ${C.line}`, paddingBottom: 16 }}>The Contributor Pipeline</h3>
             <div className="lp-grid-3">
@@ -319,7 +291,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </section>
 
-      {/* DYNAMIC PRICING TOGGLE WITH ALL 4 SERVICES */}
+      {/* DYNAMIC PRICING TOGGLE WITH EXPLAINERS */}
       <section className="lp-section-pad" style={{ background: C.white }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Campaign Pricing</div>
