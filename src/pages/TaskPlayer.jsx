@@ -65,31 +65,27 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         playerVars: { 
           playsinline: 1, 
           rel: 0,
-          controls: 0, // Hide native controls to discourage scrubbing
-          disablekb: 1 // Disable keyboard shortcuts (like arrow keys to skip)
+          controls: 0, 
+          disablekb: 1 
         },
         events: {
           onReady: (e) => {
-             // Force 1x speed to prevent speed-hack extensions
              e.target.setPlaybackRate(1);
           },
           onStateChange: (e) => {
-            // 1 = Playing, 2 = Paused, 0 = Ended
             if (e.data === 1) {
               setIsLive(true);
               setCheatWarning("");
-              e.target.setPlaybackRate(1); // Enforce normal speed constantly
+              e.target.setPlaybackRate(1);
             } else {
               setIsLive(false);
             }
 
-            // 🔥 ANTI-CHEAT: Did the video end before the timer finished?
             if (e.data === 0) {
-              // Since the interval relies on state closures, we use the current timer state indirectly via a check
               setTimer((currentTimer) => {
                  if (currentTimer > 0) {
                    setCheatWarning("⚠️ Fast-forwarding detected. Timer has been reset.");
-                   return task.watch_duration; // Reset timer back to max
+                   return task.watch_duration; 
                  }
                  return currentTimer;
               });
@@ -109,7 +105,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
   }, [task, cooldown, verification]);
 
-  // 🔥 ANTI-CHEAT: TAB SWITCHING
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
@@ -172,6 +167,12 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       alert(`Database Error: ${error.message}`);
     } else {
       alert("Verified! Points successfully deposited.");
+      
+      // 🔥 OPTIMISTIC UI UPDATE: Instant point reflection
+      if (user) {
+        user.points = (user.points || 0) + task.reward_points;
+      }
+      
       navigate('tasks');
     }
   }
@@ -218,7 +219,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         )}
         
         <div style={{ display: verification ? 'none' : 'block', pointerEvents: isLive ? 'none' : 'auto' }}>
-           {/* By disabling pointerEvents while live, they can't click the timeline to skip */}
           <div id="yt-frame" style={{ width: '100%', height: 350 }}></div>
         </div>
         
