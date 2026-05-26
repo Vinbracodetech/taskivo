@@ -48,7 +48,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
 
   if (loading) {
     return (
-      <div style={{ padding: '80px 5%', textAlign: 'center', color: 'var(--slate)', fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>
+      <div style={{ padding: '80px 5%', textAlign: 'center', color: 'var(--slate)', fontFamily: "var(--font-body)", fontSize: 14 }}>
         <div style={{ width: 24, height: 24, border: '2px solid var(--line)', borderTopColor: 'var(--ink)', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
         Authenticating B2B terminal...
       </div>
@@ -56,27 +56,32 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
   }
 
   const S = {
-    page: { padding: '40px 5%', maxWidth: 1100, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
-    glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 32, boxShadow: '0 8px 24px rgba(0,0,0,0.04)' },
-    metricLabel: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 12, display: 'block', fontFamily: "'Inter', sans-serif" },
-    metricValue: { fontFamily: "'Inter', sans-serif", fontSize: 42, fontWeight: 800, color: 'var(--ink)', lineHeight: 1, letterSpacing: '-1px' },
-    btnPrimary: { background: 'var(--ink)', border: 'none', color: 'var(--surface)', borderRadius: 10, padding: '14px 24px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', display: 'inline-block', fontFamily: "'Inter', sans-serif" },
-    btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 10, padding: '14px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'inline-block', fontFamily: "'Inter', sans-serif" },
+    page: { padding: '40px 5%', maxWidth: 1100, margin: '0 auto', fontFamily: "var(--font-body)", position: 'relative' },
+    glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 32, boxShadow: 'var(--shadow)' },
+    metricLabel: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 12, display: 'block', fontFamily: "var(--font-display)" },
+    metricValue: { fontFamily: "var(--font-display)", fontSize: 42, fontWeight: 800, color: 'var(--ink)', lineHeight: 1, letterSpacing: '-1px' },
+    btnPrimary: { background: 'var(--ink)', border: 'none', color: 'var(--surface)', borderRadius: 10, padding: '14px 24px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', display: 'inline-block', fontFamily: "var(--font-display)" },
+    btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 10, padding: '14px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', display: 'inline-block', fontFamily: "var(--font-display)" },
   };
 
   return (
     <div style={S.page}>
       
+      {/* 🔥 THE COMMAND CENTER HEADER 🔥 */}
       <div style={{ marginBottom: 48, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20 }}>
         <div>
-          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>
             Business Command
           </h1>
           <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400, margin: 0 }}>Monitor active campaigns and verified engagements.</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button onClick={function() { navigate('creator-tasks'); }} style={S.btnGhost}>View All Campaigns</button>
-          <button onClick={function() { navigate('create-task'); }} style={S.btnPrimary}>+ New Campaign</button>
+        
+        {/* NEW BUTTONS FOR HISTORY AND APPROVALS */}
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <button onClick={() => navigate('history')} style={S.btnGhost}>Billing Ledger</button>
+          <button onClick={() => navigate('creator-approvals')} style={S.btnGhost}>Review Submissions</button>
+          <button onClick={() => navigate('creator-tasks')} style={S.btnGhost}>All Campaigns</button>
+          <button onClick={() => navigate('create-task')} style={S.btnPrimary}>+ New Campaign</button>
         </div>
       </div>
 
@@ -94,7 +99,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
           <div style={{ marginTop: 16, height: 2, background: 'var(--line)', borderRadius: 2 }} />
         </div>
 
-        <div style={{ ...S.glassCard, border: '1px solid rgba(168,255,62,0.4)', background: 'var(--surface)' }}>
+        <div style={{ ...S.glassCard, border: '1px solid var(--lime)', background: 'var(--surface)' }}>
           <span style={{ ...S.metricLabel, color: 'var(--ink)' }}>Verified Engagements (ROI)</span>
           <div style={S.metricValue}>{stats.verifiedEngagements.toLocaleString()}</div>
           <div style={{ marginTop: 16, height: 2, background: 'var(--lime)', borderRadius: 2 }} />
@@ -102,12 +107,12 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
       </div>
 
       <div>
-        <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: '0 0 24px 0', letterSpacing: '-0.5px' }}>Recent Deployments</h2>
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: '0 0 24px 0', letterSpacing: '-0.5px' }}>Recent Deployments</h2>
         
         {recentCampaigns.length === 0 ? (
           <div style={{ ...S.glassCard, padding: 60, textAlign: 'center' }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--slate)', letterSpacing: '0.5px', marginBottom: 20 }}>No campaigns have been deployed yet.</div>
-            <button onClick={function() { navigate('create-task'); }} style={S.btnPrimary}>Launch First Campaign</button>
+            <button onClick={() => navigate('create-task')} style={S.btnPrimary}>Launch First Campaign</button>
           </div>
         ) : (
           <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, overflow: 'hidden' }}>
@@ -133,7 +138,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
                     </div>
 
                     <div style={{ fontSize: 13, color: 'var(--slate)', fontWeight: 600, textTransform: 'capitalize' }}>
-                      {campaign.platform}
+                      {campaign.platform.replace('_', ' ')}
                     </div>
                     
                     <div>
