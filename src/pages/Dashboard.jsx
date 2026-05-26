@@ -194,7 +194,7 @@ export default function Dashboard({ user, navigate, showToast }) {
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <DailyRewardWidget session={{ user }} />
+        <DailySpin session={{ user }} showToast={showToast} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
