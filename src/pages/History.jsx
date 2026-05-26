@@ -19,7 +19,6 @@ export default function History({ session }) {
       setHistoryData([]); // Clear previous data while loading
 
       if (activeTab === 'engagements') {
-        
         if (isCreator) {
           // ── CREATOR LOGIC: Fetch campaigns they deployed ──
           const { data, error } = await supabase
@@ -40,9 +39,7 @@ export default function History({ session }) {
             .limit(50);
           if (!error && data) setHistoryData(data);
         }
-        
       } else if (activeTab === 'wallet') {
-        
         if (isCreator) {
           // ── CREATOR LOGIC: Fetch fiat payments / grants ──
           const { data, error } = await supabase
@@ -71,10 +68,14 @@ export default function History({ session }) {
 
   function formatDate(isoString) {
     if (!isoString) return 'Processing...';
-    const date = new Date(isoString);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    }).format(date);
+    try {
+      const date = new Date(isoString);
+      return new Intl.DateTimeFormat('en-US', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      }).format(date);
+    } catch (e) {
+      return 'Unknown Date';
+    }
   }
 
   const S = {
@@ -130,27 +131,31 @@ export default function History({ session }) {
             // ── TAB 1: ENGAGEMENTS / DEPLOYMENTS ──
             if (activeTab === 'engagements') {
               if (isCreator) {
-                // CREATOR VIEW
+                // CREATOR VIEW (Crash-Proof)
+                const title = item.title || 'Untitled Campaign';
+                const views = item.target_views || 0;
+                
                 return (
                   <div key={item.id} style={S.card}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                       <div style={S.iconBox}>🚀</div>
                       <div>
-                        <div style={S.title}>{item.title}</div>
+                        <div style={S.title}>{title}</div>
                         <div style={S.date}>{formatDate(item.created_at)}</div>
                       </div>
                     </div>
                     <div>
-                      <div style={{ ...S.points, color: 'var(--ink)' }}>{item.target_views} VERIFICATIONS</div>
+                      <div style={{ ...S.points, color: 'var(--ink)' }}>{views.toLocaleString()} VERIFICATIONS</div>
                       <div style={{ ...S.status, color: 'var(--lime)' }}>Deployed ✓</div>
                     </div>
                   </div>
                 );
               } else {
-                // EARNER VIEW
+                // EARNER VIEW (Crash-Proof)
                 const taskTitle = item.tasks?.title || 'Verified Campaign Task';
                 const pts = item.tasks?.reward_points || 0;
                 const isBlog = item.platform === 'blog';
+                
                 return (
                   <div key={item.id} style={S.card}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -172,8 +177,10 @@ export default function History({ session }) {
             // ── TAB 2: WALLET / TRANSACTIONS ──
             if (activeTab === 'wallet') {
               if (isCreator) {
-                 // CREATOR VIEW
-                 const isGrant = item.amount === 0;
+                 // CREATOR VIEW (Crash-Proof)
+                 const rawAmount = item.amount || 0; // Safely fall back to 0 if amount is missing
+                 const isGrant = rawAmount === 0;
+                 
                  return (
                    <div key={item.id} style={S.card}>
                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -185,14 +192,14 @@ export default function History({ session }) {
                      </div>
                      <div>
                        <div style={{ ...S.points, color: 'var(--ink)' }}>
-                         {isGrant ? 'FREE' : `- ₦${item.amount.toLocaleString()}`}
+                         {isGrant ? 'FREE' : `- ₦${rawAmount.toLocaleString()}`}
                        </div>
                        <div style={{ ...S.status, color: 'var(--lime)' }}>SETTLED ✓</div>
                      </div>
                    </div>
                  );
               } else {
-                 // EARNER VIEW
+                 // EARNER VIEW (Crash-Proof)
                  const amount = item.amount || 0;
                  const status = item.status || 'pending';
                  let statusColor = 'var(--slate)';
