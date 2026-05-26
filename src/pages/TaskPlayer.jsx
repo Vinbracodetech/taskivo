@@ -233,4 +233,13 @@ export default function TaskPlayer({ session, navigate, taskId }) {
                 </button>
               </>
             ) : (
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: 20, color: 'var
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: 20, color: 'var(--slate)', fontSize: 14, marginTop: 16 }}>
+                🔒 Click the red button above to open the target asset. The claim form will unlock automatically.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
