@@ -17,7 +17,6 @@ export default function CreateTask({ session, navigate, showToast }) {
     paymentGateway: 'paystack'
   });
 
-  // 🔥 CHECK FOR GRANTS ON LOAD 🔥
   useEffect(() => {
     async function checkGrants() {
       const { data } = await supabase
@@ -28,16 +27,13 @@ export default function CreateTask({ session, navigate, showToast }) {
         
       if (data && data.free_credits > 0) {
         setFreeCredits(data.free_credits);
-        // Force auto-select the pilot plan if they have a credit
         setForm(prev => ({ ...prev, package: 'pilot' }));
       }
     }
     if (user?.id) checkGrants();
   }, [user]);
 
-  // 🔥 PRICING ENGINE 🔥
-  // We show USD to the user for premium branding, but process in NGN Kobo via Paystack
-  // Assuming Exchange Rate: $1 = ₦1,500
+  // 🔥 HIGH-TICKET PRICING ENGINE 🔥
   const EXCHANGE_RATE = 1500;
 
   const packages = {
@@ -52,26 +48,46 @@ export default function CreateTask({ session, navigate, showToast }) {
       traction: { label: 'Traction SEO', views: 300, priceUSD: 24 },
       scale: { label: 'Scale SEO', views: 800, priceUSD: 55 },
       enterprise: { label: 'Enterprise SEO', views: 2000, priceUSD: 120 }
+    },
+    qa_testing: {
+      starter: { label: 'Beta QA', views: 10, priceUSD: 25 },
+      traction: { label: 'Scale QA', views: 50, priceUSD: 100 }
+    },
+    ugc: {
+      starter: { label: 'Starter UGC', views: 5, priceUSD: 45 },
+      traction: { label: 'Scale UGC', views: 20, priceUSD: 160 }
     }
   };
 
-  const currentPlatformType = form.platform === 'blog' ? 'seo' : 'social';
+  let currentPlatformType = 'social';
+  if (form.platform === 'blog') currentPlatformType = 'seo';
+  if (form.platform === 'qa_testing') currentPlatformType = 'qa_testing';
+  if (form.platform === 'ugc') currentPlatformType = 'ugc';
+
   const activePackages = packages[currentPlatformType];
   const hasFreeCredit = freeCredits > 0;
   
-  // Determine which package data we are actually using
   const selectedPackageData = form.package === 'pilot' 
     ? { label: 'Pilot Grant', views: 20, priceUSD: 0 } 
-    : activePackages[form.package];
+    : activePackages[form.package] || activePackages['starter']; // Fallback if switching categories
+
+  // Ensure selected package resets safely when switching platforms
+  useEffect(() => {
+    if (form.package !== 'pilot' && !activePackages[form.package]) {
+        setForm(prev => ({ ...prev, package: 'starter' }));
+    }
+  }, [form.platform, activePackages, form.package]);
 
   function handleInput(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
   async function deployTaskToNetwork(isUsingPilot, amountPaid = 0) {
-    const earnerPayout = form.platform === 'blog' ? 50 : 30;
+    let earnerPayout = 30;
+    if (form.platform === 'blog') earnerPayout = 50;
+    if (form.platform === 'qa_testing') earnerPayout = 800;
+    if (form.platform === 'ugc') earnerPayout = 2000;
 
-    // 1. Insert the task directly as ACTIVE
     const { data: newTask, error: insertErr } = await supabase.from('tasks').insert({
       creator_id: user.id, 
       title: form.title, 
@@ -80,13 +96,12 @@ export default function CreateTask({ session, navigate, showToast }) {
       watch_duration: parseInt(form.watch_duration, 10), 
       target_views: selectedPackageData.views, 
       current_views: 0, 
-      status: 'active', // Instantly live on the Earner network
+      status: 'active', 
       reward_points: earnerPayout
     }).select().single();
 
     if (insertErr) throw new Error(`Database Insert Error: ${insertErr.message}`);
 
-    // 2. Record the Fiat Transaction in the new Ledger (For Creator's History)
     if (!isUsingPilot) {
         await supabase.from('transactions').insert({
             user_id: user.id,
@@ -99,12 +114,7 @@ export default function CreateTask({ session, navigate, showToast }) {
     }
 
     if (isUsingPilot) {
-      // Deduct their 1 and only credit
-      const { error: deductErr } = await supabase
-        .from('profiles')
-        .update({ free_credits: 0 })
-        .eq('id', user.id);
-        
+      const { error: deductErr } = await supabase.from('profiles').update({ free_credits: 0 }).eq('id', user.id);
       if (deductErr) throw new Error(`Failed to deduct grant: ${deductErr.message}`);
     }
 
@@ -128,41 +138,34 @@ export default function CreateTask({ session, navigate, showToast }) {
       if (isUsingPilot) {
         await deployTaskToNetwork(true);
       } else {
-        // 🔥 TRIGGER PAYSTACK CHECKOUT 🔥
         const amountInNGN = selectedPackageData.priceUSD * EXCHANGE_RATE;
-        const amountInKobo = amountInNGN * 100; // Paystack requires Kobo
+        const amountInKobo = amountInNGN * 100; 
 
         const paystack = new PaystackPop();
         paystack.newTransaction({
-          key: 'pk_test_dbc405eee8b6b7e9c5723a2f984a6c395a355902', // Your Test Key
+          key: 'pk_test_dbc405eee8b6b7e9c5723a2f984a6c395a355902',
           email: user.email,
           amount: amountInKobo, 
           currency: 'NGN',
-          // Metadata is crucial. If you ever upgrade to Webhooks, this is how you identify the payment.
           metadata: { 
             custom_fields: [
                 { display_name: "Campaign Title", variable_name: "campaign_title", value: form.title },
                 { display_name: "Target Views", variable_name: "target_views", value: selectedPackageData.views }
             ]
           },
-          onSuccess: (transaction) => {
-            // Payment Successful! Push the task live.
-            deployTaskToNetwork(false, amountInNGN);
-          },
+          onSuccess: () => deployTaskToNetwork(false, amountInNGN),
           onCancel: () => {
             setLocalError('Payment was cancelled.');
             setLoading(false);
           }
         });
       }
-      
     } catch (err) {
       setLocalError(err.message || err.toString());
       setLoading(false);
     }
   }
 
-  // ── THEME-AWARE STYLES ──
   const S = {
     page: { padding: '40px 5%', maxWidth: 900, margin: '0 auto', fontFamily: "var(--font-body)", position: 'relative' },
     glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 40, boxShadow: 'var(--shadow)' },
@@ -173,6 +176,9 @@ export default function CreateTask({ session, navigate, showToast }) {
     packageCard: (isActive) => ({ padding: 20, borderRadius: 16, cursor: 'pointer', transition: 'all 0.2s', background: isActive ? 'var(--ink)' : 'var(--surface)', border: `1px solid ${isActive ? 'var(--ink)' : 'var(--line)'}`, color: isActive ? 'var(--surface)' : 'var(--ink)', boxShadow: isActive ? 'var(--shadow)' : 'none' }),
     gatewayCard: (isActive) => ({ padding: '16px', borderRadius: '12px', cursor: 'pointer', border: `1px solid ${isActive ? 'var(--lime)' : 'var(--line)'}`, background: isActive ? 'var(--lime-dim)' : 'var(--surface)', flex: 1, display: 'flex', alignItems: 'center', gap: '12px' })
   };
+
+  const isManual = form.platform === 'ugc' || form.platform === 'qa_testing';
+  const unitLabel = isManual ? 'SUBMISSIONS' : 'VERIFICATIONS';
 
   return (
     <div style={S.page}>
@@ -197,58 +203,58 @@ export default function CreateTask({ session, navigate, showToast }) {
             <div>
               <span style={S.label}>Target Platform</span>
               <select style={S.select} name="platform" value={form.platform} onChange={handleInput}>
-                <option value="youtube">YouTube (Video Engagement)</option>
-                <option value="tiktok">TikTok (Short-Form Attention)</option>
-                <option value="blog">SEO Blog (Read Time Verification)</option>
+                <optgroup label="Automated Engagement">
+                  <option value="youtube">YouTube (Video Engagement)</option>
+                  <option value="tiktok">TikTok (Short-Form Attention)</option>
+                  <option value="blog">SEO Blog (Read Time Verification)</option>
+                </optgroup>
+                <optgroup label="Premium Manual Verification">
+                  <option value="ugc">Authentic UGC (Video Testimonials)</option>
+                  <option value="qa_testing">App QA Testing (Bug Reports)</option>
+                </optgroup>
               </select>
             </div>
           </div>
 
           <div>
-            <span style={S.label}>Asset URL</span>
+            <span style={S.label}>{isManual ? "Campaign Brief / Instructions URL" : "Asset URL"}</span>
             <input style={S.input} type="url" name="url" placeholder="https://..." value={form.url} onChange={handleInput} required />
           </div>
 
-          <div>
-            <span style={S.label}>Verification Duration (Seconds)</span>
-            <select style={S.select} name="watch_duration" value={form.watch_duration} onChange={handleInput}>
-              <option value="30">30 Seconds (Standard Check)</option>
-              <option value="60">60 Seconds (Deep Engagement)</option>
-            </select>
-          </div>
+          {/* Hide Watch Duration for manual tasks */}
+          {!isManual && (
+            <div>
+              <span style={S.label}>Verification Duration (Seconds)</span>
+              <select style={S.select} name="watch_duration" value={form.watch_duration} onChange={handleInput}>
+                <option value="30">30 Seconds (Standard Check)</option>
+                <option value="60">60 Seconds (Deep Engagement)</option>
+              </select>
+            </div>
+          )}
 
           <div style={{ marginTop: 16, marginBottom: 32 }}>
             <span style={{ ...S.label, marginBottom: 16 }}>Select Engagement Allocation</span>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-              
-              {/* 🔥 EXCLUSIVE PILOT GRANT CARD 🔥 */}
               {hasFreeCredit && (
                 <div onClick={() => setForm(prev => ({ ...prev, package: 'pilot' }))} style={{ ...S.packageCard(form.package === 'pilot'), border: `2px solid ${form.package === 'pilot' ? 'var(--lime)' : 'var(--line)'}` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <div style={{ fontSize: 13, fontWeight: 800, color: form.package === 'pilot' ? 'var(--lime)' : 'var(--ink)' }}>🎁 Pilot Grant</div>
-                    <div style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 100, border: `1px solid ${form.package === 'pilot' ? 'var(--surface)' : 'var(--line)'}` }}>
-                      FREE
-                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 100, border: `1px solid ${form.package === 'pilot' ? 'var(--surface)' : 'var(--line)'}` }}>FREE</div>
                   </div>
-                  <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
-                    20 <span style={{ fontSize: 12, fontWeight: 600 }}>VERIFICATIONS</span>
-                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>20 <span style={{ fontSize: 12, fontWeight: 600 }}>{unitLabel}</span></div>
                   <div style={{ fontSize: 11, opacity: 0.8 }}>One-time network trial.</div>
                 </div>
               )}
 
-              {/* Standard Packages */}
               {Object.entries(activePackages).map(([key, pkg]) => (
                 <div key={key} onClick={() => setForm(prev => ({ ...prev, package: key }))} style={S.packageCard(form.package === key)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <div style={{ fontSize: 13, fontWeight: 700 }}>{pkg.label}</div>
-                    <div style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 100, border: `1px solid ${form.package === key ? 'var(--surface)' : 'var(--line)'}` }}>
-                      ${pkg.priceUSD}
-                    </div>
+                    <div style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 100, border: `1px solid ${form.package === key ? 'var(--surface)' : 'var(--line)'}` }}>${pkg.priceUSD}</div>
                   </div>
                   <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
-                    {pkg.views} <span style={{ fontSize: 12, fontWeight: 600 }}>VERIFICATIONS</span>
+                    {pkg.views} <span style={{ fontSize: 12, fontWeight: 600 }}>{unitLabel}</span>
                   </div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate)', marginTop: 4 }}>
                     Est. ₦{(pkg.priceUSD * EXCHANGE_RATE).toLocaleString()}
@@ -258,7 +264,6 @@ export default function CreateTask({ session, navigate, showToast }) {
             </div>
           </div>
 
-          {/* Hide payment UI if they selected the Free Pilot plan */}
           {form.package !== 'pilot' && (
             <div style={{ marginBottom: 32, padding: '24px', background: 'var(--surface)', borderRadius: '16px', border: '1px solid var(--line)' }}>
               <span style={{ ...S.label, marginBottom: 16 }}>Payment Processor</span>
