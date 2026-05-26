@@ -23,12 +23,15 @@ export default function DailyRewardWidget({ session }) {
       if (data) {
         const hours = (new Date() - new Date(data.last_claim_date || 0)) / 3600000;
         if (hours >= 48) {
+          // Streak broken (more than 48 hours passed)
           setStreak(0);
           setCanClaim(true);
         } else if (hours >= 24) {
+          // Ready to claim (between 24 and 48 hours)
           setStreak(data.current_streak);
           setCanClaim(true);
         } else {
+          // Cooldown active (less than 24 hours)
           setStreak(data.current_streak);
           setCanClaim(false);
           setHoursLeft(Math.ceil(24 - hours));
@@ -42,6 +45,8 @@ export default function DailyRewardWidget({ session }) {
   async function handleClaim() {
     try {
       setLoading(true);
+      
+      // Get current points from DB to ensure accurate addition
       const { data: p } = await supabase
         .from('profiles')
         .select('points')
@@ -57,8 +62,15 @@ export default function DailyRewardWidget({ session }) {
         })
         .eq('id', user.id);
 
+      // 🔥 OPTIMISTIC UI UPDATE 🔥
+      // Instantly apply the points to the local session object in memory
+      if (user) {
+        user.points = (user.points || 0) + 2;
+      }
+
       alert("🔥 2 Points Claimed!");
-      fetchStreak();
+      fetchStreak(); // Re-sync local streak state
+      
     } catch (e) {
       alert(e.message);
     } finally {
@@ -86,7 +98,8 @@ export default function DailyRewardWidget({ session }) {
     borderRadius: 8,
     fontWeight: 800,
     width: '100%',
-    cursor: canClaim ? 'pointer' : 'not-allowed'
+    cursor: canClaim ? 'pointer' : 'not-allowed',
+    transition: 'all 0.2s ease'
   };
 
   return (
