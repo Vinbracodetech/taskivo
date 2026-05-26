@@ -1,77 +1,93 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
-// Shared styles for both the Index and the Article View
-const S = {
-  page: { padding: '80px 5%', maxWidth: 1200, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" },
-  header: { fontFamily: "'Inter', sans-serif", fontSize: 48, color: 'var(--ink)', marginBottom: 16, fontWeight: 800, letterSpacing: '-1.5px', textAlign: 'center' },
-  sub: { color: 'var(--slate)', fontSize: 16, textAlign: 'center', marginBottom: 64, maxWidth: 600, margin: '0 auto 64px auto', lineHeight: 1.6 },
-  card: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 32, display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer' },
-  tag: { fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--ink)', background: 'var(--lime)', padding: '4px 10px', borderRadius: 100, display: 'inline-block', marginBottom: 16 },
-  articlePage: { padding: '80px 5%', maxWidth: 800, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", minHeight: '100vh' }
-};
-
-// Placeholder data (Replace with Supabase fetch later)
-const articlesData = [
-  { id: 1, title: "The Architecture of Algorithmic Safety", category: "Engineering", date: "May 2026", excerpt: "How Taskivo's anti-cheat verification protects creators from ghost traffic and ensures high-retention engagement." },
-  { id: 2, title: "Scaling Micro-Earnings in Emerging Markets", category: "Network", date: "April 2026", excerpt: "A deep dive into how distributed verification systems are creating new economic models." },
-  { id: 3, title: "SEO Dynamics: Dwell Time vs. Bounce Rate", category: "Strategy", date: "April 2026", excerpt: "Why businesses are shifting from standard click campaigns to guaranteed time-on-page analytics." }
-];
-
-// EXPORT 1: The Main Blog Grid
+// ── THE BLOG INDEX (Lists all published articles) ──
 export function BlogIndex({ navigate }) {
-  return (
-    <div style={{ background: 'var(--surface)', minHeight: '100vh' }}>
-      <div style={S.page}>
-        <h1 style={S.header}>Platform Intelligence</h1>
-        <p style={S.sub}>Engineering logs, strategy updates, and network transparency reports from the Taskivo team.</p>
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 32 }}>
-          {articlesData.map(article => (
-            <div key={article.id} style={S.card} 
-                 onClick={() => navigate(`blog/${article.id}`)}
-                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 16px 32px rgba(0,0,0,0.05)'; }}
-                 onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
-              <div>
-                <span style={S.tag}>{article.category}</span>
-                <span style={{ fontSize: 12, color: 'var(--slate)', marginLeft: 12, fontWeight: 600 }}>{article.date}</span>
+  useEffect(() => {
+    async function fetchPosts() {
+      try {
+        const { data } = await supabase
+          .from('posts')
+          .select('title, slug, meta_desc, category, created_at')
+          .eq('status', 'published')
+          .order('created_at', { ascending: false });
+        setPosts(data || []);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPosts();
+  }, []);
+
+  if (loading) return <div style={{ padding: 100, textAlign: 'center', color: 'var(--slate)' }}>Loading Intelligence...</div>;
+
+  return (
+    <div style={{ padding: '80px 5%', maxWidth: 1000, margin: '0 auto', fontFamily: "var(--font-body)" }}>
+      <h1 style={{ fontSize: 40, fontFamily: "var(--font-display)", fontWeight: 800, color: 'var(--ink)', marginBottom: 16, letterSpacing: '-1px' }}>Taskivo Intelligence</h1>
+      <p style={{ fontSize: 16, color: 'var(--slate)', marginBottom: 48 }}>Insights on digital engagement, algorithmic growth, and maximizing yield.</p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+        {posts.length === 0 ? (
+          <div style={{ color: 'var(--slate)' }}>No articles published yet.</div>
+        ) : (
+          posts.map(post => (
+            <div key={post.slug} onClick={() => navigate(`article-${post.slug}`)} style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: 24, cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: post.category === 'creator' ? '#D4AF37' : 'var(--lime)', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', marginBottom: 16 }}>
+                {post.category}
               </div>
-              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 700, color: 'var(--ink)', margin: '0 0 12px 0', lineHeight: 1.3 }}>{article.title}</h2>
-              <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, flexGrow: 1, margin: 0 }}>{article.excerpt}</p>
-              
-              <div style={{ marginTop: 24, fontSize: 13, fontWeight: 700, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                Read Telemetry <span style={{ color: 'var(--lime)' }}>→</span>
-              </div>
+              <h2 style={{ fontSize: 20, color: 'var(--ink)', fontWeight: 800, marginBottom: 12, lineHeight: 1.3, fontFamily: "var(--font-display)" }}>{post.title}</h2>
+              <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>{post.meta_desc}</p>
+              <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>{new Date(post.created_at).toLocaleDateString()}</div>
             </div>
-          ))}
-        </div>
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-// EXPORT 2: The Individual Article Reader
-export function ArticleView({ navigate, articleId }) {
-  const article = articlesData.find(a => a.id.toString() === articleId?.toString()) || articlesData[0];
+// ── THE ARTICLE VIEW (Reads the specific article) ──
+export function ArticleView({ navigate, id }) {
+  const [post, setPost] = useState(null);
+  const slug = id.replace('article-', ''); 
+
+  useEffect(() => {
+    async function fetchPost() {
+      const { data } = await supabase.from('posts').select('*').eq('slug', slug).single();
+      if (data) {
+        setPost(data);
+        document.title = `${data.title} | Taskivo`;
+        // 🔥 Dynamic SEO Meta Injection 🔥
+        let meta = document.querySelector('meta[name="description"]');
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.name = 'description';
+          document.head.appendChild(meta);
+        }
+        meta.content = data.meta_desc;
+      }
+    }
+    fetchPost();
+  }, [slug]);
+
+  if (!post) return <div style={{ padding: 100, textAlign: 'center', color: 'var(--slate)' }}>Decrypting article...</div>;
 
   return (
-    <div style={{ background: 'var(--surface)' }}>
-      <div style={S.articlePage}>
-        <button onClick={() => navigate('blog')} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', cursor: 'pointer', marginBottom: 32, fontSize: 14, fontWeight: 600, padding: 0 }}>← Back to Intelligence</button>
-        
-        <div style={{ marginBottom: 24 }}>
-          <span style={S.tag}>{article.category}</span>
-          <span style={{ fontSize: 14, color: 'var(--slate)', marginLeft: 16, fontWeight: 600 }}>{article.date}</span>
-        </div>
-        
-        <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 40, color: 'var(--ink)', marginBottom: 24, fontWeight: 800, letterSpacing: '-1px', lineHeight: 1.2 }}>{article.title}</h1>
-        <div style={{ height: 1, background: 'var(--line)', margin: '32px 0' }} />
-        
-        <p style={{ color: 'var(--slate)', fontSize: 16, lineHeight: 1.8 }}>
-          {article.excerpt}
-          <br/><br/>
-          [Full article telemetry and network data would be loaded here from the database. This is a secure beta placeholder.]
-        </p>
+    <div style={{ padding: '80px 5%', maxWidth: 700, margin: '0 auto', fontFamily: "var(--font-body)" }}>
+      <button onClick={() => navigate('blog')} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 32 }}>← Back to Index</button>
+      
+      <div style={{ display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: post.category === 'creator' ? '#D4AF37' : 'var(--lime)', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', marginBottom: 16 }}>
+        {post.category}
       </div>
+      <h1 style={{ fontSize: 36, fontFamily: "var(--font-display)", fontWeight: 800, color: 'var(--ink)', marginBottom: 24, lineHeight: 1.2, letterSpacing: '-1px' }}>{post.title}</h1>
+      
+      <div 
+        style={{ color: 'var(--ink)', fontSize: 16, lineHeight: 1.8 }} 
+        dangerouslySetInnerHTML={{ __html: post.content }} 
+      />
     </div>
   );
 }
