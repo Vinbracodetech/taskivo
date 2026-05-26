@@ -5,7 +5,10 @@ export default function Wallet({ user, navigate, showToast }) {
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ amount: '', bank_name: '', account_number: '', account_name: '' });
+  const [amount, setAmount] = useState('');
+  
+  // Store their locked identity from the database
+  const [lockedDestination, setLockedDestination] = useState(null);
 
   const minWithdrawal = 2000;
 
@@ -17,24 +20,28 @@ export default function Wallet({ user, navigate, showToast }) {
   async function fetchLedger() {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // 1. Fetch Transaction History
+      const { data: txData, error: txError } = await supabase
         .from('withdrawals')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
-      if (error) throw error;
-      setWithdrawals(data || []);
+      if (txError) throw txError;
+      setWithdrawals(txData || []);
       
-      // Attempt to pre-fill their locked payout account if they have one
-      const { data: profile } = await supabase
+      // 2. Fetch their globally locked payout identity
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('payout_account')
+        .select('payout_bank_name, payout_account_name, payout_account')
         .eq('id', user.id)
         .single();
         
+      if (profileError) throw profileError;
+      
       if (profile?.payout_account) {
-        setForm(prev => ({ ...prev, account_number: profile.payout_account }));
+        setLockedDestination(profile);
       }
       
     } catch (err) {
@@ -44,15 +51,9 @@ export default function Wallet({ user, navigate, showToast }) {
     }
   }
 
-  function handleInput(e) {
-    setForm(prev => {
-      return { ...prev, [e.target.name]: e.target.value };
-    });
-  }
-
   async function handleWithdrawal(e) {
     e.preventDefault();
-    const amountNum = parseInt(form.amount, 10);
+    const amountNum = parseInt(amount, 10);
     
     if (!amountNum || amountNum < minWithdrawal) {
       if (showToast) showToast(`Minimum withdrawal is ${minWithdrawal.toLocaleString()} PTS.`, 'error');
@@ -62,44 +63,35 @@ export default function Wallet({ user, navigate, showToast }) {
       if (showToast) showToast('Insufficient liquidity.', 'error');
       return;
     }
-    if (!form.bank_name || !form.account_number || !form.account_name) {
-      if (showToast) showToast('All banking details are required.', 'error');
+    if (!lockedDestination) {
+      if (showToast) showToast('Payout identity missing. Please update your profile.', 'error');
       return;
     }
 
     try {
       setSubmitting(true);
       
-      // 🚨 LAYER 3 SECURITY: Attempt to bind the payout account to this specific user 🚨
-      const { error: bindError } = await supabase
-        .from('profiles')
-        .update({ payout_account: form.account_number })
-        .eq('id', user.id);
-
-      // If the database unique constraint blocks this, they are running multiple accounts
-      if (bindError) {
-        if (bindError.message.includes('unique') || bindError.code === '23505') {
-           if (showToast) showToast('🚨 SECURITY ALERT: This payout account is already bound to another earner. Multiple accounts are strictly prohibited.', 'error');
-           setSubmitting(false);
-           return;
-        } else {
-           throw bindError; // Throw other random errors to the generic catch block
-        }
-      }
-
-      // If the bind was successful, process the withdrawal normally
+      // Submit withdrawal using the LOCKED data, completely ignoring user input
       const { error: insertError } = await supabase.from('withdrawals').insert({
-        user_id: user.id, amount: amountNum, bank_name: form.bank_name, account_number: form.account_number, account_name: form.account_name, status: 'pending'
+        user_id: user.id, 
+        amount: amountNum, 
+        bank_name: lockedDestination.payout_bank_name, 
+        account_name: lockedDestination.payout_account_name,
+        account_number: lockedDestination.payout_account, 
+        status: 'pending'
       });
+      
       if (insertError) throw insertError;
 
+      // Deduct points
       const { error: updateError } = await supabase.from('profiles').update({ points: user.points - amountNum }).eq('id', user.id);
       if (updateError) throw updateError;
 
-      if (showToast) showToast('Payout successfully bound and submitted.', 'success');
-      setForm({ amount: '', bank_name: '', account_number: form.account_number, account_name: '' });
+      if (showToast) showToast('Transfer initiated successfully.', 'success');
+      setAmount('');
       user.points -= amountNum; 
       fetchLedger();
+      
     } catch (err) {
       if (showToast) showToast('Transaction failed. Please try again.', 'error');
     } finally {
@@ -124,11 +116,11 @@ export default function Wallet({ user, navigate, showToast }) {
     glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, boxShadow: '0 16px 40px rgba(0,0,0,0.03)' },
     label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 8, display: 'block', fontFamily: "'Inter', sans-serif" },
     valueGlow: { fontFamily: "'Inter', sans-serif", fontSize: 56, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
-    input: { width: '100%', padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', marginBottom: 20 },
+    input: { width: '100%', padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 16, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', marginBottom: 20 },
     btnLime: { width: '100%', background: 'var(--lime)', border: 'none', color: '#000', borderRadius: 12, padding: '16px', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' },
     btnDisabled: { width: '100%', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--slate)', borderRadius: 12, padding: '16px', fontSize: 14, fontWeight: 800, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' },
     statusBadge: function(status) {
-      if (status === 'approved') return { background: 'rgba(168,255,62,0.1)', color: 'var(--ink)', border: '1px solid rgba(168,255,62,0.3)' };
+      if (status === 'approved') return { background: 'rgba(168,255,62,0.1)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.3)' };
       if (status === 'rejected') return { background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' };
       return { background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--line)' };
     }
@@ -137,12 +129,11 @@ export default function Wallet({ user, navigate, showToast }) {
   return (
     <div style={S.page}>
       
-      <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Portfolio & Withdrawals</h1>
           <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400, margin: 0 }}>Manage your liquidity and request payouts.</p>
         </div>
-        <button onClick={function() { navigate('user-dashboard'); }} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>← Return</button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, marginBottom: 48 }}>
@@ -175,35 +166,41 @@ export default function Wallet({ user, navigate, showToast }) {
             <span style={{ ...S.label, marginBottom: 0, color: 'var(--ink)' }}>Secure Payout Terminal</span>
           </div>
 
-          {/* 🔥 SECURITY NOTICE ADDED TO UI 🔥 */}
-          <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: 12, borderRadius: 8, marginBottom: 20 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Security Lock Active</span>
-            <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>Payout accounts are permanently bound to your identity to prevent multi-account farming.</div>
-          </div>
+          {/* 🔥 LOCKED DESTINATION UI 🔥 */}
+          {lockedDestination ? (
+             <div style={{ background: 'rgba(168,255,62,0.05)', border: '1px solid rgba(168,255,62,0.2)', padding: 16, borderRadius: 12, marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--lime)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>✓ Verified Destination</span>
+                  <span style={{ fontSize: 16 }}>💳</span>
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{lockedDestination.payout_bank_name}</div>
+                <div style={{ fontSize: 13, color: 'var(--slate)', marginBottom: 2 }}>{lockedDestination.payout_account_name}</div>
+                <div style={{ fontSize: 14, color: 'var(--ink)', fontFamily: 'monospace', letterSpacing: '1px' }}>{lockedDestination.payout_account}</div>
+             </div>
+          ) : (
+            <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: 16, borderRadius: 12, marginBottom: 24 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.5px' }}>⚠️ Setup Required</span>
+              <div style={{ fontSize: 13, color: 'var(--slate)', marginTop: 8 }}>You must bind a payout account in your Profile or Task Network before withdrawing.</div>
+            </div>
+          )}
 
           <form onSubmit={handleWithdrawal}>
             <div>
               <label style={S.label}>Withdrawal Amount (PTS)</label>
-              <input style={S.input} type="number" name="amount" placeholder={`Max available: ${user.points}`} value={form.amount} onChange={handleInput} max={user.points} min={minWithdrawal} disabled={!isEligible} />
+              <input 
+                style={S.input} 
+                type="number" 
+                placeholder={`Available: ${user.points}`} 
+                value={amount} 
+                onChange={e => setAmount(e.target.value)} 
+                max={user.points} 
+                min={minWithdrawal} 
+                disabled={!isEligible || !lockedDestination} 
+              />
             </div>
 
-            <div>
-              <label style={S.label}>Bank Name</label>
-              <input style={S.input} type="text" name="bank_name" placeholder="e.g., Chase Bank, Zenith Bank" value={form.bank_name} onChange={handleInput} disabled={!isEligible} />
-            </div>
-
-            <div>
-              <label style={S.label}>Account Number / Wallet ID</label>
-              <input style={S.input} type="text" name="account_number" placeholder="Enter payout destination" value={form.account_number} onChange={handleInput} disabled={!isEligible} />
-            </div>
-
-            <div>
-              <label style={S.label}>Account Holder Name</label>
-              <input style={S.input} type="text" name="account_name" placeholder="Must match your registered identity" value={form.account_name} onChange={handleInput} disabled={!isEligible} />
-            </div>
-
-            <button type="submit" disabled={!isEligible || submitting} style={isEligible ? S.btnLime : S.btnDisabled}>
-              {submitting ? 'Verifying Network...' : isEligible ? 'Initiate Transfer' : 'Insufficient Liquidity'}
+            <button type="submit" disabled={!isEligible || submitting || !lockedDestination} style={isEligible && lockedDestination ? S.btnLime : S.btnDisabled}>
+              {submitting ? 'Processing...' : isEligible && lockedDestination ? 'Initiate Transfer' : 'Transfer Locked'}
             </button>
           </form>
         </div>
@@ -237,14 +234,14 @@ export default function Wallet({ user, navigate, showToast }) {
                     
                     <div>
                       <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>{item.bank_name}</div>
-                      <div style={{ fontSize: 12, color: 'var(--slate)', fontFamily: 'monospace', letterSpacing: '1px' }}>****{item.account_number.slice(-4) || item.account_number}</div>
+                      <div style={{ fontSize: 12, color: 'var(--slate)', fontFamily: 'monospace', letterSpacing: '1px' }}>****{item.account_number?.slice(-4) || 'XXXX'}</div>
                     </div>
                     
-                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', textAlign: 'left' }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', textAlign: 'right' }}>
                       {item.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 600 }}>PTS</span>
                     </div>
                     
-                    <div style={{ textAlign: 'left' }}>
+                    <div style={{ textAlign: 'right' }}>
                       <span style={{ ...S.statusBadge(item.status), fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block' }}>
                         {item.status}
                       </span>
