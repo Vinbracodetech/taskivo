@@ -7,6 +7,8 @@ export default function History({ session }) {
   const [activeTab, setActiveTab] = useState('engagements'); // 'engagements' | 'wallet'
   const [historyData, setHistoryData] = useState([]);
 
+  const isCreator = user?.role === 'creator';
+
   useEffect(() => {
     if (user?.id) fetchHistory();
   }, [user, activeTab]);
@@ -17,30 +19,48 @@ export default function History({ session }) {
       setHistoryData([]); // Clear previous data while loading
 
       if (activeTab === 'engagements') {
-        // Fetch completed tasks
-        const { data, error } = await supabase
-          .from('completions')
-          .select(`
-            id, 
-            created_at, 
-            platform,
-            tasks ( title, reward_points )
-          `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(50);
-
-        if (!error && data) setHistoryData(data);
+        
+        if (isCreator) {
+          // ── CREATOR LOGIC: Fetch campaigns they deployed ──
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('creator_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(50);
+          if (!error && data) setHistoryData(data);
+          
+        } else {
+          // ── EARNER LOGIC: Fetch tasks they completed ──
+          const { data, error } = await supabase
+            .from('completions')
+            .select(`id, created_at, platform, tasks ( title, reward_points )`)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(50);
+          if (!error && data) setHistoryData(data);
+        }
         
       } else if (activeTab === 'wallet') {
-        // Fetch real withdrawal requests
-        const { data, error } = await supabase
-          .from('withdrawals')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (!error && data) setHistoryData(data);
+        
+        if (isCreator) {
+          // ── CREATOR LOGIC: Fetch fiat payments / grants ──
+          const { data, error } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          if (!error && data) setHistoryData(data);
+          
+        } else {
+          // ── EARNER LOGIC: Fetch withdrawal requests ──
+          const { data, error } = await supabase
+            .from('withdrawals')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+          if (!error && data) setHistoryData(data);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch ledger", err);
@@ -87,10 +107,10 @@ export default function History({ session }) {
 
       <div style={S.tabWrap}>
         <button style={S.tab(activeTab === 'engagements')} onClick={() => setActiveTab('engagements')}>
-          Network Engagements
+          {isCreator ? 'Campaign Deployments' : 'Network Engagements'}
         </button>
         <button style={S.tab(activeTab === 'wallet')} onClick={() => setActiveTab('wallet')}>
-          Wallet Transactions
+          {isCreator ? 'Billing & Receipts' : 'Wallet Transactions'}
         </button>
       </div>
 
@@ -107,65 +127,98 @@ export default function History({ session }) {
         <div style={S.timelineWrap}>
           {historyData.map((item) => {
             
-            // ── NETWORK ENGAGEMENTS TAB ──
+            // ── TAB 1: ENGAGEMENTS / DEPLOYMENTS ──
             if (activeTab === 'engagements') {
-              const taskTitle = item.tasks?.title || 'Verified Campaign Task';
-              const pts = item.tasks?.reward_points || 0;
-              const isBlog = item.platform === 'blog';
-              
-              return (
-                <div key={item.id} style={S.card}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={S.iconBox}>{isBlog ? '📄' : '▶️'}</div>
+              if (isCreator) {
+                // CREATOR VIEW
+                return (
+                  <div key={item.id} style={S.card}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div style={S.iconBox}>🚀</div>
+                      <div>
+                        <div style={S.title}>{item.title}</div>
+                        <div style={S.date}>{formatDate(item.created_at)}</div>
+                      </div>
+                    </div>
                     <div>
-                      <div style={S.title}>{taskTitle}</div>
-                      <div style={S.date}>{formatDate(item.created_at)}</div>
+                      <div style={{ ...S.points, color: 'var(--ink)' }}>{item.target_views} VERIFICATIONS</div>
+                      <div style={{ ...S.status, color: 'var(--lime)' }}>Deployed ✓</div>
                     </div>
                   </div>
-                  <div>
-                    <div style={{ ...S.points, color: 'var(--lime)' }}>+{pts} PTS</div>
-                    <div style={{ ...S.status, color: 'var(--slate)' }}>Verified ✓</div>
+                );
+              } else {
+                // EARNER VIEW
+                const taskTitle = item.tasks?.title || 'Verified Campaign Task';
+                const pts = item.tasks?.reward_points || 0;
+                const isBlog = item.platform === 'blog';
+                return (
+                  <div key={item.id} style={S.card}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div style={S.iconBox}>{isBlog ? '📄' : '▶️'}</div>
+                      <div>
+                        <div style={S.title}>{taskTitle}</div>
+                        <div style={S.date}>{formatDate(item.created_at)}</div>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ ...S.points, color: 'var(--lime)' }}>+{pts} PTS</div>
+                      <div style={{ ...S.status, color: 'var(--slate)' }}>Verified ✓</div>
+                    </div>
                   </div>
-                </div>
-              );
+                );
+              }
             }
 
-            // ── WALLET TRANSACTIONS TAB ──
-            const title = 'Fiat Withdrawal Request';
-            const amount = item.amount || 0;
-            const status = item.status || 'pending';
-            
-            let statusColor = 'var(--slate)';
-            let statusText = status;
-            
-            if (status === 'completed') {
-              statusColor = 'var(--lime)';
-              statusText = 'SETTLED ✓';
-            } else if (status === 'rejected') {
-              statusColor = '#ef4444'; // Red
-              statusText = 'REJECTED ✕';
-            } else {
-              statusColor = '#fbbf24'; // Yellow
-              statusText = 'PROCESSING ⏱️';
-            }
+            // ── TAB 2: WALLET / TRANSACTIONS ──
+            if (activeTab === 'wallet') {
+              if (isCreator) {
+                 // CREATOR VIEW
+                 const isGrant = item.amount === 0;
+                 return (
+                   <div key={item.id} style={S.card}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                       <div style={S.iconBox}>💳</div>
+                       <div>
+                         <div style={S.title}>{isGrant ? 'Pilot Grant Redeemed' : 'Campaign Purchase (Paystack)'}</div>
+                         <div style={S.date}>{formatDate(item.created_at)}</div>
+                       </div>
+                     </div>
+                     <div>
+                       <div style={{ ...S.points, color: 'var(--ink)' }}>
+                         {isGrant ? 'FREE' : `- ₦${item.amount.toLocaleString()}`}
+                       </div>
+                       <div style={{ ...S.status, color: 'var(--lime)' }}>SETTLED ✓</div>
+                     </div>
+                   </div>
+                 );
+              } else {
+                 // EARNER VIEW
+                 const amount = item.amount || 0;
+                 const status = item.status || 'pending';
+                 let statusColor = 'var(--slate)';
+                 let statusText = status;
+                 
+                 if (status === 'completed') { statusColor = 'var(--lime)'; statusText = 'SETTLED ✓'; }
+                 else if (status === 'rejected') { statusColor = '#ef4444'; statusText = 'REJECTED ✕'; }
+                 else { statusColor = '#fbbf24'; statusText = 'PROCESSING ⏱️'; }
 
-            return (
-              <div key={item.id} style={S.card}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={S.iconBox}>💳</div>
-                  <div>
-                    <div style={S.title}>{title}</div>
-                    <div style={S.date}>{formatDate(item.created_at)}</div>
-                  </div>
-                </div>
-                <div>
-                  <div style={{ ...S.points, color: 'var(--ink)' }}>
-                    -{amount.toLocaleString()} PTS
-                  </div>
-                  <div style={{ ...S.status, color: statusColor }}>{statusText}</div>
-                </div>
-              </div>
-            );
+                 return (
+                   <div key={item.id} style={S.card}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                       <div style={S.iconBox}>🏦</div>
+                       <div>
+                         <div style={S.title}>Fiat Withdrawal Request</div>
+                         <div style={S.date}>{formatDate(item.created_at)}</div>
+                       </div>
+                     </div>
+                     <div>
+                       <div style={{ ...S.points, color: 'var(--ink)' }}>-{amount.toLocaleString()} PTS</div>
+                       <div style={{ ...S.status, color: statusColor }}>{statusText}</div>
+                     </div>
+                   </div>
+                 );
+              }
+            }
           })}
         </div>
       )}
