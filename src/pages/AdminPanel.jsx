@@ -389,20 +389,37 @@ export function AdminWithdrawals({ showToast }) {
 export function AdminBlog({ showToast }) {
   const [form, setForm] = useState({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
   const [loading, setLoading] = useState(false);
+  const [posts, setPosts] = useState([]);
+  const [editingId, setEditingId] = useState(null);
 
-  // Auto-generate URL-friendly slug
-  function handleTitleChange(e) {
-    const newTitle = e.target.value;
-    const autoSlug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    setForm({ ...form, title: newTitle, slug: autoSlug });
+  // Fetch all posts (Drafts & Published) on load
+  useEffect(() => { fetchPosts(); }, []);
+
+  async function fetchPosts() {
+    try {
+      const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+      setPosts(data || []);
+    } catch (err) {
+      if (showToast) showToast('Failed to load article ledger.', 'error');
+    }
   }
 
-  // Quick HTML wrapper helpers for mobile writing
+  // Auto-generate URL-friendly slug ONLY if it's a new post
+  function handleTitleChange(e) {
+    const newTitle = e.target.value;
+    if (!editingId) {
+      const autoSlug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      setForm({ ...form, title: newTitle, slug: autoSlug });
+    } else {
+      setForm({ ...form, title: newTitle });
+    }
+  }
+
   function wrapText(tag) {
     setForm({ ...form, content: form.content + `\n<${tag}></${tag}>\n` });
   }
 
-  async function publishPost() {
+  async function savePost() {
     if (!form.title || !form.content) {
       if (showToast) showToast('Title and Content are required.', 'error');
       return;
@@ -410,10 +427,19 @@ export function AdminBlog({ showToast }) {
     
     setLoading(true);
     try {
-      const { error } = await supabase.from('posts').insert([form]);
-      if (error) throw error;
-      if (showToast) showToast(`Article saved as ${form.status}.`, 'success');
-      setForm({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
+      if (editingId) {
+        // Update existing post
+        const { error } = await supabase.from('posts').update(form).eq('id', editingId);
+        if (error) throw error;
+        if (showToast) showToast('Article successfully updated.', 'success');
+      } else {
+        // Insert new post
+        const { error } = await supabase.from('posts').insert([form]);
+        if (error) throw error;
+        if (showToast) showToast(`Article saved as ${form.status}.`, 'success');
+      }
+      resetForm();
+      fetchPosts(); // Refresh the table
     } catch (err) {
       if (showToast) showToast('Failed to save article. Check slug uniqueness.', 'error');
     } finally {
@@ -421,25 +447,64 @@ export function AdminBlog({ showToast }) {
     }
   }
 
+  function startEdit(post) {
+    setEditingId(post.id);
+    setForm({ title: post.title, slug: post.slug, meta_desc: post.meta_desc, content: post.content, category: post.category, status: post.status });
+    window.scrollTo(0, 0); // Scroll to top on mobile
+  }
+
+  function resetForm() {
+    setEditingId(null);
+    setForm({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
+  }
+
+  async function deletePost(id) {
+    if (!window.confirm('CRITICAL: Permanently delete this article?')) return;
+    try {
+      const { error } = await supabase.from('posts').delete().eq('id', id);
+      if (error) throw error;
+      if (showToast) showToast('Article permanently deleted.', 'success');
+      fetchPosts();
+    } catch (err) {
+      if (showToast) showToast('Failed to delete article.', 'error');
+    }
+  }
+
+  // Re-declare S here if it's not globally available in the file scope
+  const S = {
+    page: { padding: '40px 5%', maxWidth: 1200, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative', minHeight: '80vh' },
+    header: { fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' },
+    subHeader: { color: 'var(--slate)', fontSize: 15, fontWeight: 400, margin: '0 0 40px 0' },
+    glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.05)' },
+    tableContainer: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, overflow: 'hidden', marginTop: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.05)' },
+    tableHeader: { display: 'grid', gap: 16, padding: '16px 24px', background: 'var(--surface)', borderBottom: '1px solid var(--line)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', fontFamily: "'Inter', sans-serif" },
+    tableRow: { display: 'grid', gap: 16, padding: '20px 24px', borderBottom: '1px solid var(--line)', alignItems: 'center' },
+    btnAction: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
+    btnDanger: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
+    btnSuccess: { background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
+    input: { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--ink)', padding: '12px 16px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' },
+    select: { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--ink)', padding: '12px 16px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
+  };
+
   return (
     <div style={S.page}>
       <h1 style={S.header}>Content Engine</h1>
-      <p style={S.subHeader}>Deploy SEO-optimized articles.</p>
+      <p style={S.subHeader}>{editingId ? 'Modifying existing article.' : 'Deploy SEO-optimized articles.'}</p>
 
+      {/* ── THE EDITOR ── */}
       <div style={S.glassCard}>
-        <input style={{ ...S.input, marginBottom: 16 }} placeholder="Article Meta Title (e.g., Top 5 Ways to Earn...)" value={form.title} onChange={handleTitleChange} />
+        <input style={{ ...S.input, marginBottom: 16 }} placeholder="Article Meta Title" value={form.title} onChange={handleTitleChange} />
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
-          <input style={S.input} placeholder="url-slug" value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} />
+          <input style={S.input} placeholder="url-slug" value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} disabled={editingId} />
           <select style={S.select} value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
             <option value="earner">Target: Earners</option>
             <option value="creator">Target: B2B Creators</option>
           </select>
         </div>
 
-        <input style={{ ...S.input, marginBottom: 16 }} placeholder="Meta Description (For Google SEO, max 160 chars)" value={form.meta_desc} onChange={e => setForm({...form, meta_desc: e.target.value})} maxLength={160} />
+        <input style={{ ...S.input, marginBottom: 16 }} placeholder="Meta Description (max 160 chars)" value={form.meta_desc} onChange={e => setForm({...form, meta_desc: e.target.value})} maxLength={160} />
         
-        {/* Mobile-friendly HTML helpers */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 12, overflowX: 'auto' }}>
           <button onClick={() => wrapText('h2')} style={S.btnAction}>+ Header</button>
           <button onClick={() => wrapText('p')} style={S.btnAction}>+ Paragraph</button>
@@ -455,14 +520,59 @@ export function AdminBlog({ showToast }) {
         />
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 16 }}>
-          <select style={{ ...S.select, width: 'auto' }} value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
-            <option value="draft">Save as Draft</option>
-            <option value="published">Publish Live</option>
-          </select>
-          <button onClick={publishPost} disabled={loading} style={{ ...S.btnSuccess, padding: '12px 24px', fontSize: 14 }}>
-            {loading ? 'DEPLOYING...' : 'DEPLOY ARTICLE'}
+          <div style={{ display: 'flex', gap: 16 }}>
+            <select style={{ ...S.select, width: 'auto' }} value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+              <option value="draft">Save as Draft</option>
+              <option value="published">Publish Live</option>
+            </select>
+            {editingId && <button onClick={resetForm} style={S.btnAction}>Cancel Edit</button>}
+          </div>
+          
+          <button onClick={savePost} disabled={loading} style={{ ...S.btnSuccess, padding: '12px 24px', fontSize: 14, background: 'var(--lime)', color: '#000' }}>
+            {loading ? 'SAVING...' : editingId ? 'UPDATE ARTICLE' : 'DEPLOY ARTICLE'}
           </button>
         </div>
+      </div>
+
+      {/* ── THE LEDGER (TABLE) ── */}
+      <h2 style={{ ...S.header, fontSize: 20, marginTop: 48, marginBottom: 16 }}>Article Ledger</h2>
+      <div style={S.tableContainer}>
+        <div style={{ ...S.tableHeader, gridTemplateColumns: '2fr 1fr 1fr 1fr' }} className="hide-on-mobile">
+          <span>Title</span>
+          <span>Category</span>
+          <span>Status</span>
+          <span style={{ textAlign: 'right' }}>Actions</span>
+        </div>
+
+        {posts.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>No articles found.</div>
+        ) : (
+          posts.map(post => (
+            <div key={post.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+              <div>
+                <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>{post.title}</div>
+                <div style={{ fontSize: 11, color: 'var(--slate)' }}>/{post.slug}</div>
+              </div>
+              
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', background: post.category === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: post.category === 'creator' ? '#D4AF37' : 'var(--lime)' }}>
+                  {post.category}
+                </span>
+              </div>
+              
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: post.status === 'published' ? 'rgba(168,255,62,0.1)' : 'var(--surface)', color: post.status === 'published' ? 'var(--ink)' : 'var(--slate)', border: '1px solid var(--line)' }}>
+                  {post.status}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <button onClick={() => startEdit(post)} style={S.btnAction}>Edit</button>
+                <button onClick={() => deletePost(post.id)} style={S.btnDanger}>Drop</button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
