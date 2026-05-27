@@ -1,244 +1,224 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function TaskPlayer({ session, navigate, taskId }) {
-  const user = session?.user;
-  const [loading, setLoading] = useState(true);
   const [task, setTask] = useState(null);
-  
-  // Timer States (For Automated Tasks)
+  const [loading, setLoading] = useState(true);
   const [timer, setTimer] = useState(0);
-  const [isLive, setIsLive] = useState(false);
-  const [verification, setVerification] = useState(false);
-  
-  // Security & Input States
-  const [cooldown, setCooldown] = useState(null);
-  const [handle, setHandle] = useState('');
-  const [proofUrl, setProofUrl] = useState('');
-  const [gateUnlocked, setGateUnlocked] = useState(false);
-  const [cheatWarning, setCheatWarning] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const ytPlayerRef = useRef(null);
+  const [status, setStatus] = useState('waiting'); // waiting, active, verifying, completed
+  const [seoCodeInput, setSeoCodeInput] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    async function init() {
-      // Check cooldown
-      const { data: c } = await supabase.from('completions').select('created_at').eq('task_id', taskId).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
-      if (c) {
-        const h = (new Date() - new Date(c.created_at)) / 3600000;
-        if (h < 24) { setCooldown(Math.ceil(24 - h)); setLoading(false); return; }
+    async function loadTask() {
+      try {
+        const { data } = await supabase.from('tasks').select('*').eq('id', taskId).single();
+        if (data) {
+          setTask(data);
+          setTimer(data.watch_duration);
+        } else {
+          setErrorMsg("Task not found or expired.");
+        }
+      } catch (err) {
+        setErrorMsg("Failed to encrypt data link.");
+      } finally {
+        setLoading(false);
       }
-      
-      // Fetch task
-      const { data: t } = await supabase.from('tasks').select('*').eq('id', taskId).single();
-      if (t) { 
-        setTask(t); 
-        setTimer(t.watch_duration); 
-      }
-      setLoading(false);
     }
-    if (user?.id) init();
-  }, [taskId, user]);
+    loadTask();
+  }, [taskId]);
 
-  const isManualTask = task?.platform === 'ugc' || task?.platform === 'qa_testing';
-  const isBlog = task?.platform === 'blog';
-
-  // 🔥 AUTOMATED TIMER LOGIC (Only runs if it's a Video/Blog task) 🔥
+  // Anti-Cheat Timer for YouTube Videos
   useEffect(() => {
-    if (!task || cooldown || verification || isManualTask) return;
-    
-    // For YouTube specifically
-    if (task.platform === 'youtube') {
-      const loadPlayer = () => {
-        if (ytPlayerRef.current) return; 
-        const vidMatch = task.url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/);
-        const vidId = vidMatch ? vidMatch[1] : '';
-        ytPlayerRef.current = new window.YT.Player('yt-frame', {
-          videoId: vidId,
-          playerVars: { playsinline: 1, rel: 0, controls: 0, disablekb: 1 },
-          events: {
-            onReady: (e) => { e.target.setPlaybackRate(1); },
-            onStateChange: (e) => {
-              if (e.data === 1) {
-                setIsLive(true); setCheatWarning(""); e.target.setPlaybackRate(1);
-              } else { setIsLive(false); }
-              if (e.data === 0) {
-                setTimer((currentTimer) => {
-                   if (currentTimer > 0) { setCheatWarning("⚠️ Fast-forwarding detected. Timer reset."); return task.watch_duration; }
-                   return currentTimer;
-                });
-              }
-            }
-          }
-        });
-      };
-      if (!window.YT || !window.YT.Player) {
-        const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; window.onYouTubeIframeAPIReady = loadPlayer; document.body.appendChild(s);
-      } else { loadPlayer(); }
-    } else if (isBlog) {
-        // Blog Logic: They must click to open tab, we monitor time
-    }
-  }, [task, cooldown, verification, isManualTask, isBlog]);
-
-  // Tab-Switch Detection
-  useEffect(() => {
-    if (isManualTask) return; // Don't penalize UGC uploaders for switching tabs to get their link
-    const handleVisibility = () => {
-      if (document.hidden) {
-        setIsLive(false);
-        if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') ytPlayerRef.current.pauseVideo();
-        if (!verification) setCheatWarning("⚠️ Timer paused. You must keep this tab visible.");
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [verification, isManualTask]);
-
-  // Countdown execution
-  useEffect(() => {
-    if (isManualTask) return;
-    if (timer <= 0 && task && !verification) {
-      setVerification(true); setIsLive(false); setCheatWarning("");
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') ytPlayerRef.current.pauseVideo();
-      return;
-    }
     let interval;
-    if (isLive && !document.hidden && timer > 0) { interval = setInterval(() => { setTimer((prev) => prev - 1); }, 1000); }
-    return () => clearInterval(interval);
-  }, [isLive, timer, task, verification, isManualTask]);
-
-  function handleOpenApp() { window.open(task.url, '_blank'); setGateUnlocked(true); setIsLive(true); }
-
-  async function claimTask() {
-    setSubmitting(true);
-    
-    if (isManualTask && !proofUrl.trim()) { alert("Please provide a valid link to your proof."); setSubmitting(false); return; }
-    if (!isManualTask && !handle.trim()) { alert("Enter your platform handle to claim points."); setSubmitting(false); return; }
-    
-    const insertData = { 
-      user_id: user.id, 
-      earner_id: user.id, 
-      task_id: task.id, 
-      platform: task.platform, 
-      social_handle: handle,
-      proof_url: proofUrl,
-      status: isManualTask ? 'pending_review' : 'verified'
-    };
-
-    const { error } = await supabase.from('completions').insert(insertData);
-    
-    if (error) { 
-      alert(`Database Error: ${error.message}`); 
-    } else {
-      if (isManualTask) {
-        alert("Submitted! The Creator will review your proof and release the points shortly.");
-      } else {
-        alert("Verified! Points successfully deposited.");
-        if (user) user.points = (user.points || 0) + task.reward_points;
-      }
-      navigate('tasks');
+    if (status === 'active' && task?.platform === 'youtube' && timer > 0) {
+      interval = setInterval(() => {
+        // Only count down if tab is visible
+        if (!document.hidden) {
+          setTimer(prev => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              setStatus('verifying');
+              return 0;
+            }
+            return prev - 1;
+          });
+        }
+      }, 1000);
     }
-    setSubmitting(false);
+    return () => clearInterval(interval);
+  }, [status, timer, task]);
+
+  // Extract YouTube ID for clean embedding
+  function getYouTubeId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
   }
 
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Decrypting asset...</div>;
-  if (cooldown) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>⏱️ Cooldown Active: {cooldown}h left</div>;
+  async function completeTask() {
+    try {
+      setStatus('processing');
+      setErrorMsg('');
 
-  // ── DYNAMIC UI STATES ──
-  let statusText = 'PLAYBACK PAUSED';
-  let statusColor = '#ef4444';
+      // 1. Verify SEO Code if applicable
+      if (task.platform === 'blog') {
+        if (seoCodeInput.trim().toUpperCase() !== task.secret_code.trim().toUpperCase()) {
+          setErrorMsg("Invalid verification code. Did you stay on the page until the timer ended?");
+          setStatus('waiting');
+          return;
+        }
+      }
 
-  if (isManualTask) {
-    statusText = 'MANUAL UPLOAD REQUIRED'; statusColor = '#fbbf24';
-  } else if (verification) { 
-    statusText = '✅ VERIFICATION READY'; statusColor = 'var(--lime)'; 
-  } else if (isLive) { 
-    statusText = `TRACKING ACTIVE: ${timer}s`; statusColor = 'var(--lime)'; 
-  } else if (timer === task?.watch_duration) { 
-    statusText = 'INITIATE TASK TO START'; statusColor = '#fbbf24'; 
+      // 2. Mark as completed in DB
+      const { error: compErr } = await supabase.from('completions').insert({
+        user_id: session.user.id,
+        task_id: task.id,
+        status: (task.platform === 'ugc' || task.platform === 'qa_testing') ? 'pending_approval' : 'approved',
+        reward_points: task.reward_points
+      });
+
+      if (compErr) throw new Error("You have already completed this task.");
+
+      // 3. Payout immediately if it's an automated task
+      if (task.platform === 'youtube' || task.platform === 'blog') {
+        const { data: userProfile } = await supabase.from('profiles').select('points').eq('id', session.user.id).single();
+        await supabase.from('profiles').update({ points: userProfile.points + task.reward_points }).eq('id', session.user.id);
+        await supabase.from('tasks').update({ current_views: task.current_views + 1 }).eq('id', task.id);
+      }
+
+      setStatus('completed');
+    } catch (err) {
+      setErrorMsg(err.message);
+      setStatus('waiting');
+    }
   }
 
-  const S = {
-    wrap: { padding: 20, maxWidth: 600, margin: 'auto', fontFamily: "var(--font-body)" },
-    card: { background: 'var(--surface)', borderRadius: 16, overflow: 'hidden', marginBottom: 20, border: '1px solid var(--line)', position: 'relative' },
-    header: { padding: 15, background: 'var(--surface-card)', borderBottom: '1px solid var(--line)', color: statusColor, fontWeight: 800, textAlign: 'center', fontFamily: "var(--font-display)", letterSpacing: '1px' },
-    verifBox: { padding: 40, background: 'var(--surface-card)', textAlign: 'center' },
-    input: { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)' },
-    btnRed: { background: '#ef4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 13, letterSpacing: '0.5px' },
-    btnGreen: { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16, fontFamily: "var(--font-display)" },
-    warningBox: { background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 16, marginBottom: 24, textAlign: 'left' },
-    cheatToast: { background: '#ef4444', color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' }
-  };
+  if (loading) return <div style={{ padding: 100, textAlign: 'center', color: 'var(--slate)' }}>Loading Mission Data...</div>;
+  if (!task) return <div style={{ padding: 100, textAlign: 'center', color: '#ef4444' }}>{errorMsg || "Mission Unavailable"}</div>;
+
+  const isVideo = task.platform === 'youtube';
+  const isSEO = task.platform === 'blog';
+  const isManual = task.platform === 'ugc' || task.platform === 'qa_testing';
 
   return (
-    <div style={S.wrap}>
-      <div style={S.card}>
-        <div style={S.header}>{statusText}</div>
-        {cheatWarning && !verification && <div style={S.cheatToast}>{cheatWarning}</div>}
+    <div style={{ padding: '40px 5%', maxWidth: 800, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" }}>
+      <button onClick={() => navigate('tasks')} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 24 }}>← Abort Mission</button>
+      
+      <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
         
-        {/* ── AUTOMATED YOUTUBE RENDERER ── */}
-        {!isManualTask && task.platform === 'youtube' && (
-          <div style={{ display: verification ? 'none' : 'block', pointerEvents: isLive ? 'none' : 'auto' }}>
-            <div id="yt-frame" style={{ width: '100%', height: 350 }}></div>
+        {/* HEADER */}
+        <div style={{ padding: '32px 32px 24px', borderBottom: '1px solid var(--line)' }}>
+          <div style={{ display: 'inline-block', background: 'var(--lime-dim)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.2)', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', marginBottom: 12 }}>
+            {task.platform} Mission
           </div>
-        )}
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 8, fontWeight: 800 }}>{task.title}</h1>
+          <div style={{ fontSize: 14, color: 'var(--slate)' }}>Payout: <strong style={{ color: 'var(--ink)' }}>{task.reward_points} PTS</strong></div>
+        </div>
 
-        {/* ── BLOG RENDERER ── */}
-        {!isManualTask && task.platform === 'blog' && !verification && (
-          <div style={{ padding: 40, textAlign: 'center' }}>
-             <button onClick={handleOpenApp} style={S.btnRed}>▶ OPEN SECURE BROWSER TAB</button>
-             <p style={{ color: 'var(--slate)', fontSize: 13 }}>You must keep the new tab open for {task.watch_duration} seconds to bypass the firewall.</p>
-          </div>
-        )}
+        <div style={{ padding: 32 }}>
+          {errorMsg && (
+            <div style={{ padding: 16, background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: 12, marginBottom: 24, fontSize: 14, fontWeight: 600 }}>
+              {errorMsg}
+            </div>
+          )}
 
-        {/* ── MANUAL UGC / QA PORTAL ── */}
-        {isManualTask && (
-           <div style={S.verifBox}>
-              <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 12, fontFamily: "var(--font-display)" }}>Manual Submission Required</h3>
-              <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24 }}>
-                Review the campaign guidelines below. Once complete, upload your proof (Google Drive, Dropbox, Imgur) and paste the public link here.
-              </p>
-              
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', padding: 16, borderRadius: 8, marginBottom: 24, textAlign: 'left', wordBreak: 'break-all' }}>
-                <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Campaign Brief / URL</div>
-                <a href={task.url} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}>{task.url}</a>
-              </div>
-
-              <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Public Link to Proof</div>
-              <input placeholder="https://drive.google.com/..." value={proofUrl} onChange={e => setProofUrl(e.target.value)} style={S.input} />
-              
-              <button onClick={claimTask} disabled={submitting} style={{ ...S.btnGreen, opacity: submitting ? 0.5 : 1 }}>
-                {submitting ? 'UPLOADING...' : 'SUBMIT FOR REVIEW'}
-              </button>
-           </div>
-        )}
-        
-        {/* ── AUTOMATED CLAIM FORM (Unlocked after timer) ── */}
-        {verification && !isManualTask && (
-          <div style={S.verifBox}>
-            <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 24, fontFamily: "var(--font-display)" }}>Engagement Required</h3>
-            <button onClick={handleOpenApp} style={S.btnRed}>▶ 1. OPEN APP TO LIKE, COMMENT & SUBSCRIBE</button>
-            
-            {gateUnlocked ? (
-              <>
-                <div style={S.warningBox}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.5px' }}>⚠️ Strict Verification Warning</div>
-                  <div style={{ fontSize: 13, color: 'var(--slate)', lineHeight: 1.5 }}>Creators actively audit this network. If a Creator reports your engagement as fake or missing, you will face a <strong style={{ color: '#ef4444' }}>50 PTS deduction</strong>.</div>
+          {/* ── 1. VIDEO PLAYER ── */}
+          {isVideo && (
+            <div>
+              {status === 'waiting' ? (
+                <div style={{ textAlign: 'center', padding: 40, background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: 15, color: 'var(--slate)', marginBottom: 24 }}>Watch the video completely to pass verification. Fast-forwarding is disabled.</div>
+                  <button onClick={() => setStatus('active')} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '14px 28px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>Start Verification Timer</button>
                 </div>
-                <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>2. Drop your handle for audit</div>
-                <input placeholder="e.g., @YourUsername" value={handle} onChange={e => setHandle(e.target.value)} style={S.input} />
-                <button onClick={claimTask} disabled={submitting} style={{ ...S.btnGreen, opacity: submitting ? 0.5 : 1 }}>
-                  {submitting ? 'CLAIMING...' : `3. CLAIM ${task.reward_points} POINTS`}
-                </button>
-              </>
-            ) : (
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: 20, color: 'var(--slate)', fontSize: 14, marginTop: 16 }}>
-                🔒 Click the red button above to open the target asset. The claim form will unlock automatically.
+              ) : (
+                <>
+                  <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: 12, background: '#000', marginBottom: 24 }}>
+                    <iframe 
+                      src={`https://www.youtube.com/embed/${getYouTubeId(task.url)}?autoplay=1&controls=0&disablekb=1&modestbranding=1&rel=0`} 
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }} 
+                      frameBorder="0" 
+                      allow="autoplay; encrypted-media" 
+                      allowFullScreen 
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 20, background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--line)' }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Time Remaining</div>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: timer > 0 ? '#ef4444' : 'var(--lime)', fontFamily: "'Inter', sans-serif" }}>{timer}s</div>
+                    </div>
+                    {status === 'verifying' && (
+                      <button onClick={completeTask} style={{ background: 'var(--ink)', color: 'var(--surface)', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Claim {task.reward_points} PTS</button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── 2. SEO SEARCH ENFORCER ── */}
+          {isSEO && status !== 'completed' && (
+            <div>
+              <div style={{ background: 'var(--surface)', padding: 24, borderRadius: 12, border: '1px solid var(--line)', marginBottom: 24 }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: 16, color: 'var(--ink)' }}>Search Protocol</h3>
+                <ol style={{ paddingLeft: 20, margin: 0, color: 'var(--slate)', lineHeight: 1.8, fontSize: 14 }}>
+                  <li>Open a new browser tab and go to <strong>Google.com</strong></li>
+                  <li>Search for this exact phrase: <strong style={{ color: 'var(--ink)', background: 'var(--lime-dim)', padding: '2px 6px', borderRadius: 4 }}>{task.search_keyword}</strong></li>
+                  <li>Find the link for <strong>{new URL(task.url).hostname}</strong> and click it.</li>
+                  <li>Scroll to the bottom of the article and wait for the verification timer to finish.</li>
+                  <li>Copy the Secret Code and paste it below.</li>
+                </ol>
               </div>
-            )}
-          </div>
-        )}
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <input 
+                  type="text" 
+                  placeholder="Paste Secret Code Here..." 
+                  value={seoCodeInput} 
+                  onChange={e => setSeoCodeInput(e.target.value)} 
+                  style={{ flex: 1, padding: 16, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 16, outline: 'none', fontFamily: 'monospace', textTransform: 'uppercase' }} 
+                />
+                <button 
+                  onClick={completeTask} 
+                  disabled={!seoCodeInput}
+                  style={{ background: seoCodeInput ? 'var(--lime)' : 'var(--surface)', color: seoCodeInput ? '#000' : 'var(--slate)', border: 'none', padding: '0 24px', borderRadius: 12, fontSize: 14, fontWeight: 800, cursor: seoCodeInput ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
+                >
+                  Verify
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── 3. UGC / QA MANUAL UPLOAD ── */}
+          {isManual && status !== 'completed' && (
+            <div style={{ textAlign: 'center', padding: 40, background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--line)' }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>📤</div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: 18, color: 'var(--ink)' }}>Manual Submission Required</h3>
+              <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24 }}>Follow the instructions on the creator's page and upload your proof directly to the provided external form.</p>
+              <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+                <a href={task.url} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--surface-card)', color: 'var(--ink)', border: '1px solid var(--line)', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>View Instructions</a>
+                <button onClick={completeTask} style={{ background: 'var(--ink)', color: 'var(--surface)', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Mark as Submitted</button>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 16 }}>Payout will be held in escrow until approved by the Creator.</div>
+            </div>
+          )}
+
+          {/* ── SUCCESS STATE ── */}
+          {status === 'completed' && (
+            <div style={{ textAlign: 'center', padding: 40 }}>
+              <div style={{ width: 64, height: 64, background: 'rgba(168,255,62,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid var(--lime)' }}>
+                <span style={{ fontSize: 24 }}>✓</span>
+              </div>
+              <h2 style={{ fontSize: 24, color: 'var(--ink)', marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>Mission Accomplished</h2>
+              <p style={{ color: 'var(--slate)', fontSize: 15, marginBottom: 32 }}>
+                {isManual ? "Proof submitted. Payout pending creator approval." : `Liquidity secured. ${task.reward_points} PTS added to treasury.`}
+              </p>
+              <button onClick={() => navigate('tasks')} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Return to Feed</button>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
