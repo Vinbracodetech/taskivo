@@ -12,8 +12,10 @@ export default function CreateTask({ session, navigate, showToast }) {
     title: '',
     platform: 'youtube',
     url: '',
+    search_keyword: '', // 🔥 Added for SEO Search
+    secret_code: '',    // 🔥 Added for SEO Verification
     watch_duration: 30,
-    package: 'traction', // Default fallback
+    package: 'traction',
     paymentGateway: 'paystack'
   });
 
@@ -33,7 +35,6 @@ export default function CreateTask({ session, navigate, showToast }) {
     if (user?.id) checkGrants();
   }, [user]);
 
-  // 🔥 HIGH-TICKET PRICING ENGINE 🔥
   const EXCHANGE_RATE = 1500;
 
   const packages = {
@@ -69,9 +70,8 @@ export default function CreateTask({ session, navigate, showToast }) {
   
   const selectedPackageData = form.package === 'pilot' 
     ? { label: 'Pilot Grant', views: 20, priceUSD: 0 } 
-    : activePackages[form.package] || activePackages['starter']; // Fallback if switching categories
+    : activePackages[form.package] || activePackages['starter'];
 
-  // Ensure selected package resets safely when switching platforms
   useEffect(() => {
     if (form.package !== 'pilot' && !activePackages[form.package]) {
         setForm(prev => ({ ...prev, package: 'starter' }));
@@ -93,6 +93,8 @@ export default function CreateTask({ session, navigate, showToast }) {
       title: form.title, 
       platform: form.platform, 
       url: form.url,
+      search_keyword: form.platform === 'blog' ? form.search_keyword : null,
+      secret_code: form.platform === 'blog' ? form.secret_code : null,
       watch_duration: parseInt(form.watch_duration, 10), 
       target_views: selectedPackageData.views, 
       current_views: 0, 
@@ -128,6 +130,12 @@ export default function CreateTask({ session, navigate, showToast }) {
 
     if (!form.title || !form.url) {
       setLocalError('Please complete all required fields.');
+      return;
+    }
+    
+    // Extra validation for SEO tasks
+    if (form.platform === 'blog' && (!form.search_keyword || !form.secret_code)) {
+      setLocalError('SEO Campaigns require a Search Keyword and a Secret Code.');
       return;
     }
 
@@ -205,7 +213,6 @@ export default function CreateTask({ session, navigate, showToast }) {
               <select style={S.select} name="platform" value={form.platform} onChange={handleInput}>
                 <optgroup label="Automated Engagement">
                   <option value="youtube">YouTube (Video Engagement)</option>
-                  <option value="tiktok">TikTok (Short-Form Attention)</option>
                   <option value="blog">SEO Blog (Read Time Verification)</option>
                 </optgroup>
                 <optgroup label="Premium Manual Verification">
@@ -217,17 +224,34 @@ export default function CreateTask({ session, navigate, showToast }) {
           </div>
 
           <div>
-            <span style={S.label}>{isManual ? "Campaign Brief / Instructions URL" : "Asset URL"}</span>
+            <span style={S.label}>{isManual ? "Campaign Brief / Instructions URL" : "Asset URL (Where should users go?)"}</span>
             <input style={S.input} type="url" name="url" placeholder="https://..." value={form.url} onChange={handleInput} required />
           </div>
 
-          {/* Hide Watch Duration for manual tasks */}
+          {/* 🔥 DYNAMIC SEO FIELDS 🔥 */}
+          {form.platform === 'blog' && (
+            <div style={{ background: 'var(--surface)', padding: 24, borderRadius: 12, border: '1px solid var(--lime)', marginBottom: 24 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+                <div>
+                  <span style={S.label}>Google Search Keyword</span>
+                  <input style={{...S.input, marginBottom: 0}} type="text" name="search_keyword" placeholder="e.g. Best Earner Sites 2026" value={form.search_keyword} onChange={handleInput} required />
+                </div>
+                <div>
+                  <span style={S.label}>Verification Secret Code</span>
+                  <input style={{...S.input, marginBottom: 0}} type="text" name="secret_code" placeholder="e.g. 9X2P1" value={form.secret_code} onChange={handleInput} required />
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--slate)', margin: '12px 0 0 0' }}>Earners will search for the keyword, find your URL, wait for the timer, and must input this exact code to get paid.</p>
+            </div>
+          )}
+
           {!isManual && (
             <div>
               <span style={S.label}>Verification Duration (Seconds)</span>
               <select style={S.select} name="watch_duration" value={form.watch_duration} onChange={handleInput}>
                 <option value="30">30 Seconds (Standard Check)</option>
                 <option value="60">60 Seconds (Deep Engagement)</option>
+                <option value="120">120 Seconds (SEO Dominance)</option>
               </select>
             </div>
           )}
