@@ -91,6 +91,7 @@ export default function Dashboard({ user, navigate, showToast }) {
     setSavingProfile(true);
     try {
       if (!editForm.full_name) throw new Error("Full name is required");
+      if (!editForm.payout_account || !editForm.payout_bank_name) throw new Error("Payout details are required for verification");
       
       const { error } = await supabase
         .from('profiles')
@@ -114,7 +115,7 @@ export default function Dashboard({ user, navigate, showToast }) {
       user.payout_account = editForm.payout_account;
       user.payout_account_name = editForm.payout_account_name;
       
-      if (showToast) showToast('Profile updated successfully', 'success');
+      if (showToast) showToast('Profile verified and updated successfully', 'success');
       setShowEditModal(false);
     } catch (err) {
       if (showToast) showToast(err.message, 'error');
@@ -147,12 +148,19 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   const minWithdrawal = 2000;
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
-  const isVerified = !!user.payout_account;
+  
+  // 🔥 LAYER 3 VERIFICATION CHECK
+  const isVerified = Boolean(user.payout_account && user.payout_bank_name);
 
   const S = {
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "var(--font-body)", position: 'relative' },
     glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow)' },
     premiumCard: { background: 'var(--surface-card)', border: '1px solid var(--gold)', borderRadius: 24, padding: 32, boxShadow: 'var(--shadow)', position: 'relative', overflow: 'hidden' },
+    
+    // NEW LOCK UI STYLES
+    lockCard: { background: 'var(--surface-card)', border: '1px solid var(--lime)', borderRadius: 24, padding: '48px 32px', textAlign: 'center', boxShadow: '0 16px 32px rgba(168,255,62,0.05)', marginTop: 24 },
+    lockIcon: { fontSize: 48, marginBottom: 24, display: 'inline-block', filter: 'drop-shadow(0 0 12px rgba(168,255,62,0.4))' },
+    
     label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 16, display: 'block', fontFamily: "var(--font-display)" },
     valueGlow: { fontFamily: "var(--font-display)", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
     btnGhost: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 12, padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-block', textAlign: 'center', fontFamily: "var(--font-display)", transition: 'all 0.2s' },
@@ -186,124 +194,140 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          {/* 🔥 ADDED HISTORY QUICK LINK */}
-          <button onClick={() => navigate('history')} style={S.btnGhost}>Activity Ledger</button>
+          {/* Active users can still access their history or edit profile */}
+          {isVerified && <button onClick={() => navigate('history')} style={S.btnGhost}>Activity Ledger</button>}
           <button onClick={() => setShowEditModal(true)} style={S.btnGhost}>Edit Profile</button>
         </div>
       </div>
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <DailySpin session={{ user }} showToast={showToast} />
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
-        <div style={S.glassCard}>
-          <span style={S.label}>Available Balance</span>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
-            <div style={S.valueGlow}>{user.points.toLocaleString()}</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px' }}>PTS</div>
-          </div>
-          
-          {/* 🔥 UPDATED WALLET/HISTORY BUTTONS */}
-          <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
-            <button onClick={() => navigate('wallet')} style={{ ...S.btnGhost, flex: 1 }}>Wallet</button>
-            <button onClick={() => navigate('history')} style={{ ...S.btnGhost, flex: 1 }}>Ledger</button>
-          </div>
-        </div>
-
-        <div style={S.glassCard}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <span style={{ ...S.label, marginBottom: 0 }}>Verified Engagements</span>
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 100, letterSpacing: '0.5px' }}>
-              {stats.completions} LIFETIME
-            </div>
-          </div>
-          
-          <div style={{ marginTop: 24, marginBottom: 32 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', fontWeight: 600, marginBottom: 12 }}>
-              <span>Liquidity Target</span>
-              <span style={{ color: 'var(--ink)' }}>{user.points} / {minWithdrawal}</span>
-            </div>
-            <div style={{ height: 6, background: 'var(--surface)', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--line)' }}>
-              <div style={{ width: `${progressPercent}%`, height: '100%', background: 'var(--lime)', borderRadius: 10 }}></div>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 'auto' }}>
-            <button onClick={() => navigate('tasks')} style={{ ...S.btnLime, width: '100%' }}>Acquire Tasks</button>
-          </div>
-        </div>
-      </div>
-
-      {/* PREMIUM GOLD CARD */}
-      <div style={{ ...S.premiumCard, marginBottom: 56, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
-        <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--gold)', color: 'var(--gold)', background: 'var(--surface)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>
-            ✦ VIP Network Bonus
-          </div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Expand Your Network. Earn 50 Points.</h2>
-          <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: 0 }}>
-            Distribute your unique cryptographic invite link. Upon a successful registration and first verified task completion from your referral, your account is instantly credited.
+      {/* 🔥 THE HARD INTERCEPTION LAYER */}
+      {!isVerified ? (
+        <div style={S.lockCard}>
+          <div style={S.lockIcon}>🛡️</div>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 24, color: 'var(--ink)', marginBottom: 16, fontWeight: 800, letterSpacing: '-0.5px' }}>
+            Layer 3 Verification Required
+          </h2>
+          <p style={{ color: 'var(--slate)', fontSize: 15, lineHeight: 1.6, maxWidth: 400, margin: '0 auto 32px' }}>
+            To enforce our zero-bot moat and guarantee authentic execution for B2B partners, you must bind a verifiable payout account before accessing the global liquidity pool.
           </p>
+          <button onClick={() => setShowEditModal(true)} style={{ ...S.btnLime, padding: '16px 32px', fontSize: 15 }}>
+            Bind Payout Account
+          </button>
         </div>
-        
-        <button onClick={copyReferralLink} style={{ position: 'relative', zIndex: 2, background: referralCopied ? 'var(--surface)' : 'var(--surface-card)', color: referralCopied ? 'var(--ink)' : 'var(--gold)', border: `1px solid ${referralCopied ? 'var(--line)' : 'var(--gold)'}`, borderRadius: 12, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "var(--font-display)", letterSpacing: '0.5px', transition: 'all 0.3s' }}>
-          {referralCopied ? 'LINK COPIED TO CLIPBOARD ✓' : 'COPY SECURE LINK'}
-        </button>
-      </div>
-
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.5px' }}>Active Opportunities</h2>
-          <span onClick={() => navigate('tasks')} style={{ color: 'var(--slate)', fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>View Directory →</span>
-        </div>
-        
-        {featuredTasks.length === 0 ? (
-          <div style={{ ...S.glassCard, padding: 60, alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--slate)', letterSpacing: '0.5px' }}>No active campaigns available at this moment.</div>
+      ) : (
+        <>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <DailySpin session={{ user }} showToast={showToast} />
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {featuredTasks.map(task => {
-              const isBlog = task.platform === 'blog';
-              const quotaHit = (isBlog && quotas.blogs >= 20) || (!isBlog && quotas.videos >= 3);
-              const cooldownHours = cooldowns[task.id];
-              const isLocked = quotaHit || cooldownHours;
 
-              return (
-                <div key={task.id} style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, opacity: isLocked ? 0.6 : 1 }}>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                      {isBlog ? '📄' : '▶️'}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 4, letterSpacing: '-0.2px' }}>{task.title}</div>
-                      <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{task.watch_duration}s Verification</div>
-                    </div>
-                  </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
+            <div style={S.glassCard}>
+              <span style={S.label}>Available Balance</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
+                <div style={S.valueGlow}>{user.points.toLocaleString()}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px' }}>PTS</div>
+              </div>
+              
+              <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
+                <button onClick={() => navigate('wallet')} style={{ ...S.btnGhost, flex: 1 }}>Wallet</button>
+                <button onClick={() => navigate('history')} style={{ ...S.btnGhost, flex: 1 }}>Ledger</button>
+              </div>
+            </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Yield</div>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: isLocked ? 'var(--slate)' : 'var(--lime)' }}>+{task.reward_points} PTS</div>
-                    </div>
-                    
-                    {quotaHit ? (
-                      <button disabled style={S.btnLocked}>LIMIT REACHED</button>
-                    ) : cooldownHours ? (
-                      <button disabled style={S.btnLocked}>🔒 {cooldownHours}H COOLDOWN</button>
-                    ) : (
-                      <button onClick={() => navigate(`player/${task.id}`)} style={{ ...S.btnGhost, padding: '10px 20px', fontSize: 12 }}>Initiate</button>
-                    )}
-                  </div>
-
+            <div style={S.glassCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ ...S.label, marginBottom: 0 }}>Verified Engagements</span>
+                <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 100, letterSpacing: '0.5px' }}>
+                  {stats.completions} LIFETIME
                 </div>
-              );
-            })}
+              </div>
+              
+              <div style={{ marginTop: 24, marginBottom: 32 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', fontWeight: 600, marginBottom: 12 }}>
+                  <span>Liquidity Target</span>
+                  <span style={{ color: 'var(--ink)' }}>{user.points} / {minWithdrawal}</span>
+                </div>
+                <div style={{ height: 6, background: 'var(--surface)', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--line)' }}>
+                  <div style={{ width: `${progressPercent}%`, height: '100%', background: 'var(--lime)', borderRadius: 10 }}></div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 'auto' }}>
+                <button onClick={() => navigate('tasks')} style={{ ...S.btnLime, width: '100%' }}>Acquire Tasks</button>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+
+          <div style={{ ...S.premiumCard, marginBottom: 56, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+            <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--gold)', color: 'var(--gold)', background: 'var(--surface)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16 }}>
+                ✦ VIP Network Bonus
+              </div>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Expand Your Network. Earn 50 Points.</h2>
+              <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: 0 }}>
+                Distribute your unique cryptographic invite link. Upon a successful registration and first verified task completion from your referral, your account is instantly credited.
+              </p>
+            </div>
+            
+            <button onClick={copyReferralLink} style={{ position: 'relative', zIndex: 2, background: referralCopied ? 'var(--surface)' : 'var(--surface-card)', color: referralCopied ? 'var(--ink)' : 'var(--gold)', border: `1px solid ${referralCopied ? 'var(--line)' : 'var(--gold)'}`, borderRadius: 12, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "var(--font-display)", letterSpacing: '0.5px', transition: 'all 0.3s' }}>
+              {referralCopied ? 'LINK COPIED TO CLIPBOARD ✓' : 'COPY SECURE LINK'}
+            </button>
+          </div>
+
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: 0, letterSpacing: '-0.5px' }}>Active Opportunities</h2>
+              <span onClick={() => navigate('tasks')} style={{ color: 'var(--slate)', fontSize: 13, fontWeight: 600, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>View Directory →</span>
+            </div>
+            
+            {featuredTasks.length === 0 ? (
+              <div style={{ ...S.glassCard, padding: 60, alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--slate)', letterSpacing: '0.5px' }}>No active campaigns available at this moment.</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {featuredTasks.map(task => {
+                  const isBlog = task.platform === 'blog';
+                  const quotaHit = (isBlog && quotas.blogs >= 20) || (!isBlog && quotas.videos >= 3);
+                  const cooldownHours = cooldowns[task.id];
+                  const isLocked = quotaHit || cooldownHours;
+
+                  return (
+                    <div key={task.id} style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, opacity: isLocked ? 0.6 : 1 }}>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                          {isBlog ? '📄' : '▶️'}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 4, letterSpacing: '-0.2px' }}>{task.title}</div>
+                          <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{task.watch_duration}s Verification</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Yield</div>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: isLocked ? 'var(--slate)' : 'var(--lime)' }}>+{task.reward_points} PTS</div>
+                        </div>
+                        
+                        {quotaHit ? (
+                          <button disabled style={S.btnLocked}>LIMIT REACHED</button>
+                        ) : cooldownHours ? (
+                          <button disabled style={S.btnLocked}>🔒 {cooldownHours}H COOLDOWN</button>
+                        ) : (
+                          <button onClick={() => navigate(`player/${task.id}`)} style={{ ...S.btnGhost, padding: '10px 20px', fontSize: 12 }}>Initiate</button>
+                        )}
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {showEditModal && (
         <div style={S.modalOverlay}>
