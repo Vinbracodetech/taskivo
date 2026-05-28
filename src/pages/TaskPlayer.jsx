@@ -5,9 +5,13 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timer, setTimer] = useState(0);
-  const [status, setStatus] = useState('waiting'); // waiting, active, verifying, completed
+  const [status, setStatus] = useState('waiting'); // waiting, active, verifying, processing, completed
   const [seoCodeInput, setSeoCodeInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  
+  // 🔥 NEW EVIDENCE UPLOAD STATES 🔥
+  const [proofText, setProofText] = useState('');
+  const [proofUrl, setProofUrl] = useState('');
 
   useEffect(() => {
     async function loadTask() {
@@ -20,7 +24,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           setErrorMsg("Task not found or expired.");
         }
       } catch (err) {
-        setErrorMsg("Failed to encrypt data link.");
+        setErrorMsg("Failed to decrypt data link.");
       } finally {
         setLoading(false);
       }
@@ -60,6 +64,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     try {
       setStatus('processing');
       setErrorMsg('');
+      
+      const isManual = task.platform === 'ugc' || task.platform === 'qa_testing';
 
       // 1. Verify SEO Code if applicable
       if (task.platform === 'blog') {
@@ -70,18 +76,30 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         }
       }
 
-      // 2. Mark as completed in DB
+      // 2. Verify Manual Proof if applicable
+      if (isManual) {
+        if (!proofText.trim() && !proofUrl.trim()) {
+          setErrorMsg("Action Denied: You must provide a bug report/text explanation or an evidence link.");
+          setStatus('waiting');
+          return;
+        }
+      }
+
+      // 3. Insert into Completions Table
+      // Notice: we strictly use 'pending' so it routes to the Creator Dashboard QA Queue
       const { error: compErr } = await supabase.from('completions').insert({
         user_id: session.user.id,
         task_id: task.id,
-        status: (task.platform === 'ugc' || task.platform === 'qa_testing') ? 'pending_approval' : 'approved',
-        reward_points: task.reward_points
+        status: isManual ? 'pending' : 'approved',
+        reward_points: task.reward_points,
+        proof_text: isManual ? proofText : null,
+        proof_url: isManual ? proofUrl : null
       });
 
-      if (compErr) throw new Error("You have already completed this task.");
+      if (compErr) throw new Error("Our records show you have already engaged with this task.");
 
-      // 3. Payout immediately if it's an automated task
-      if (task.platform === 'youtube' || task.platform === 'blog') {
+      // 4. Payout immediately ONLY if it's an automated task
+      if (!isManual) {
         const { data: userProfile } = await supabase.from('profiles').select('points').eq('id', session.user.id).single();
         await supabase.from('profiles').update({ points: userProfile.points + task.reward_points }).eq('id', session.user.id);
         await supabase.from('tasks').update({ current_views: task.current_views + 1 }).eq('id', task.id);
@@ -102,18 +120,18 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const isManual = task.platform === 'ugc' || task.platform === 'qa_testing';
 
   return (
-    <div style={{ padding: '40px 5%', maxWidth: 800, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" }}>
-      <button onClick={() => navigate('tasks')} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 24 }}>← Abort Mission</button>
+    <div style={{ padding: '40px 5%', maxWidth: 800, margin: '0 auto', fontFamily: "var(--font-body)" }}>
+      <button onClick={() => navigate('tasks')} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 24, fontFamily: "var(--font-display)" }}>← Abort Mission</button>
       
       <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
         
         {/* HEADER */}
         <div style={{ padding: '32px 32px 24px', borderBottom: '1px solid var(--line)' }}>
           <div style={{ display: 'inline-block', background: 'var(--lime-dim)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.2)', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', marginBottom: 12 }}>
-            {task.platform} Mission
+            {task.platform.replace('_', ' ')} Mission
           </div>
-          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 8, fontWeight: 800 }}>{task.title}</h1>
-          <div style={{ fontSize: 14, color: 'var(--slate)' }}>Payout: <strong style={{ color: 'var(--ink)' }}>{task.reward_points} PTS</strong></div>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 24, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>{task.title}</h1>
+          <div style={{ fontSize: 14, color: 'var(--slate)' }}>Payout Target: <strong style={{ color: 'var(--ink)' }}>{task.reward_points} PTS</strong></div>
         </div>
 
         <div style={{ padding: 32 }}>
@@ -129,7 +147,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
               {status === 'waiting' ? (
                 <div style={{ textAlign: 'center', padding: 40, background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--line)' }}>
                   <div style={{ fontSize: 15, color: 'var(--slate)', marginBottom: 24 }}>Watch the video completely to pass verification. Fast-forwarding is disabled.</div>
-                  <button onClick={() => setStatus('active')} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '14px 28px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>Start Verification Timer</button>
+                  <button onClick={() => setStatus('active')} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '14px 28px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "var(--font-display)", textTransform: 'uppercase', letterSpacing: '1px', boxShadow: '0 8px 16px rgba(168,255,62,0.2)' }}>Start Verification Timer</button>
                 </div>
               ) : (
                 <>
@@ -146,10 +164,12 @@ export default function TaskPlayer({ session, navigate, taskId }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 20, background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--line)' }}>
                     <div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Time Remaining</div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: timer > 0 ? '#ef4444' : 'var(--lime)', fontFamily: "'Inter', sans-serif" }}>{timer}s</div>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: timer > 0 ? '#ef4444' : 'var(--lime)', fontFamily: "var(--font-display)" }}>{timer}s</div>
                     </div>
                     {status === 'verifying' && (
-                      <button onClick={completeTask} style={{ background: 'var(--ink)', color: 'var(--surface)', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Claim {task.reward_points} PTS</button>
+                      <button onClick={completeTask} disabled={status === 'processing'} style={{ background: 'var(--ink)', color: 'var(--surface)', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>
+                        {status === 'processing' ? 'Verifying...' : `Claim ${task.reward_points} PTS`}
+                      </button>
                     )}
                   </div>
                 </>
@@ -161,7 +181,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           {isSEO && status !== 'completed' && (
             <div>
               <div style={{ background: 'var(--surface)', padding: 24, borderRadius: 12, border: '1px solid var(--line)', marginBottom: 24 }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: 16, color: 'var(--ink)' }}>Search Protocol</h3>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: 16, color: 'var(--ink)', fontFamily: "var(--font-display)" }}>Search Protocol</h3>
                 <ol style={{ paddingLeft: 20, margin: 0, color: 'var(--slate)', lineHeight: 1.8, fontSize: 14 }}>
                   <li>Open a new browser tab and go to <strong>Google.com</strong></li>
                   <li>Search for this exact phrase: <strong style={{ color: 'var(--ink)', background: 'var(--lime-dim)', padding: '2px 6px', borderRadius: 4 }}>{task.search_keyword}</strong></li>
@@ -171,50 +191,85 @@ export default function TaskPlayer({ session, navigate, taskId }) {
                 </ol>
               </div>
 
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <input 
                   type="text" 
                   placeholder="Paste Secret Code Here..." 
                   value={seoCodeInput} 
                   onChange={e => setSeoCodeInput(e.target.value)} 
-                  style={{ flex: 1, padding: 16, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 16, outline: 'none', fontFamily: 'monospace', textTransform: 'uppercase' }} 
+                  style={{ flex: '1 1 200px', padding: 16, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 16, outline: 'none', fontFamily: 'monospace', textTransform: 'uppercase' }} 
                 />
                 <button 
                   onClick={completeTask} 
-                  disabled={!seoCodeInput}
-                  style={{ background: seoCodeInput ? 'var(--lime)' : 'var(--surface)', color: seoCodeInput ? '#000' : 'var(--slate)', border: 'none', padding: '0 24px', borderRadius: 12, fontSize: 14, fontWeight: 800, cursor: seoCodeInput ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}
+                  disabled={!seoCodeInput || status === 'processing'}
+                  style={{ background: seoCodeInput ? 'var(--lime)' : 'var(--surface)', color: seoCodeInput ? '#000' : 'var(--slate)', border: 'none', padding: '16px 32px', borderRadius: 12, fontSize: 14, fontWeight: 800, cursor: seoCodeInput ? 'pointer' : 'not-allowed', transition: 'all 0.2s', fontFamily: "var(--font-display)", textTransform: 'uppercase', letterSpacing: '1px' }}
                 >
-                  Verify
+                  {status === 'processing' ? 'Checking...' : 'Verify'}
                 </button>
               </div>
             </div>
           )}
 
-          {/* ── 3. UGC / QA MANUAL UPLOAD ── */}
+          {/* ── 3. UGC / QA MANUAL UPLOAD ENGINE ── */}
           {isManual && status !== 'completed' && (
-            <div style={{ textAlign: 'center', padding: 40, background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--line)' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>📤</div>
-              <h3 style={{ margin: '0 0 8px 0', fontSize: 18, color: 'var(--ink)' }}>Manual Submission Required</h3>
-              <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24 }}>Follow the instructions on the creator's page and upload your proof directly to the provided external form.</p>
-              <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-                <a href={task.url} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--surface-card)', color: 'var(--ink)', border: '1px solid var(--line)', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>View Instructions</a>
-                <button onClick={completeTask} style={{ background: 'var(--ink)', color: 'var(--surface)', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Mark as Submitted</button>
+            <div style={{ background: 'var(--surface)', padding: 32, borderRadius: 16, border: '1px solid var(--line)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 40, height: 40, background: 'var(--surface-card)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: '1px solid var(--line)' }}>📤</div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, color: 'var(--ink)', fontFamily: "var(--font-display)" }}>Evidence Required</h3>
+                  <div style={{ fontSize: 13, color: 'var(--slate)' }}>Manual creator review process</div>
+                </div>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 16 }}>Payout will be held in escrow until approved by the Creator.</div>
+              
+              <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>
+                Review the task instructions at the target asset. Once you have completed the requirements, upload your evidence below. Your payout will be escrowed until the Creator approves your submission.
+              </p>
+
+              <a href={task.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', background: 'var(--surface-card)', color: 'var(--ink)', border: '1px solid var(--line)', padding: '12px 24px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', marginBottom: 32 }}>↗ Open Target Asset / Instructions</a>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--slate)', marginBottom: 8, display: 'block', fontFamily: "var(--font-display)" }}>Submission Notes / Bug Report (Optional)</label>
+                <textarea 
+                  rows="4" 
+                  placeholder="Describe what you did or list any bugs found..." 
+                  value={proofText}
+                  onChange={e => setProofText(e.target.value)}
+                  style={{ width: '100%', padding: 16, background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: "var(--font-body)" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 32 }}>
+                <label style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--slate)', marginBottom: 8, display: 'block', fontFamily: "var(--font-display)" }}>Evidence URL (Screenshot / Video Link)</label>
+                <input 
+                  type="url" 
+                  placeholder="https://drive.google.com/... or https://prnt.sc/..." 
+                  value={proofUrl}
+                  onChange={e => setProofUrl(e.target.value)}
+                  style={{ width: '100%', padding: 16, background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: "var(--font-body)" }}
+                />
+              </div>
+
+              <button 
+                onClick={completeTask} 
+                disabled={(!proofText.trim() && !proofUrl.trim()) || status === 'processing'}
+                style={{ width: '100%', background: (proofText || proofUrl) ? 'var(--ink)' : 'var(--surface-card)', color: (proofText || proofUrl) ? 'var(--surface)' : 'var(--slate)', border: (proofText || proofUrl) ? 'none' : '1px solid var(--line)', padding: '16px', borderRadius: 12, fontSize: 14, fontWeight: 800, cursor: (proofText || proofUrl) ? 'pointer' : 'not-allowed', transition: 'all 0.2s', fontFamily: "var(--font-display)", textTransform: 'uppercase', letterSpacing: '1px' }}
+              >
+                {status === 'processing' ? 'Submitting to Escrow...' : 'Submit Evidence for Review'}
+              </button>
             </div>
           )}
 
           {/* ── SUCCESS STATE ── */}
           {status === 'completed' && (
-            <div style={{ textAlign: 'center', padding: 40 }}>
-              <div style={{ width: 64, height: 64, background: 'rgba(168,255,62,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid var(--lime)' }}>
-                <span style={{ fontSize: 24 }}>✓</span>
+            <div style={{ textAlign: 'center', padding: 40, background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--lime)' }}>
+              <div style={{ width: 64, height: 64, background: 'var(--lime-dim)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid var(--lime)' }}>
+                <span style={{ fontSize: 24, color: 'var(--lime)' }}>✓</span>
               </div>
-              <h2 style={{ fontSize: 24, color: 'var(--ink)', marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>Mission Accomplished</h2>
-              <p style={{ color: 'var(--slate)', fontSize: 15, marginBottom: 32 }}>
-                {isManual ? "Proof submitted. Payout pending creator approval." : `Liquidity secured. ${task.reward_points} PTS added to treasury.`}
+              <h2 style={{ fontSize: 24, color: 'var(--ink)', marginBottom: 8, fontFamily: "var(--font-display)", letterSpacing: '-0.5px' }}>Mission Accomplished</h2>
+              <p style={{ color: 'var(--slate)', fontSize: 15, marginBottom: 32, lineHeight: 1.5 }}>
+                {isManual ? "Your proof has been submitted securely. Payout is held in escrow pending Creator QA approval." : `Liquidity verified. ${task.reward_points} PTS added to your treasury.`}
               </p>
-              <button onClick={() => navigate('tasks')} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Return to Feed</button>
+              <button onClick={() => navigate('tasks')} style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', color: 'var(--ink)', padding: '14px 28px', borderRadius: 12, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "var(--font-display)", textTransform: 'uppercase', letterSpacing: '1px' }}>Return to Feed</button>
             </div>
           )}
 
