@@ -150,9 +150,9 @@ export default function CreateTask({ session, navigate, showToast }) {
         const amountInKobo = amountInNGN * 100; 
 
         const paystack = new PaystackPop();
-        paystack.newTransaction({
-          key: 'pk_test_dbc405eee8b6b7e9c5723a2f984a6c395a355902',
-          email: user.email,
+paystack.newTransaction({
+  key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+  email: user.email,
           amount: amountInKobo, 
           currency: 'NGN',
           metadata: { 
