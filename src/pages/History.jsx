@@ -33,7 +33,6 @@ export default function History({ session }) {
           // ── EARNER LOGIC: UNIFIED TIMELINE MERGE ──
           
           const [compRes, blogRes, spinRes] = await Promise.allSettled([
-            // Notice we added 'status' to this query for Manual UGC/QA approvals!
             supabase.from('completions').select(`id, created_at, platform, status, tasks ( title, reward_points )`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
             supabase.from('blog_reads').select(`id, created_at, post_slug`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
             supabase.from('daily_spins').select(`id, created_at, reward_points`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50)
@@ -60,12 +59,13 @@ export default function History({ session }) {
                 id: d.id,
                 created_at: d.created_at,
                 _recordType: 'client_task',
+                _platform: d.platform, // Store the exact platform for UI checks
                 _title: d.tasks?.title || 'Verified Campaign Task',
                 _pts: d.tasks?.reward_points || 0,
                 _icon: icon,
                 _tagText: platformTag,
                 _typeColor: typeColor,
-                _status: d.status || 'completed' // Pulls the 'pending' status for UGC/QA
+                _status: d.status || 'completed'
               };
             }));
           }
@@ -228,13 +228,21 @@ export default function History({ session }) {
                   tagColor = '#D4AF37';
                 }
 
-                // 🔥 HANDLE MANUAL VERIFICATION (UGC/QA) PENDING ESCROW 🔥
-                if (item._recordType === 'client_task' && item._status === 'pending') {
-                  statusText = 'IN REVIEW ⏱️';
-                  statusColor = '#fbbf24';
-                } else if (item._recordType === 'client_task' && item._status === 'rejected') {
-                  statusText = 'REJECTED ✕';
-                  statusColor = '#ef4444';
+                // 🔥 STRICT MANUAL VERIFICATION UI CHECK 🔥
+                if (item._recordType === 'client_task') {
+                   const isManualTask = item._platform === 'ugc' || item._platform === 'qa_testing';
+                   
+                   if (isManualTask && item._status === 'pending') {
+                     statusText = 'IN REVIEW ⏱️';
+                     statusColor = '#fbbf24';
+                   } else if (isManualTask && item._status === 'rejected') {
+                     statusText = 'REJECTED ✕';
+                     statusColor = '#ef4444';
+                   } else {
+                     // For Videos and Blogs, ALWAYS force Credited ✓
+                     statusText = 'CREDITED ✓';
+                     statusColor = 'var(--slate)';
+                   }
                 }
                 
                 return (
