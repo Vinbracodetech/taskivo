@@ -75,7 +75,7 @@ export function AdminOverview({ navigate, showToast }) {
       <h2 style={{ ...S.header, fontSize: 20, marginBottom: 24 }}>Control Modules</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
         <div onClick={() => navigate('admin-users')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }}>
-          <h3 style={{ color: 'var(--ink)', margin: '0 0 8px 0', fontSize: 18 }}>Identity & Access Management</h3>
+          <h3 style={{ color: 'var(--ink)', margin: '0 0 8px 0', fontSize: 18 }}>Identity &amp; Access Management</h3>
           <p style={{ color: 'var(--slate)', fontSize: 13, margin: 0 }}>Modify roles, suspend accounts, and edit balances.</p>
         </div>
         <div onClick={() => navigate('admin-tasks')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }}>
@@ -230,7 +230,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
         status: 'active',
         target_views: 999999, // Practically unlimited views for internal tasks
         is_house_campaign: true, // The bypass flag!
-        creator_id: user.id
+        creator_id: user?.id || 'admin'
       };
 
       const { error } = await supabase.from('tasks').insert(newHouseTask);
@@ -353,7 +353,7 @@ export function AdminTasks({ showToast }) {
       <div style={S.tableContainer}>
         <div style={{ ...S.tableHeader, gridTemplateColumns: '2fr 1fr 1fr 1.5fr' }} className="hide-on-mobile">
           <span>Campaign details</span>
-          <span>Platform & Target</span>
+          <span>Platform &amp; Target</span>
           <span>Status</span>
           <span style={{ textAlign: 'right' }}>Overrides</span>
         </div>
@@ -365,7 +365,7 @@ export function AdminTasks({ showToast }) {
                 {t.is_house_campaign && <span style={{ color: 'var(--lime)', marginRight: 6 }}>[OFFICIAL]</span>}
                 {t.title}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--slate)', fontFamily: 'monospace' }}>Creator: {t.creator_id.substring(0,8)}...</div>
+              <div style={{ fontSize: 12, color: 'var(--slate)', fontFamily: 'monospace' }}>Creator: {t.creator_id?.substring(0,8) || 'admin'}...</div>
             </div>
             
             <div>
@@ -473,7 +473,7 @@ export function AdminWithdrawals({ showToast }) {
                 {req.status === 'pending' ? (
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                     <button onClick={() => processRequest(req, 'approve')} style={S.btnSuccess}>Authorize</button>
-                    <button onClick={() => processRequest(req, 'reject')} style={S.btnDanger}>Deny & Refund</button>
+                    <button onClick={() => processRequest(req, 'reject')} style={S.btnDanger}>Deny &amp; Refund</button>
                   </div>
                 ) : (
                   <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: req.status === 'approved' ? 'rgba(168,255,62,0.1)' : 'rgba(239,68,68,0.1)', color: req.status === 'approved' ? 'var(--ink)' : '#ef4444', border: '1px solid var(--line)' }}>
@@ -612,4 +612,50 @@ export function AdminBlog({ showToast }) {
           </div>
           
           <button onClick={savePost} disabled={loading} style={{ ...S.btnSuccess, padding: '12px 24px', fontSize: 14, background: 'var(--lime)', color: '#000' }}>
-            {loading ? 'SAVING...' : editingId ?
+            {loading ? 'SAVING...' : editingId ? 'UPDATE ARTICLE' : 'DEPLOY ARTICLE'}
+          </button>
+        </div>
+      </div>
+
+      <h2 style={{ ...S.header, fontSize: 20, marginTop: 48, marginBottom: 16 }}>Article Ledger</h2>
+      <div style={S.tableContainer}>
+        <div style={{ ...S.tableHeader, gridTemplateColumns: '2fr 1fr 1fr 1fr' }} className="hide-on-mobile">
+          <span>Title</span>
+          <span>Category</span>
+          <span>Status</span>
+          <span style={{ textAlign: 'right' }}>Actions</span>
+        </div>
+
+        {posts.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>No articles found.</div>
+        ) : (
+          posts.map(post => (
+            <div key={post.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+              <div>
+                <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>{post.title}</div>
+                <div style={{ fontSize: 11, color: 'var(--slate)' }}>/{post.slug}</div>
+              </div>
+              
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', background: post.category === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: post.category === 'creator' ? '#D4AF37' : 'var(--lime)' }}>
+                  {post.category}
+                </span>
+              </div>
+              
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: post.status === 'published' ? 'rgba(168,255,62,0.1)' : 'var(--surface)', color: post.status === 'published' ? 'var(--ink)' : 'var(--slate)', border: '1px solid var(--line)' }}>
+                  {post.status}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <button onClick={() => startEdit(post)} style={S.btnAction}>Edit</button>
+                <button onClick={() => deletePost(post.id)} style={S.btnDanger}>Drop</button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
