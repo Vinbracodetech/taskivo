@@ -32,27 +32,42 @@ export default function History({ session }) {
         } else {
           // ── EARNER LOGIC: UNIFIED TIMELINE MERGE ──
           
-          // We use Promise.allSettled so if the daily_spins table doesn't exist yet, it won't crash the whole page.
           const [compRes, blogRes, spinRes] = await Promise.allSettled([
-            supabase.from('completions').select(`id, created_at, platform, tasks ( title, reward_points )`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
+            // Notice we added 'status' to this query for Manual UGC/QA approvals!
+            supabase.from('completions').select(`id, created_at, platform, status, tasks ( title, reward_points )`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
             supabase.from('blog_reads').select(`id, created_at, post_slug`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
-            
-            // ⚠️ NOTE: Update 'daily_spins' and 'reward_points' below if your Supabase table is named differently!
             supabase.from('daily_spins').select(`id, created_at, reward_points`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50)
           ]);
 
           let mergedTimeline = [];
 
-          // 1. Inject Standard Campaigns
+          // 1. Inject Standard & Premium Campaigns (with accurate tags & icons)
           if (compRes.status === 'fulfilled' && compRes.value.data) {
-            mergedTimeline.push(...compRes.value.data.map(d => ({
-              id: d.id,
-              created_at: d.created_at,
-              _recordType: 'client_task',
-              _title: d.tasks?.title || 'Verified Campaign Task',
-              _pts: d.tasks?.reward_points || 0,
-              _icon: d.platform === 'blog' ? '📄' : d.platform === 'ugc' ? '📸' : '▶️'
-            })));
+            mergedTimeline.push(...compRes.value.data.map(d => {
+              let icon = '▶️';
+              let platformTag = 'Video View';
+              let typeColor = 'rgba(255,255,255,0.05)';
+              
+              if (d.platform === 'blog') { 
+                icon = '📄'; platformTag = 'SEO Dwell'; 
+              } else if (d.platform === 'ugc') { 
+                icon = '📸'; platformTag = 'UGC Escrow'; typeColor = '#D4AF37'; 
+              } else if (d.platform === 'qa_testing') { 
+                icon = '🛠️'; platformTag = 'App QA Test'; typeColor = '#D4AF37'; 
+              }
+
+              return {
+                id: d.id,
+                created_at: d.created_at,
+                _recordType: 'client_task',
+                _title: d.tasks?.title || 'Verified Campaign Task',
+                _pts: d.tasks?.reward_points || 0,
+                _icon: icon,
+                _tagText: platformTag,
+                _typeColor: typeColor,
+                _status: d.status || 'completed' // Pulls the 'pending' status for UGC/QA
+              };
+            }));
           }
 
           // 2. Inject Internal Blog Reads
@@ -62,7 +77,7 @@ export default function History({ session }) {
               created_at: d.created_at,
               _recordType: 'official_blog',
               _title: `Taskivo Intel: ${d.post_slug.replace(/-/g, ' ')}`,
-              _pts: 10, // Hardcoded reward for internal articles
+              _pts: 10,
               _icon: '📄'
             })));
           }
@@ -74,7 +89,7 @@ export default function History({ session }) {
               created_at: d.created_at,
               _recordType: 'daily_spin',
               _title: 'Daily Wheel Spin Bonus',
-              _pts: d.reward_points || d.points || d.amount || 0, // Fallbacks in case column is named differently
+              _pts: d.reward_points || d.points || d.amount || 0, 
               _icon: '🎡'
             })));
           }
@@ -87,21 +102,10 @@ export default function History({ session }) {
         }
       } else if (activeTab === 'wallet') {
         if (isCreator) {
-          // ── CREATOR LOGIC: Fetch fiat payments / grants ──
-          const { data, error } = await supabase
-            .from('transactions')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
+          const { data, error } = await supabase.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
           if (!error && data) setHistoryData(data);
-          
         } else {
-          // ── EARNER LOGIC: Fetch withdrawal requests ──
-          const { data, error } = await supabase
-            .from('withdrawals')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
+          const { data, error } = await supabase.from('withdrawals').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
           if (!error && data) setHistoryData(data);
         }
       }
@@ -124,7 +128,6 @@ export default function History({ session }) {
     }
   }
 
-  // 🔥 PREMIUM UI STYLES (MATCHES THE NEW DASHBOARD) 🔥
   const S = {
     page: { padding: '40px 5%', maxWidth: 800, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", minHeight: '80vh' },
     headerWrap: { marginBottom: 32, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 24 },
@@ -137,16 +140,8 @@ export default function History({ session }) {
     }),
     timelineWrap: { display: 'flex', flexDirection: 'column', gap: 16 },
     card: (typeColor) => ({ 
-      background: 'var(--surface-card)', 
-      border: '1px solid rgba(255,255,255,0.03)', 
-      borderLeft: `4px solid ${typeColor}`,
-      borderRadius: 16, 
-      padding: '20px 24px', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'space-between', 
-      gap: 16, 
-      flexWrap: 'wrap',
+      background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.03)', borderLeft: `4px solid ${typeColor}`,
+      borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
       boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
     }),
     iconBox: (bgColor) => ({ width: 44, height: 44, borderRadius: 12, background: bgColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }),
@@ -213,10 +208,13 @@ export default function History({ session }) {
                 );
               } else {
                 // EARNER UNIFIED RENDERER
-                let typeColor = 'rgba(255,255,255,0.1)';
+                let typeColor = item._typeColor || 'rgba(255,255,255,0.1)';
                 let bgColor = 'var(--surface)';
-                let tagText = 'Verified Task';
+                let tagText = item._tagText || 'Verified Task';
                 let tagColor = 'var(--slate)';
+                
+                let statusColor = 'var(--slate)';
+                let statusText = 'Credited ✓';
 
                 if (item._recordType === 'official_blog') {
                   typeColor = '#A8FF3E'; // Lime
@@ -228,6 +226,15 @@ export default function History({ session }) {
                   bgColor = 'rgba(212,175,55,0.1)';
                   tagText = 'Daily Reward';
                   tagColor = '#D4AF37';
+                }
+
+                // 🔥 HANDLE MANUAL VERIFICATION (UGC/QA) PENDING ESCROW 🔥
+                if (item._recordType === 'client_task' && item._status === 'pending') {
+                  statusText = 'IN REVIEW ⏱️';
+                  statusColor = '#fbbf24';
+                } else if (item._recordType === 'client_task' && item._status === 'rejected') {
+                  statusText = 'REJECTED ✕';
+                  statusColor = '#ef4444';
                 }
                 
                 return (
@@ -242,7 +249,7 @@ export default function History({ session }) {
                     </div>
                     <div>
                       <div style={{ ...S.points, color: 'var(--ink)' }}>+{item._pts} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>PTS</span></div>
-                      <div style={{ ...S.status, color: 'var(--slate)' }}>Credited ✓</div>
+                      <div style={{ ...S.status, color: statusColor }}>{statusText}</div>
                     </div>
                   </div>
                 );
