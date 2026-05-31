@@ -45,7 +45,6 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
       transition: "background-color 0.3s ease"
     }}>
       
-      {/* 🔥 THE NEW TASKIVO SVG LOGO 🔥 */}
       <div 
         style={{ width: 130, display: "flex", alignItems: "center", cursor: "pointer" }} 
         onClick={function() { navigate("landing"); }}
@@ -85,7 +84,6 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
       
       <div style={{ display: "flex", gap: 16, alignItems: "center", fontFamily: "'DM Sans', sans-serif" }}>
         
-        {/* 🔥 VISITOR THEME TOGGLE 🔥 */}
         <button 
           onClick={toggleTheme} 
           style={{ background: 'transparent', border: 'none', color: 'var(--ink)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}
@@ -142,7 +140,6 @@ export default function App() {
   
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
 
-  // 🔥 THE BULLETPROOF REFERRAL CATCHER 🔥
   useEffect(function() {
     if (typeof window !== "undefined") {
       var refId = null;
@@ -161,7 +158,7 @@ export default function App() {
 
       if (refId) {
         localStorage.setItem("taskivo_ref", refId);
-        setAuthMode("register"); // Instantly force UI to registration tab
+        setAuthMode("register"); 
       }
     }
   }, []);
@@ -282,10 +279,8 @@ export default function App() {
       <div className="app-shell" style={{ position: 'relative', minHeight: '100vh', background: 'var(--surface)' }}>
         <div className="main-content" style={{ paddingBottom: user ? 100 : 0 }}>
           
-          {/* 🔥 UPDATED TOPNAV WITH THEME TOGGLE 🔥 */}
           <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} theme={theme} toggleTheme={toggleTheme} />
 
-          {/* 🔥 ADMIN SECONDARY NAVIGATION (Auto-appears when in Admin pages) 🔥 */}
           {user && user.role === 'admin' && view.startsWith('admin-') && (
             <div style={{ background: 'var(--surface-card)', borderBottom: '1px solid var(--line)', padding: '12px 5%', display: 'flex', gap: 16, overflowX: 'auto', whiteSpace: 'nowrap', zIndex: 89, position: 'sticky', top: 72 }}>
               <button onClick={() => navigate('admin-dashboard')} style={{ background: 'transparent', border: 'none', color: view === 'admin-dashboard' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Overview</button>
@@ -303,7 +298,9 @@ export default function App() {
             {view === "terms" && <Terms />}
             {view === "privacy" && <Privacy />}
             {view === "blog" && <BlogIndex navigate={navigate} />}
-            {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} />}
+            
+            {/* 🔥 UPDATED TO PASS USER & AUTH MODE 🔥 */}
+            {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} user={user} setAuthMode={setAuthMode} />}
 
             {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
             {view === "tasks" && user && <Tasks session={{user}} navigate={navigate} />}
