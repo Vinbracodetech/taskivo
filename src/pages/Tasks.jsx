@@ -69,13 +69,41 @@ export default function Tasks({ session, navigate }) {
       setQuotas({ videos: vCount, blogs: bCount, premium: pCount });
       setCooldowns(cooldownMap);
 
-      const { data: activeTasks } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('status', 'active')
-        .order('reward_points', { ascending: false }); // Show highest paying tasks first
+      // 1. FETCH CLIENT & ADMIN CUSTOM TASKS
+      const completedTaskIds = (history || []).map(h => h.task_id);
+      const { data: activeTasks } = await supabase.from('tasks').select('*').eq('status', 'active');
+      const freshTasks = (activeTasks || []).filter(t => !completedTaskIds.includes(t.id)).map(t => ({
+        ...t,
+        is_internal_blog: false
+      }));
+
+      // 2. FETCH AUTOMATED TASKIVO BLOG POSTS (10 PTS ENGINE)
+      const { data: blogReads } = await supabase.from('blog_reads').select('post_slug').eq('user_id', user.id);
+      const readSlugs = (blogReads || []).map(b => b.post_slug);
+      
+      const { data: activePosts } = await supabase.from('posts').select('*').eq('status', 'published');
+      const freshPosts = (activePosts || []).filter(p => !readSlugs.includes(p.slug)).map(p => ({
+        id: 'internal-' + p.slug,
+        is_internal_blog: true,
+        slug: p.slug,
+        title: p.title,
+        platform: 'Taskivo Intel',
+        reward_points: 10,
+        created_at: p.created_at
+      }));
+
+      // 3. MERGE & SORT (Date descending, then randomized within 12-hour windows)
+      const nowTime = new Date().getTime();
+      const mergedFeed = [...freshTasks, ...freshPosts].map(t => ({
+        ...t,
+        created_time: new Date(t.created_at || nowTime).getTime()
+      })).sort((a, b) => {
+        const dateDiff = b.created_time - a.created_time;
+        if (Math.abs(dateDiff) > 43200000) return dateDiff; 
+        return 0.5 - Math.random();
+      });
         
-      setTasks(activeTasks || []);
+      setTasks(mergedFeed);
     } catch (err) {
       console.error(err);
     } finally {
@@ -123,8 +151,8 @@ export default function Tasks({ session, navigate }) {
     headerWrap: { marginBottom: 48, borderBottom: '1px solid var(--line)', paddingBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20 },
     glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 24, padding: 40, textAlign: 'center' },
     quotaBox: (isPremium) => ({ background: isPremium ? 'var(--surface)' : 'var(--lime-dim)', border: `1px solid ${isPremium ? 'var(--gold)' : 'var(--lime)'}`, padding: '16px 24px', borderRadius: 16, flex: '1 1 200px' }),
-    taskCard: (isPremium) => ({ background: 'var(--surface-card)', border: `1px solid ${isPremium ? 'var(--gold)' : 'var(--line)'}`, borderRadius: 20, padding: '24px', display: 'flex', flexDirection: 'column', boxShadow: isPremium ? '0 8px 24px rgba(212, 175, 55, 0.08)' : 'var(--shadow)', position: 'relative', overflow: 'hidden' }),
-    btnActive: (isPremium) => ({ background: isPremium ? 'var(--gold)' : 'var(--lime)', color: '#000', border: 'none', padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "var(--font-display)", textTransform: 'uppercase' }),
+    taskCard: (isPremium, isInternal) => ({ background: isInternal ? 'var(--lime-dim)' : 'var(--surface-card)', border: `1px solid ${isPremium ? 'var(--gold)' : isInternal ? 'var(--lime)' : 'var(--line)'}`, borderRadius: 20, padding: '24px', display: 'flex', flexDirection: 'column', boxShadow: isPremium ? '0 8px 24px rgba(212, 175, 55, 0.08)' : 'var(--shadow)', position: 'relative', overflow: 'hidden' }),
+    btnActive: (isPremium, isInternal) => ({ background: isPremium ? 'var(--gold)' : isInternal ? 'var(--ink)' : 'var(--lime)', color: isInternal ? 'var(--lime)' : '#000', border: 'none', padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "var(--font-display)", textTransform: 'uppercase' }),
     btnLocked: { background: 'var(--surface)', color: 'var(--slate)', border: '1px solid var(--line)', padding: '10px 20px', borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "var(--font-display)" },
     
     payoutOverlay: { position: 'relative', minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
@@ -219,6 +247,7 @@ export default function Tasks({ session, navigate }) {
             const isVideo = task.platform === 'youtube';
             const isBlog = task.platform === 'blog';
             const isPremium = task.platform === 'ugc' || task.platform === 'qa_testing';
+            const isInternal = task.is_internal_blog || task.is_house_campaign;
             
             let quotaHit = false;
             if (isVideo && quotas.videos >= 3) quotaHit = true;
@@ -228,12 +257,12 @@ export default function Tasks({ session, navigate }) {
             const isLocked = quotaHit || cooldowns[task.id];
             
             let icon = '▶️';
-            if (isBlog) icon = '📄';
+            if (isBlog || isInternal) icon = '📄';
             if (task.platform === 'ugc') icon = '📸';
             if (task.platform === 'qa_testing') icon = '🛠️';
 
             return (
-              <div key={task.id} style={{ ...S.taskCard(isPremium), opacity: isLocked ? 0.6 : 1 }}>
+              <div key={task.id} style={{ ...S.taskCard(isPremium, isInternal), opacity: isLocked ? 0.6 : 1 }}>
                 
                 {isPremium && (
                   <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--gold)', color: '#000', fontSize: 9, fontWeight: 800, padding: '4px 12px', borderBottomLeftRadius: 12, textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -246,9 +275,12 @@ export default function Tasks({ session, navigate }) {
                     {icon}
                   </div>
                   <div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: isInternal ? 'var(--lime)' : 'var(--slate)', textTransform: 'uppercase', marginBottom: 4 }}>
+                      {task.is_house_campaign ? 'OFFICIAL TASK' : task.platform}
+                    </div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)', marginBottom: 4, lineHeight: 1.3 }}>{task.title}</div>
                     <div style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>
-                      {isPremium ? 'Manual Verification' : `${task.watch_duration}s Enforced Dwell`}
+                      {isPremium ? 'Manual Verification' : task.watch_duration ? `${task.watch_duration}s Enforced Dwell` : 'Automated Verification'}
                     </div>
                   </div>
                 </div>
@@ -264,7 +296,17 @@ export default function Tasks({ session, navigate }) {
                   ) : cooldowns[task.id] ? (
                     <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]}H WAIT</button>
                   ) : (
-                    <button onClick={() => navigate(`player/${task.id}`)} style={S.btnActive(isPremium)}>INITIATE</button>
+                    <button onClick={() => {
+                        if (task.is_internal_blog) {
+                          localStorage.setItem('taskivo_active_mission', task.slug);
+                          navigate(`article-${task.slug}`);
+                        } else {
+                          if (task.platform === 'blog' && task.url) {
+                            localStorage.setItem('taskivo_active_mission', task.url.split('/').pop());
+                          }
+                          navigate(`player/${task.id}`);
+                        }
+                    }} style={S.btnActive(isPremium, isInternal)}>INITIATE</button>
                   )}
                 </div>
               </div>
