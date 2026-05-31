@@ -27,7 +27,7 @@ import {
   AdminUsers as AdminUsersComp,
   AdminTasks as AdminTasksComp,
   AdminWithdrawals as AdminWithdrawalsComp,
-  AdminBlog as AdminBlogComp // 🔥 ADDED BLOG CMS IMPORT
+  AdminBlog as AdminBlogComp 
 } from "./pages/AdminPanel.jsx";
 
 // ── GLOBAL STICKY HEADER ──
@@ -41,13 +41,43 @@ function TopNav({ navigate, user, setAuthMode }) {
       borderBottom: "1px solid var(--line)",
       transition: "background-color 0.3s ease"
     }}>
-      <div style={{
-        fontFamily: "'Inter', sans-serif",
-        fontWeight: 800, color: "var(--ink)", fontSize: 22, letterSpacing: "-0.5px",
-        display: "flex", alignItems: "center", gap: 8, cursor: "pointer"
-      }} onClick={function() { navigate("landing"); }}>
-        <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--lime)", display: "inline-block" }}></span>
-        Taskivo
+      
+      {/* 🔥 THE NEW TASKIVO SVG LOGO 🔥 */}
+      <div 
+        style={{ width: 130, display: "flex", alignItems: "center", cursor: "pointer" }} 
+        onClick={function() { navigate("landing"); }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" style={{ width: '100%', height: 'auto', display: 'block' }}>
+          <defs>
+            <linearGradient id="lime3D" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#A8FF3E" />
+              <stop offset="100%" stopColor="#3D7000" />
+            </linearGradient>
+            <linearGradient id="goldAccent" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#D4AF37" />
+              <stop offset="100%" stopColor="#FFF2C8" />
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          
+          <g transform="translate(15, 20)">
+            <path d="M0 20 L20 10 L40 20 L20 30 Z" fill="url(#lime3D)" />
+            <path d="M0 20 L20 30 L20 70 L0 60 Z" fill="#78D61A" />
+            <path d="M20 30 L40 20 L40 60 L20 70 Z" fill="#3D7000" />
+            <path d="M20 10 L45 0 L65 10 L40 20 Z" fill="url(#goldAccent)" filter="url(#glow)"/>
+            <path d="M40 20 L65 10 L65 30 L40 40 Z" fill="#B38F24" />
+          </g>
+
+          <text x="105" y="78" fontFamily="'Inter', sans-serif" fontSize="56" fontWeight="900" fill="var(--ink)" letterSpacing="-2">Taskivo</text>
+          
+          <circle cx="340" cy="68" r="6" fill="url(#lime3D)" filter="url(#glow)" />
+        </svg>
       </div>
       
       <div style={{ display: "flex", gap: 16, alignItems: "center", fontFamily: "'DM Sans', sans-serif" }}>
@@ -276,7 +306,7 @@ export default function App() {
             {view === "admin-users" && user && <AdminUsersComp showToast={showToast} currentUser={user} />}
             {view === "admin-tasks" && user && <AdminTasksComp showToast={showToast} />}
             {view === "admin-withdrawals" && user && <AdminWithdrawalsComp showToast={showToast} />}
-            {view === "admin-blog" && user && <AdminBlogComp showToast={showToast} />} {/* 🔥 ADDED ADMIN BLOG ROUTE */}
+            {view === "admin-blog" && user && <AdminBlogComp showToast={showToast} />}
           </div>
         </div>
 
