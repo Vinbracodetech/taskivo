@@ -11,13 +11,11 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentHash, setCurrentHash] = useState(window.location.hash.replace('#', ''));
 
-  // 🔥 NEW: LISTEN TO URL CHANGES 🔥
   useEffect(() => {
     const handleHashChange = () => {
       setCurrentHash(window.location.hash.replace('#', ''));
     };
     
-    // Listen for browser navigation
     window.addEventListener('hashchange', handleHashChange);
     
     return () => {
@@ -33,7 +31,6 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
   function handleNavigate(route) {
     closeMenu();
     navigate(route);
-    // Manually update local state just in case event listener is slow
     setCurrentHash(route);
   }
 
@@ -56,6 +53,8 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
     }
   }
 
+  // 🔥 ADDED GLOBE ICON FOR THE PUBLIC LANDING PAGE 🔥
+  const IconGlobe = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
   const IconHome = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>;
   const IconTasks = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>;
   const IconWallet = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>;
@@ -68,8 +67,6 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
   const IconTrash = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
   const IconLogout = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
 
-  // 🔥 NEW: DYNAMIC PILL BUTTON 🔥
-  // We renamed `isProfile` to `isActive` because any button can be active now!
   function PillButton({ icon, onClick, isActive }) {
     return (
       <button 
@@ -99,14 +96,12 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
     );
   }
 
-  // Figure out the home dashboard route based on user role
   const homeRoute = user.role === 'admin' ? 'admin-dashboard' : user.role === 'creator' ? 'creator-dashboard' : 'user-dashboard';
 
   return (
     <>
       <div style={{ position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4, padding: '8px', background: C.glass, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.line}`, borderRadius: 100, zIndex: 9990, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
         
-        {/* 🔥 COMPARE CURRENT HASH TO ROUTE TO DETERMINE isActive 🔥 */}
         <PillButton 
           icon={IconHome} 
           onClick={() => handleNavigate(homeRoute)} 
@@ -136,7 +131,6 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
         
         <div style={{ width: 1, height: 24, background: C.line, margin: '0 4px' }} />
         
-        {/* Profile menu button doesn't track a route, it tracks if the menu is open! */}
         <PillButton icon={IconProfile} onClick={openMenu} isActive={menuOpen} />
       </div>
 
@@ -153,7 +147,10 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {/* 🔥 ADDED TASKIVO HOMEPAGE ROUTE AT THE TOP 🔥 */}
+          <MenuItem icon={IconGlobe} label="Taskivo Homepage" onClick={() => handleNavigate('landing')} />
           <MenuItem icon={IconHome} label="Dashboard" onClick={() => handleNavigate(homeRoute)} />
+          
           {user.role === 'earner' && (<><MenuItem icon={IconTasks} label="Task Network" onClick={() => handleNavigate('tasks')} /><MenuItem icon={IconWallet} label="Wallet & Withdrawals" onClick={() => handleNavigate('wallet')} /></>)}
           {user.role === 'creator' && (<><MenuItem icon={<span style={{fontSize: 18}}>🚀</span>} label="Launch Campaign" onClick={() => handleNavigate('create-task')} /><MenuItem icon={IconAnalytics} label="Campaign Analytics" onClick={() => handleNavigate('creator-analytics')} /></>)}
           {user.role === 'admin' && (<><MenuItem icon={IconUsers} label="Manage Users" onClick={() => handleNavigate('admin-users')} /><MenuItem icon={IconAdminList} label="Review Network Tasks" onClick={() => handleNavigate('admin-tasks')} /><MenuItem icon={IconWallet} label="Process Withdrawals" onClick={() => handleNavigate('admin-withdrawals')} /></>)}
