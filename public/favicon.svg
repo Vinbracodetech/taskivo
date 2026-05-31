@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="lime3DFav" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A8FF3E" />
+      <stop offset="100%" stop-color="#3D7000" />
+    </linearGradient>
+    <linearGradient id="goldAccentFav" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D4AF37" />
+      <stop offset="100%" stop-color="#FFF2C8" />
+    </linearGradient>
+    <filter id="glowFav">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="100" height="100" rx="22" fill="#0D0D14" />
+
+  <g transform="translate(18, 18) scale(1.05)">
+    <path d="M0 20 L20 10 L40 20 L20 30 Z" fill="url(#lime3DFav)" />
+    <path d="M0 20 L20 30 L20 70 L0 60 Z" fill="#78D61A" />
+    <path d="M20 30 L40 20 L40 60 L20 70 Z" fill="#3D7000" />
+    <path d="M20 10 L45 0 L65 10 L40 20 Z" fill="url(#goldAccentFav)" filter="url(#glowFav)"/>
+    <path d="M40 20 L65 10 L65 30 L40 40 Z" fill="#B38F24" />
+  </g>
+</svg>
