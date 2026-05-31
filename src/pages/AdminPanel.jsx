@@ -202,6 +202,103 @@ export function AdminUsers({ showToast, currentUser }) {
   );
 }
 
+// ── 3.1 ADMIN HOUSE DEPLOYER (GOD-MODE) ──
+export function AdminHouseDeployer({ showToast, onDeploy }) {
+  const [title, setTitle] = useState('');
+  const [platform, setPlatform] = useState('SEO Search');
+  const [url, setUrl] = useState('');
+  const [rewardPoints, setRewardPoints] = useState(50);
+  const [keyword, setKeyword] = useState('');
+  const [secretCode, setSecretCode] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleDeploy(e) {
+    e.preventDefault();
+    if (!title || !url) return alert("Title and Target URL are mandatory payload details.");
+    setSubmitting(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const newHouseTask = {
+        title,
+        platform: platform === 'SEO Search' ? 'blog' : platform,
+        url,
+        reward_points: parseInt(rewardPoints),
+        search_keyword: platform === 'SEO Search' ? keyword : null,
+        secret_code: platform === 'SEO Search' ? secretCode : 'HOUSE_BYPASS',
+        status: 'active',
+        target_views: 999999, // Practically unlimited views for internal tasks
+        is_house_campaign: true, // The bypass flag!
+        creator_id: user.id
+      };
+
+      const { error } = await supabase.from('tasks').insert(newHouseTask);
+      if (error) throw error;
+
+      if (showToast) showToast("House Campaign broadcasted to networks instantly!", "success");
+      setTitle(''); setUrl(''); setKeyword(''); setSecretCode('');
+      if (onDeploy) onDeploy(); // Instantly refresh the table below
+    } catch (err) {
+      if (showToast) showToast("Error broadcasting house campaign.", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div style={{ ...S.glassCard, marginBottom: 48 }}>
+      <h3 style={{ ...S.header, fontSize: 22, margin: '0 0 8px 0', color: 'var(--ink)' }}>God-Mode Deployer</h3>
+      <p style={{ color: 'var(--slate)', fontSize: 14, margin: '0 0 24px 0' }}>Launch unrestricted official campaigns onto the live worker index bypassing standard payment barriers.</p>
+
+      <form onSubmit={handleDeploy} style={{ display: 'grid', gap: 16 }}>
+        <div>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>Task Title</label>
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g., Join our official Telegram Community" style={S.input} required />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>Platform Ecosystem</label>
+            <select value={platform} onChange={e => setPlatform(e.target.value)} style={S.select}>
+              <option value="SEO Search">Google SEO</option>
+              <option value="youtube">YouTube Ecosystem</option>
+              <option value="twitter">Twitter / X</option>
+              <option value="Custom Direct">Direct Click Link</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>Custom Reward (PTS)</label>
+            <input type="number" value={rewardPoints} onChange={e => setRewardPoints(e.target.value)} style={S.input} required />
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>Target Destination URL</label>
+          <input type="url" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." style={S.input} required />
+        </div>
+
+        {platform === 'SEO Search' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, background: 'var(--surface)', padding: 16, borderRadius: 12, border: '1px solid var(--line)' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>Target Keyword</label>
+              <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Taskivo platform" style={S.input} required />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: 6 }}>Secret Code Payload</label>
+              <input type="text" value={secretCode} onChange={e => setSecretCode(e.target.value)} placeholder="CryptoCodeX" style={S.input} required />
+            </div>
+          </div>
+        )}
+
+        <button type="submit" disabled={submitting} style={{ ...S.btnSuccess, background: 'var(--lime)', color: '#000', padding: '14px', fontSize: 14, marginTop: 8 }}>
+          {submitting ? 'DEPLOYING ENGINE...' : 'BROADCAST HOUSE CAMPAIGN'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 // ── 3. ADMIN TASKS MODULE ──
 export function AdminTasks({ showToast }) {
   const [tasks, setTasks] = useState([]);
@@ -246,6 +343,10 @@ export function AdminTasks({ showToast }) {
 
   return (
     <div style={S.page}>
+      
+      {/* 🚀 THE NEW HOUSE DEPLOYER INJECTED HERE 🚀 */}
+      <AdminHouseDeployer showToast={showToast} onDeploy={fetchTasks} />
+
       <h1 style={S.header}>Campaign Moderation</h1>
       <p style={S.subHeader}>Audit, suspend, or terminate active creator campaigns.</p>
 
@@ -260,13 +361,16 @@ export function AdminTasks({ showToast }) {
         {tasks.map(t => (
           <div key={t.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
             <div>
-              <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>{t.title}</div>
+              <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>
+                {t.is_house_campaign && <span style={{ color: 'var(--lime)', marginRight: 6 }}>[OFFICIAL]</span>}
+                {t.title}
+              </div>
               <div style={{ fontSize: 12, color: 'var(--slate)', fontFamily: 'monospace' }}>Creator: {t.creator_id.substring(0,8)}...</div>
             </div>
             
             <div>
               <div style={{ fontSize: 13, color: 'var(--ink)', fontWeight: 600, textTransform: 'capitalize' }}>{t.platform}</div>
-              <div style={{ fontSize: 12, color: 'var(--slate)' }}>{t.target_views} views limit</div>
+              <div style={{ fontSize: 12, color: 'var(--slate)' }}>{t.target_views === 999999 ? 'Unlimited' : `${t.target_views} views limit`}</div>
             </div>
             
             <div>
@@ -392,7 +496,6 @@ export function AdminBlog({ showToast }) {
   const [posts, setPosts] = useState([]);
   const [editingId, setEditingId] = useState(null);
 
-  // Fetch all posts (Drafts & Published) on load
   useEffect(() => { fetchPosts(); }, []);
 
   async function fetchPosts() {
@@ -404,7 +507,6 @@ export function AdminBlog({ showToast }) {
     }
   }
 
-  // Auto-generate URL-friendly slug ONLY if it's a new post
   function handleTitleChange(e) {
     const newTitle = e.target.value;
     if (!editingId) {
@@ -428,18 +530,16 @@ export function AdminBlog({ showToast }) {
     setLoading(true);
     try {
       if (editingId) {
-        // Update existing post
         const { error } = await supabase.from('posts').update(form).eq('id', editingId);
         if (error) throw error;
         if (showToast) showToast('Article successfully updated.', 'success');
       } else {
-        // Insert new post
         const { error } = await supabase.from('posts').insert([form]);
         if (error) throw error;
         if (showToast) showToast(`Article saved as ${form.status}.`, 'success');
       }
       resetForm();
-      fetchPosts(); // Refresh the table
+      fetchPosts(); 
     } catch (err) {
       if (showToast) showToast('Failed to save article. Check slug uniqueness.', 'error');
     } finally {
@@ -450,7 +550,7 @@ export function AdminBlog({ showToast }) {
   function startEdit(post) {
     setEditingId(post.id);
     setForm({ title: post.title, slug: post.slug, meta_desc: post.meta_desc, content: post.content, category: post.category, status: post.status });
-    window.scrollTo(0, 0); // Scroll to top on mobile
+    window.scrollTo(0, 0); 
   }
 
   function resetForm() {
@@ -470,28 +570,11 @@ export function AdminBlog({ showToast }) {
     }
   }
 
-  // Re-declare S here if it's not globally available in the file scope
-  const S = {
-    page: { padding: '40px 5%', maxWidth: 1200, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative', minHeight: '80vh' },
-    header: { fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' },
-    subHeader: { color: 'var(--slate)', fontSize: 15, fontWeight: 400, margin: '0 0 40px 0' },
-    glassCard: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.05)' },
-    tableContainer: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, overflow: 'hidden', marginTop: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.05)' },
-    tableHeader: { display: 'grid', gap: 16, padding: '16px 24px', background: 'var(--surface)', borderBottom: '1px solid var(--line)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', fontFamily: "'Inter', sans-serif" },
-    tableRow: { display: 'grid', gap: 16, padding: '20px 24px', borderBottom: '1px solid var(--line)', alignItems: 'center' },
-    btnAction: { background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
-    btnDanger: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
-    btnSuccess: { background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--ink)', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
-    input: { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--ink)', padding: '12px 16px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' },
-    select: { background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--ink)', padding: '12px 16px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
-  };
-
   return (
     <div style={S.page}>
       <h1 style={S.header}>Content Engine</h1>
       <p style={S.subHeader}>{editingId ? 'Modifying existing article.' : 'Deploy SEO-optimized articles.'}</p>
 
-      {/* ── THE EDITOR ── */}
       <div style={S.glassCard}>
         <input style={{ ...S.input, marginBottom: 16 }} placeholder="Article Meta Title" value={form.title} onChange={handleTitleChange} />
         
@@ -529,51 +612,4 @@ export function AdminBlog({ showToast }) {
           </div>
           
           <button onClick={savePost} disabled={loading} style={{ ...S.btnSuccess, padding: '12px 24px', fontSize: 14, background: 'var(--lime)', color: '#000' }}>
-            {loading ? 'SAVING...' : editingId ? 'UPDATE ARTICLE' : 'DEPLOY ARTICLE'}
-          </button>
-        </div>
-      </div>
-
-      {/* ── THE LEDGER (TABLE) ── */}
-      <h2 style={{ ...S.header, fontSize: 20, marginTop: 48, marginBottom: 16 }}>Article Ledger</h2>
-      <div style={S.tableContainer}>
-        <div style={{ ...S.tableHeader, gridTemplateColumns: '2fr 1fr 1fr 1fr' }} className="hide-on-mobile">
-          <span>Title</span>
-          <span>Category</span>
-          <span>Status</span>
-          <span style={{ textAlign: 'right' }}>Actions</span>
-        </div>
-
-        {posts.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>No articles found.</div>
-        ) : (
-          posts.map(post => (
-            <div key={post.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
-              <div>
-                <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>{post.title}</div>
-                <div style={{ fontSize: 11, color: 'var(--slate)' }}>/{post.slug}</div>
-              </div>
-              
-              <div>
-                <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', background: post.category === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: post.category === 'creator' ? '#D4AF37' : 'var(--lime)' }}>
-                  {post.category}
-                </span>
-              </div>
-              
-              <div>
-                <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: post.status === 'published' ? 'rgba(168,255,62,0.1)' : 'var(--surface)', color: post.status === 'published' ? 'var(--ink)' : 'var(--slate)', border: '1px solid var(--line)' }}>
-                  {post.status}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                <button onClick={() => startEdit(post)} style={S.btnAction}>Edit</button>
-                <button onClick={() => deletePost(post.id)} style={S.btnDanger}>Drop</button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
+            {loading ? 'SAVING...' : editingId ?
