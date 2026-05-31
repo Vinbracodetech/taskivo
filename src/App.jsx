@@ -31,7 +31,10 @@ import {
 } from "./pages/AdminPanel.jsx";
 
 // ── GLOBAL STICKY HEADER ──
-function TopNav({ navigate, user, setAuthMode }) {
+function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
+  const IconMoon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
+  const IconSun = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
+
   return (
     <nav style={{
       position: "sticky", top: 0, zIndex: 90,
@@ -81,7 +84,18 @@ function TopNav({ navigate, user, setAuthMode }) {
       </div>
       
       <div style={{ display: "flex", gap: 16, alignItems: "center", fontFamily: "'DM Sans', sans-serif" }}>
+        
+        {/* 🔥 VISITOR THEME TOGGLE 🔥 */}
+        <button 
+          onClick={toggleTheme} 
+          style={{ background: 'transparent', border: 'none', color: 'var(--ink)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}
+          aria-label="Toggle Theme"
+        >
+          {theme === 'dark' ? IconSun : IconMoon}
+        </button>
+
         <span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 14, fontWeight: 600 }} onClick={function() { navigate("blog"); }}>Blog</span>
+        
         {!user ? (
           <div style={{ display: "flex", gap: 8 }}>
             <button style={{ background: "transparent", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif" }} onClick={function() { if(setAuthMode) setAuthMode("login"); navigate("auth"); }}>Log in</button>
@@ -268,7 +282,8 @@ export default function App() {
       <div className="app-shell" style={{ position: 'relative', minHeight: '100vh', background: 'var(--surface)' }}>
         <div className="main-content" style={{ paddingBottom: user ? 100 : 0 }}>
           
-          <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} />
+          {/* 🔥 UPDATED TOPNAV WITH THEME TOGGLE 🔥 */}
+          <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} theme={theme} toggleTheme={toggleTheme} />
 
           {/* 🔥 ADMIN SECONDARY NAVIGATION (Auto-appears when in Admin pages) 🔥 */}
           {user && user.role === 'admin' && view.startsWith('admin-') && (
