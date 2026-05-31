@@ -49,14 +49,14 @@ export function BlogIndex({ navigate }) {
   );
 }
 
-// ── THE ARTICLE VIEW (With Active Mission & Identity Engine) ──
+// ── THE ARTICLE VIEW (With Auto-Claim Engine) ──
 export function ArticleView({ navigate, id, user, setAuthMode }) {
   const [post, setPost] = useState(null);
   const [timeLeft, setTimeLeft] = useState(120); 
-  const [showCode, setShowCode] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(false);
   const slug = id.replace('article-', ''); 
 
-  // Security Check: Is this earner on an active task for THIS exact article?
   const isActiveMission = localStorage.getItem('taskivo_active_mission') === slug;
 
   useEffect(() => {
@@ -65,30 +65,21 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       if (data) {
         setPost(data);
         document.title = `${data.title} | Taskivo`;
-        let meta = document.querySelector('meta[name="description"]');
-        if (!meta) {
-          meta = document.createElement('meta');
-          meta.name = 'description';
-          document.head.appendChild(meta);
-        }
-        meta.content = data.meta_desc;
       }
     }
     fetchPost();
   }, [slug]);
 
-  // The Secure Visibility Timer (ONLY runs if they have the active mission token)
+  // The Secure Visibility Timer & Auto-Claim Trigger
   useEffect(() => {
     if (!post || user?.role !== 'earner' || !isActiveMission) return;
     
     const interval = setInterval(() => {
-      if (!document.hidden && !showCode) {
+      if (!document.hidden && !claimed && !claiming) {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            setShowCode(true);
+            handleAutoClaim();
             clearInterval(interval);
-            // Delete the token so they can't reuse it
-            localStorage.removeItem('taskivo_active_mission');
             return 0;
           }
           return prev - 1;
@@ -96,15 +87,42 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [post, showCode, user, isActiveMission]);
+  }, [post, claimed, claiming, user, isActiveMission]);
+
+  async function handleAutoClaim() {
+    setClaiming(true);
+    try {
+      // 1. Ensure they haven't already claimed it
+      const { data: existing } = await supabase.from('blog_reads').select('*').eq('user_id', user.id).eq('post_slug', slug).single();
+      
+      if (!existing) {
+        // 2. Mark as read in the database
+        await supabase.from('blog_reads').insert({ user_id: user.id, post_slug: slug });
+        
+        // 3. Add 10 PTS directly to profile
+        const { data: profile } = await supabase.from('profiles').select('points').eq('id', user.id).single();
+        await supabase.from('profiles').update({ points: profile.points + 10 }).eq('id', user.id);
+      }
+      
+      setClaimed(true);
+      localStorage.removeItem('taskivo_active_mission');
+    } catch(err) {
+      console.error("Auto-claim error", err);
+      setClaiming(false); // Let them retry if it fails
+    }
+  }
+
+  // Forces the global state to refresh the balance when returning to the feed
+  function completeMissionAndReturn() {
+    window.location.hash = 'tasks';
+    window.location.reload();
+  }
 
   if (!post) return <div style={{ padding: 100, textAlign: 'center', color: 'var(--slate)' }}>Decrypting article...</div>;
 
-  const verificationCode = (post.slug.substring(0, 4) + "8X" + post.title.length).toUpperCase();
-
   return (
     <div style={{ padding: '80px 5%', maxWidth: 700, margin: '0 auto', fontFamily: "var(--font-body)" }}>
-      <button onClick={() => navigate('blog')} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 32 }}>← Back to Index</button>
+      <button onClick={() => navigate('tasks')} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 32 }}>← Return to Missions</button>
       
       <div style={{ display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: post.category === 'creator' ? '#D4AF37' : 'var(--lime)', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', marginBottom: 16 }}>
         {post.category}
@@ -116,24 +134,26 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         dangerouslySetInnerHTML={{ __html: post.content }} 
       />
 
-      {/* ── SMART RENDERING ENGINE ── */}
-      
-      {/* State 1: Active Mission Earner */}
+      {/* ── AUTO-CLAIM RENDERING ENGINE ── */}
       {user?.role === 'earner' && isActiveMission && (
-        <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: 32, textAlign: 'center', boxShadow: 'var(--shadow)' }}>
-          {showCode ? (
+        <div style={{ background: 'var(--surface-card)', border: claimed ? '1px solid var(--lime)' : '1px solid var(--line)', borderRadius: 16, padding: 32, textAlign: 'center', boxShadow: 'var(--shadow)' }}>
+          {claimed ? (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--lime)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Verification Complete</div>
-              <div style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 16 }}>Return to Taskivo and enter this code:</div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--ink)', fontFamily: 'monospace', letterSpacing: '4px', background: 'var(--surface)', display: 'inline-block', padding: '12px 24px', borderRadius: 8, border: '1px solid var(--line)' }}>
-                {verificationCode}
-              </div>
+              <div style={{ width: 48, height: 48, background: 'var(--lime-dim)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid var(--lime)', color: 'var(--lime)', fontSize: 20 }}>✓</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--ink)', fontFamily: 'var(--font-display)', marginBottom: 8 }}>Mission Accomplished</div>
+              <div style={{ color: 'var(--slate)', fontSize: 15, marginBottom: 24 }}>10 PTS has been successfully added to your treasury.</div>
+              <button onClick={completeMissionAndReturn} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 800, cursor: 'pointer' }}>Return to Feed</button>
+            </div>
+          ) : claiming ? (
+            <div>
+              <div style={{ width: 24, height: 24, border: '2px solid var(--line)', borderTopColor: 'var(--lime)', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--lime)', textTransform: 'uppercase', letterSpacing: '1px' }}>Securing Liquidity...</div>
             </div>
           ) : (
             <div>
               <div style={{ width: 24, height: 24, border: '2px solid var(--line)', borderTopColor: '#ef4444', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
               <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Verifying Human Presence</div>
-              <div style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 16 }}>You must keep this tab open and active to generate your payout code.</div>
+              <div style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 16 }}>You must keep this tab open and active to claim your 10 PTS.</div>
               <div style={{ fontSize: 40, fontWeight: 800, color: '#ef4444', fontFamily: "var(--font-display)" }}>
                 {timeLeft}s
               </div>
