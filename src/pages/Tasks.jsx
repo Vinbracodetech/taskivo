@@ -217,7 +217,8 @@ export default function Tasks({ session, navigate }) {
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 36, color: 'var(--ink)', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-1px' }}>Engagement <span style={{ color: 'var(--lime)' }}>Network</span></h1>
           <p style={{ color: 'var(--slate)', margin: 0, fontSize: 15 }}>Execute verifiable tasks to acquire daily yield.</p>
         </div>
-        <button onClick={() => navigate('dashboard')} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>My Hub →</button>
+        {/* 🔥 ROUTE FIXED HERE TO 'user-dashboard' 🔥 */}
+        <button onClick={() => navigate('user-dashboard')} style={{ background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', borderRadius: 8, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>My Hub →</button>
       </div>
 
       <div style={{ display: 'flex', gap: 20, marginBottom: 48, flexWrap: 'wrap' }}>
