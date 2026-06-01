@@ -68,10 +68,9 @@ export function BlogIndex({ navigate }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
           {posts.length === 0 ? (
-            <div style={{ color: 'var(--slate)' }}>No articles published yet.</div>
+            <div style={{ color: 'var(--slate)' }}>No records decrypted yet.</div>
           ) : (
             posts.map(post => {
-              // High-end dynamic placeholders based on category
               const imgUrl = post.category === 'creator' 
                 ? 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop'
                 : 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2070&auto=format&fit=crop';
@@ -79,7 +78,6 @@ export function BlogIndex({ navigate }) {
               return (
                 <div key={post.slug} onClick={() => navigate(`article-${post.slug}`)} style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', backdropFilter: 'blur(10px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                   
-                  {/* Cinematic Card Header Image */}
                   <div style={{ height: 180, backgroundImage: `url(${imgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 0%, var(--surface-card) 100%)' }} />
                     <div style={{ position: 'absolute', bottom: 16, left: 24, display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.9)' : 'rgba(168,255,62,0.9)', color: '#000', fontSize: 10, fontWeight: 800, padding: '6px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -107,11 +105,18 @@ export function BlogIndex({ navigate }) {
 // ── THE ELITE ARTICLE VIEW ──
 export function ArticleView({ navigate, id, user, setAuthMode }) {
   const [post, setPost] = useState(null);
+  
   const [timeLeft, setTimeLeft] = useState(120); 
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
-  const slug = id.replace('article-', ''); 
+  
+  // Quiz State
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [quizQuestion, setQuizQuestion] = useState(null);
+  const [selectedAnswer, setSelectedAnswer] = useState('');
+  const [quizError, setQuizError] = useState(false);
 
+  const slug = id.replace('article-', ''); 
   const isActiveMission = localStorage.getItem('taskivo_active_mission') === slug;
 
   useEffect(() => {
@@ -125,15 +130,27 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     fetchPost();
   }, [slug]);
 
+  // 🔥 WARNING LOCK: Prevents accidental tab closing 🔥
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isActiveMission && !claimed && timeLeft > 0) {
+        e.preventDefault();
+        e.returnValue = "Warning: Leaving now forfeits your reward.";
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isActiveMission, claimed, timeLeft]);
+
   // Secure Visibility Timer
   useEffect(() => {
-    if (!post || user?.role !== 'earner' || !isActiveMission) return;
+    if (!post || !user || !isActiveMission) return;
     
     const interval = setInterval(() => {
-      if (!document.hidden && !claimed && !claiming) {
+      if (!document.hidden && !claimed && !claiming && !showQuiz) {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            handleAutoClaim();
+            triggerVerification();
             clearInterval(interval);
             return 0;
           }
@@ -142,7 +159,33 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [post, claimed, claiming, user, isActiveMission]);
+  }, [post, claimed, claiming, showQuiz, user, isActiveMission]);
+
+  function triggerVerification() {
+    // Check if quiz_data exists and is an array of questions
+    if (post.quiz_data && Array.isArray(post.quiz_data) && post.quiz_data.length > 0) {
+      // Pick a random question
+      const randomQ = post.quiz_data[Math.floor(Math.random() * post.quiz_data.length)];
+      setQuizQuestion(randomQ);
+      setShowQuiz(true);
+    } else {
+      // Fallback: If no quiz in database, auto-claim
+      handleAutoClaim();
+    }
+  }
+
+  function submitQuiz() {
+    if (!selectedAnswer) return;
+    if (selectedAnswer === quizQuestion.answer) {
+      setQuizError(false);
+      setShowQuiz(false);
+      handleAutoClaim();
+    } else {
+      setQuizError(true);
+      // Optional: you could lock the mission entirely here if they fail.
+      // For now, it forces them to try again.
+    }
+  }
 
   async function handleAutoClaim() {
     setClaiming(true);
@@ -159,13 +202,17 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       localStorage.removeItem('taskivo_active_mission');
     } catch(err) {
       console.error("Auto-claim error", err);
+    } finally {
       setClaiming(false); 
     }
   }
 
-  function completeMissionAndReturn() {
-    window.location.hash = 'tasks';
-    window.location.reload();
+  function handleBackClick() {
+    if (isActiveMission && !claimed && timeLeft > 0) {
+      const confirmLeave = window.confirm("WARNING: You have not completed the required dwell time. Leaving now will forfeit your 10 PTS reward.\n\nAre you sure you want to exit?");
+      if (!confirmLeave) return;
+    }
+    navigate(user ? 'tasks' : 'blog');
   }
 
   if (!post) return (
@@ -180,8 +227,33 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     <div style={{ ...S.pageWrapper, backgroundAttachment: 'scroll' }}>
       <style>{proseStyles}</style>
 
+      {/* 🔥 THE QUIZ OVERLAY 🔥 */}
+      {showQuiz && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: 'var(--surface-card)', border: '1px solid var(--lime)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 24px 48px rgba(168,255,62,0.1)' }}>
+            <div style={{ fontSize: 10, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Human Verification</div>
+            <h3 style={{ fontSize: 20, color: 'var(--ink)', fontFamily: "'Inter', sans-serif", fontWeight: 800, marginBottom: 24, lineHeight: 1.3 }}>{quizQuestion.question}</h3>
+            
+            {quizError && <div style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', padding: '12px', borderRadius: 8, fontSize: 12, fontWeight: 700, marginBottom: 16 }}>Incorrect analysis. Review the briefing and try again.</div>}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+              {quizQuestion.options.map((opt, i) => (
+                <label key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px', background: 'var(--surface)', border: selectedAnswer === opt ? '1px solid var(--lime)' : '1px solid var(--line)', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  <input type="radio" name="quiz" value={opt} onChange={() => setSelectedAnswer(opt)} checked={selectedAnswer === opt} style={{ accentColor: 'var(--lime)' }} />
+                  <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600 }}>{opt}</span>
+                </label>
+              ))}
+            </div>
+
+            <button onClick={submitQuiz} disabled={!selectedAnswer} style={{ width: '100%', background: selectedAnswer ? 'var(--lime)' : 'var(--surface)', color: selectedAnswer ? '#000' : 'var(--slate)', border: 'none', padding: '16px', borderRadius: 100, fontSize: 14, fontWeight: 800, cursor: selectedAnswer ? 'pointer' : 'not-allowed', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Verify & Secure Yield
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 🔥 THE FLOATING MISSION HUD 🔥 */}
-      {user?.role === 'earner' && isActiveMission && (
+      {user && isActiveMission && !showQuiz && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(20,20,25,0.95)', backdropFilter: 'blur(20px)',
@@ -196,7 +268,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
                 <div style={{ fontSize: 10, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Mission Complete</div>
                 <div style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>+10 PTS Secured</div>
               </div>
-              <button onClick={completeMissionAndReturn} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>Return</button>
+              <button onClick={() => { window.location.hash = 'tasks'; window.location.reload(); }} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>Return</button>
             </>
           ) : claiming ? (
             <>
@@ -226,14 +298,11 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         backgroundPosition: 'center',
         borderBottom: '1px solid rgba(255,255,255,0.05)'
       }}>
-        <div style={{ 
-          position: 'absolute', 
-          inset: 0, 
-          background: 'linear-gradient(to bottom, rgba(13,13,20,0.3) 0%, rgba(13,13,20,0.8) 60%, var(--surface) 100%)' 
-        }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(13,13,20,0.3) 0%, rgba(13,13,20,0.8) 60%, var(--surface) 100%)' }} />
         
+        {/* Warning Lock Back Button */}
         <div style={{ position: 'absolute', top: 32, left: '5%', zIndex: 20 }}>
-          <button onClick={() => navigate(user ? 'tasks' : 'blog')} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 20px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={handleBackClick} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 20px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
             ← Back to Network
           </button>
         </div>
@@ -262,10 +331,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
           </div>
         </div>
         
-        <div 
-          className="article-prose"
-          dangerouslySetInnerHTML={{ __html: post.content }} 
-        />
+        <div className="article-prose" dangerouslySetInnerHTML={{ __html: post.content }} />
 
         {!user && (
           <div style={{ background: 'linear-gradient(135deg, rgba(168,255,62,0.1) 0%, transparent 100%)', border: '1px solid var(--lime)', borderRadius: 24, padding: 40, textAlign: 'center', marginTop: 80, backdropFilter: 'blur(10px)' }}>
