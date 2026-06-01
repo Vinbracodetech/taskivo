@@ -36,7 +36,6 @@ export function BlogIndex({ navigate }) {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        // 🔥 FIX: Removed 'image_url' so the query stops crashing! 🔥
         const { data, error } = await supabase
           .from('posts')
           .select('title, slug, meta_desc, category, created_at')
@@ -71,18 +70,33 @@ export function BlogIndex({ navigate }) {
           {posts.length === 0 ? (
             <div style={{ color: 'var(--slate)' }}>No articles published yet.</div>
           ) : (
-            posts.map(post => (
-              <div key={post.slug} onClick={() => navigate(`article-${post.slug}`)} style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 32, cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', backdropFilter: 'blur(10px)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <div style={{ display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: post.category === 'creator' ? '#D4AF37' : 'var(--lime)', fontSize: 10, fontWeight: 800, padding: '6px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    {post.category}
+            posts.map(post => {
+              // High-end dynamic placeholders based on category
+              const imgUrl = post.category === 'creator' 
+                ? 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop'
+                : 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2070&auto=format&fit=crop';
+
+              return (
+                <div key={post.slug} onClick={() => navigate(`article-${post.slug}`)} style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', backdropFilter: 'blur(10px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  
+                  {/* Cinematic Card Header Image */}
+                  <div style={{ height: 180, backgroundImage: `url(${imgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 0%, var(--surface-card) 100%)' }} />
+                    <div style={{ position: 'absolute', bottom: 16, left: 24, display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.9)' : 'rgba(168,255,62,0.9)', color: '#000', fontSize: 10, fontWeight: 800, padding: '6px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      {post.category}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>{new Date(post.created_at).toLocaleDateString()}</div>
+
+                  <div style={{ padding: '8px 24px 32px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>{new Date(post.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <h2 style={{ fontSize: 22, color: 'var(--ink)', fontWeight: 800, marginBottom: 12, lineHeight: 1.3, fontFamily: "'Inter', sans-serif", letterSpacing: '-0.5px' }}>{post.title}</h2>
+                    <p style={{ color: 'var(--slate)', fontSize: 15, lineHeight: 1.6, margin: 0 }}>{post.meta_desc}</p>
+                  </div>
                 </div>
-                <h2 style={{ fontSize: 22, color: 'var(--ink)', fontWeight: 800, marginBottom: 16, lineHeight: 1.3, fontFamily: "'Inter', sans-serif", letterSpacing: '-0.5px' }}>{post.title}</h2>
-                <p style={{ color: 'var(--slate)', fontSize: 15, lineHeight: 1.6 }}>{post.meta_desc}</p>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -102,7 +116,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
 
   useEffect(() => {
     async function fetchPost() {
-      // select('*') is safe here because it just grabs whatever columns exist
       const { data } = await supabase.from('posts').select('*').eq('slug', slug).single();
       if (data) {
         setPost(data);
@@ -161,7 +174,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     </div>
   );
 
-  // Fallback to a high-end tech abstract image if the post has no image_url in the database
   const heroImage = post.image_url || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop';
 
   return (
@@ -214,14 +226,12 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         backgroundPosition: 'center',
         borderBottom: '1px solid rgba(255,255,255,0.05)'
       }}>
-        {/* Dark Gradient Overlay Fading into Background */}
         <div style={{ 
           position: 'absolute', 
           inset: 0, 
           background: 'linear-gradient(to bottom, rgba(13,13,20,0.3) 0%, rgba(13,13,20,0.8) 60%, var(--surface) 100%)' 
         }} />
         
-        {/* Back Button Floats Above Image */}
         <div style={{ position: 'absolute', top: 32, left: '5%', zIndex: 20 }}>
           <button onClick={() => navigate(user ? 'tasks' : 'blog')} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 20px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
             ← Back to Network
@@ -231,7 +241,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
 
       <div style={{ padding: '0 5% 120px', maxWidth: 720, margin: '0 auto', position: 'relative', zIndex: 10 }}>
         
-        {/* Editorial Header (Pulled up over the fade) */}
         <div style={{ marginTop: -100, marginBottom: 48, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 48 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
             <span style={{ display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.9)' : 'rgba(168,255,62,0.9)', color: '#000', fontSize: 11, fontWeight: 800, padding: '6px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -253,13 +262,11 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
           </div>
         </div>
         
-        {/* Editorial Content Body */}
         <div 
           className="article-prose"
           dangerouslySetInnerHTML={{ __html: post.content }} 
         />
 
-        {/* Guest Marketing (Only shows if logged out) */}
         {!user && (
           <div style={{ background: 'linear-gradient(135deg, rgba(168,255,62,0.1) 0%, transparent 100%)', border: '1px solid var(--lime)', borderRadius: 24, padding: 40, textAlign: 'center', marginTop: 80, backdropFilter: 'blur(10px)' }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif", marginBottom: 12, letterSpacing: '-0.5px' }}>Monetize Your Attention.</div>
