@@ -36,11 +36,14 @@ export function BlogIndex({ navigate }) {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const { data } = await supabase
+        // 🔥 FIX: Removed 'image_url' so the query stops crashing! 🔥
+        const { data, error } = await supabase
           .from('posts')
-          .select('title, slug, meta_desc, category, created_at, image_url')
+          .select('title, slug, meta_desc, category, created_at')
           .eq('status', 'published')
           .order('created_at', { ascending: false });
+          
+        if (error) console.error("Error fetching posts:", error);
         setPosts(data || []);
       } finally {
         setLoading(false);
@@ -99,6 +102,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
 
   useEffect(() => {
     async function fetchPost() {
+      // select('*') is safe here because it just grabs whatever columns exist
       const { data } = await supabase.from('posts').select('*').eq('slug', slug).single();
       if (data) {
         setPost(data);
