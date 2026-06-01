@@ -128,16 +128,15 @@ export default function Tasks({ session, navigate }) {
   }
 
   const S = {
-    // 🔥 PROPRIETARY TASKIVO ISOMETRIC BACKGROUND 🔥
+    // 🔥 BRIGHTER, VISIBLE ISOMETRIC BACKGROUND 🔥
     pageWrapper: {
       minHeight: '100vh',
       backgroundColor: 'var(--surface)',
       backgroundImage: `
-        linear-gradient(to bottom, rgba(13,13,20,0.85) 0%, var(--surface) 100%), 
-        radial-gradient(circle at 80% -20%, rgba(168,255,62,0.12) 0%, transparent 60%),
-        url("data:image/svg+xml,%3Csvg width='60' height='103.9' viewBox='0 0 60 103.9' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 103.9L0 86.6V52l30-17.3 30 17.3v34.6zM30 34.6L0 17.3V-17.3l30-17.3 30 17.3v34.6z' fill='none' stroke='%23A8FF3E' stroke-width='1' stroke-opacity='0.04'/%3E%3C/svg%3E")
+        radial-gradient(circle at top center, rgba(168,255,62,0.20) 0%, transparent 70%),
+        url("data:image/svg+xml,%3Csvg width='80' height='138.6' viewBox='0 0 80 138.6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 138.6L0 115.5V69.3l40-23.1 40 23.1v46.2zM40 46.2L0 23.1V-23.1l40-23.1 40 23.1v46.2z' fill='none' stroke='%23A8FF3E' stroke-width='2' stroke-opacity='0.15'/%3E%3C/svg%3E")
       `,
-      backgroundSize: '100%, 100%, 60px 103.9px',
+      backgroundSize: '100%, 80px 138.6px',
       backgroundAttachment: 'fixed',
     },
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
