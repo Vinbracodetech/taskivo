@@ -38,7 +38,7 @@ export function BlogIndex({ navigate }) {
       try {
         const { data } = await supabase
           .from('posts')
-          .select('title, slug, meta_desc, category, created_at')
+          .select('title, slug, meta_desc, category, created_at, image_url')
           .eq('status', 'published')
           .order('created_at', { ascending: false });
         setPosts(data || []);
@@ -157,8 +157,11 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     </div>
   );
 
+  // Fallback to a high-end tech abstract image if the post has no image_url in the database
+  const heroImage = post.image_url || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop';
+
   return (
-    <div style={S.pageWrapper}>
+    <div style={{ ...S.pageWrapper, backgroundAttachment: 'scroll' }}>
       <style>{proseStyles}</style>
 
       {/* 🔥 THE FLOATING MISSION HUD 🔥 */}
@@ -196,15 +199,38 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         </div>
       )}
 
-      <div style={{ padding: '80px 5% 120px', maxWidth: 720, margin: '0 auto' }}>
-        <button onClick={() => navigate(user ? 'tasks' : 'blog')} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 40, display: 'flex', alignItems: 'center', gap: 8 }}>
-          ← Back
-        </button>
+      {/* 🔥 THE CINEMATIC HERO HEADER 🔥 */}
+      <div style={{ 
+        position: 'relative', 
+        width: '100%', 
+        height: '45vh', 
+        minHeight: 350, 
+        backgroundImage: `url(${heroImage})`, 
+        backgroundSize: 'cover', 
+        backgroundPosition: 'center',
+        borderBottom: '1px solid rgba(255,255,255,0.05)'
+      }}>
+        {/* Dark Gradient Overlay Fading into Background */}
+        <div style={{ 
+          position: 'absolute', 
+          inset: 0, 
+          background: 'linear-gradient(to bottom, rgba(13,13,20,0.3) 0%, rgba(13,13,20,0.8) 60%, var(--surface) 100%)' 
+        }} />
         
-        {/* Editorial Header */}
-        <div style={{ marginBottom: 48, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 48 }}>
+        {/* Back Button Floats Above Image */}
+        <div style={{ position: 'absolute', top: 32, left: '5%', zIndex: 20 }}>
+          <button onClick={() => navigate(user ? 'tasks' : 'blog')} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 20px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+            ← Back to Network
+          </button>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 5% 120px', maxWidth: 720, margin: '0 auto', position: 'relative', zIndex: 10 }}>
+        
+        {/* Editorial Header (Pulled up over the fade) */}
+        <div style={{ marginTop: -100, marginBottom: 48, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 48 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-            <span style={{ display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: post.category === 'creator' ? '#D4AF37' : 'var(--lime)', fontSize: 11, fontWeight: 800, padding: '6px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <span style={{ display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.9)' : 'rgba(168,255,62,0.9)', color: '#000', fontSize: 11, fontWeight: 800, padding: '6px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px' }}>
               {post.category}
             </span>
             <span style={{ color: 'var(--slate)', fontSize: 13, fontWeight: 600 }}>5 Min Read</span>
