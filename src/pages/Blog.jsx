@@ -106,6 +106,9 @@ export function BlogIndex({ navigate }) {
 export function ArticleView({ navigate, id, user, setAuthMode }) {
   const [post, setPost] = useState(null);
   
+  // FOOLPROOF AUTH STATE (Fetches manually if props fail)
+  const [localUser, setLocalUser] = useState(user);
+  
   const [timeLeft, setTimeLeft] = useState(120); 
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
@@ -118,6 +121,15 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
 
   const slug = id.replace('article-', ''); 
   const isActiveMission = localStorage.getItem('taskivo_active_mission') === slug;
+
+  // Manual Auth Check
+  useEffect(() => {
+    if (!localUser) {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) setLocalUser(data.user);
+      });
+    }
+  }, [localUser]);
 
   useEffect(() => {
     async function fetchPost() {
@@ -144,7 +156,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
 
   // Secure Visibility Timer
   useEffect(() => {
-    if (!post || !user || !isActiveMission) return;
+    if (!post || !isActiveMission) return;
     
     const interval = setInterval(() => {
       if (!document.hidden && !claimed && !claiming && !showQuiz) {
@@ -159,12 +171,11 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [post, claimed, claiming, showQuiz, user, isActiveMission]);
+  }, [post, claimed, claiming, showQuiz, isActiveMission]);
 
   function triggerVerification() {
     // Check if quiz_data exists and is an array of questions
     if (post.quiz_data && Array.isArray(post.quiz_data) && post.quiz_data.length > 0) {
-      // Pick a random question
       const randomQ = post.quiz_data[Math.floor(Math.random() * post.quiz_data.length)];
       setQuizQuestion(randomQ);
       setShowQuiz(true);
@@ -182,20 +193,20 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       handleAutoClaim();
     } else {
       setQuizError(true);
-      // Optional: you could lock the mission entirely here if they fail.
-      // For now, it forces them to try again.
     }
   }
 
   async function handleAutoClaim() {
+    if (!localUser) return; // Prevent crash if user isn't fully loaded
+    
     setClaiming(true);
     try {
-      const { data: existing } = await supabase.from('blog_reads').select('*').eq('user_id', user.id).eq('post_slug', slug).single();
+      const { data: existing } = await supabase.from('blog_reads').select('*').eq('user_id', localUser.id).eq('post_slug', slug).single();
       
       if (!existing) {
-        await supabase.from('blog_reads').insert({ user_id: user.id, post_slug: slug });
-        const { data: profile } = await supabase.from('profiles').select('points').eq('id', user.id).single();
-        await supabase.from('profiles').update({ points: profile.points + 10 }).eq('id', user.id);
+        await supabase.from('blog_reads').insert({ user_id: localUser.id, post_slug: slug });
+        const { data: profile } = await supabase.from('profiles').select('points').eq('id', localUser.id).single();
+        await supabase.from('profiles').update({ points: profile.points + 10 }).eq('id', localUser.id);
       }
       
       setClaimed(true);
@@ -212,7 +223,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       const confirmLeave = window.confirm("WARNING: You have not completed the required dwell time. Leaving now will forfeit your 10 PTS reward.\n\nAre you sure you want to exit?");
       if (!confirmLeave) return;
     }
-    navigate(user ? 'tasks' : 'blog');
+    navigate(localUser ? 'tasks' : 'blog');
   }
 
   if (!post) return (
@@ -253,7 +264,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       )}
 
       {/* 🔥 THE FLOATING MISSION HUD 🔥 */}
-      {user && isActiveMission && !showQuiz && (
+      {isActiveMission && !showQuiz && (
         <div style={{
           position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(20,20,25,0.95)', backdropFilter: 'blur(20px)',
@@ -333,7 +344,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         
         <div className="article-prose" dangerouslySetInnerHTML={{ __html: post.content }} />
 
-        {!user && (
+        {!localUser && (
           <div style={{ background: 'linear-gradient(135deg, rgba(168,255,62,0.1) 0%, transparent 100%)', border: '1px solid var(--lime)', borderRadius: 24, padding: 40, textAlign: 'center', marginTop: 80, backdropFilter: 'blur(10px)' }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif", marginBottom: 12, letterSpacing: '-0.5px' }}>Monetize Your Attention.</div>
             <p style={{ color: 'var(--slate)', fontSize: 16, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px', lineHeight: 1.6 }}>Taskivo earners get paid fiat currency for reading intelligence briefings just like this one.</p>
