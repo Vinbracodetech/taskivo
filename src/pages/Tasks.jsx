@@ -6,7 +6,6 @@ export default function Tasks({ session, navigate }) {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   
-  // 🔥 PAGINATION / LAZY LOAD STATE 🔥
   const [displayCount, setDisplayCount] = useState(15);
   
   const [quotas, setQuotas] = useState({ videos: 0, blogs: 0, premium: 0 });
@@ -129,13 +128,16 @@ export default function Tasks({ session, navigate }) {
   }
 
   const S = {
-    // 🔥 ATMOSPHERIC BACKGROUND ADDED HERE 🔥
+    // 🔥 PROPRIETARY TASKIVO ISOMETRIC BACKGROUND 🔥
     pageWrapper: {
       minHeight: '100vh',
       backgroundColor: 'var(--surface)',
-      backgroundImage: `linear-gradient(to bottom, rgba(13,13,20,0.85) 0%, var(--surface) 100%), url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop')`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'top center',
+      backgroundImage: `
+        linear-gradient(to bottom, rgba(13,13,20,0.85) 0%, var(--surface) 100%), 
+        radial-gradient(circle at 80% -20%, rgba(168,255,62,0.12) 0%, transparent 60%),
+        url("data:image/svg+xml,%3Csvg width='60' height='103.9' viewBox='0 0 60 103.9' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 103.9L0 86.6V52l30-17.3 30 17.3v34.6zM30 34.6L0 17.3V-17.3l30-17.3 30 17.3v34.6z' fill='none' stroke='%23A8FF3E' stroke-width='1' stroke-opacity='0.04'/%3E%3C/svg%3E")
+      `,
+      backgroundSize: '100%, 100%, 60px 103.9px',
       backgroundAttachment: 'fixed',
     },
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
@@ -219,7 +221,6 @@ export default function Tasks({ session, navigate }) {
     );
   }
 
-  // Calculate displayed tasks slice
   const displayedTasks = tasks.slice(0, displayCount);
 
   return (
@@ -349,7 +350,6 @@ export default function Tasks({ session, navigate }) {
           </div>
         )}
 
-        {/* 🔥 LAZY LOAD BUTTON 🔥 */}
         {tasks.length > displayCount && (
           <div style={{ textAlign: 'center', marginTop: 48 }}>
             <button 
