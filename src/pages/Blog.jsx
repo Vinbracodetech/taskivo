@@ -106,7 +106,7 @@ export function BlogIndex({ navigate }) {
 export function ArticleView({ navigate, id, user, setAuthMode }) {
   const [post, setPost] = useState(null);
   
-  // FOOLPROOF AUTH STATE (Fetches manually if props fail)
+  // FOOLPROOF AUTH STATE
   const [localUser, setLocalUser] = useState(user);
   
   const [timeLeft, setTimeLeft] = useState(120); 
@@ -122,7 +122,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
   const slug = id.replace('article-', ''); 
   const isActiveMission = localStorage.getItem('taskivo_active_mission') === slug;
 
-  // Manual Auth Check
   useEffect(() => {
     if (!localUser) {
       supabase.auth.getUser().then(({ data }) => {
@@ -142,7 +141,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     fetchPost();
   }, [slug]);
 
-  // 🔥 WARNING LOCK: Prevents accidental tab closing 🔥
+  // WARNING LOCK
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (isActiveMission && !claimed && timeLeft > 0) {
@@ -174,13 +173,11 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
   }, [post, claimed, claiming, showQuiz, isActiveMission]);
 
   function triggerVerification() {
-    // Check if quiz_data exists and is an array of questions
     if (post.quiz_data && Array.isArray(post.quiz_data) && post.quiz_data.length > 0) {
       const randomQ = post.quiz_data[Math.floor(Math.random() * post.quiz_data.length)];
       setQuizQuestion(randomQ);
       setShowQuiz(true);
     } else {
-      // Fallback: If no quiz in database, auto-claim
       handleAutoClaim();
     }
   }
@@ -197,7 +194,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
   }
 
   async function handleAutoClaim() {
-    if (!localUser) return; // Prevent crash if user isn't fully loaded
+    if (!localUser) return; 
     
     setClaiming(true);
     try {
@@ -207,6 +204,9 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         await supabase.from('blog_reads').insert({ user_id: localUser.id, post_slug: slug });
         const { data: profile } = await supabase.from('profiles').select('points').eq('id', localUser.id).single();
         await supabase.from('profiles').update({ points: profile.points + 10 }).eq('id', localUser.id);
+        
+        // Dispatch global event so Nav bars can instantly update points if listening
+        window.dispatchEvent(new Event('taskivo_points_updated'));
       }
       
       setClaimed(true);
@@ -263,7 +263,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         </div>
       )}
 
-      {/* 🔥 THE FLOATING MISSION HUD (Pushed up to clear mobile nav bars) 🔥 */}
+      {/* 🔥 THE FLOATING MISSION HUD 🔥 */}
       {isActiveMission && !showQuiz && (
         <div style={{
           position: 'fixed', bottom: 110, left: '50%', transform: 'translateX(-50%)',
@@ -279,7 +279,8 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
                 <div style={{ fontSize: 10, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Mission Complete</div>
                 <div style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>+10 PTS Secured</div>
               </div>
-              <button onClick={() => { window.location.hash = 'tasks'; window.location.reload(); }} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>Return</button>
+              {/* INSTANT SPA ROUTING - NO RELOAD */}
+              <button onClick={() => navigate('tasks')} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>Return</button>
             </>
           ) : claiming ? (
             <>
@@ -311,7 +312,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       }}>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(13,13,20,0.3) 0%, rgba(13,13,20,0.8) 60%, var(--surface) 100%)' }} />
         
-        {/* Warning Lock Back Button */}
         <div style={{ position: 'absolute', top: 32, left: '5%', zIndex: 20 }}>
           <button onClick={handleBackClick} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 20px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
             ← Back to Network
