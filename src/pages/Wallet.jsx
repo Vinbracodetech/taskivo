@@ -88,7 +88,6 @@ export default function Wallet({ user, navigate, showToast }) {
       if (updateError) throw updateError;
 
       // 🔥 FIRE THE GLOBAL SYNC ENGINE 🔥
-      // This forces the Top Nav to instantly update the points without a reload!
       window.dispatchEvent(new Event('taskivo_points_updated'));
 
       if (showToast) showToast('Transfer initiated. Funds will arrive within 24 hours.', 'success');
@@ -99,8 +98,11 @@ export default function Wallet({ user, navigate, showToast }) {
       
     } catch (err) {
       console.error("Withdrawal Error:", err);
-      // 🔥 EXPOSE THE EXACT DATABASE ERROR 🔥
-      if (showToast) showToast(err.message || 'Transaction failed. Please try again.', 'error');
+      
+      // 🔥 FORCES A MASSIVE POPUP ON YOUR PHONE WITH THE EXACT DATABASE ERROR 🔥
+      alert("DATABASE REJECTED IT! Reason: " + JSON.stringify(err, null, 2));
+      
+      if (showToast) showToast(err.message || 'Transaction failed.', 'error');
     } finally {
       setSubmitting(false);
     }
