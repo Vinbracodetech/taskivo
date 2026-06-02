@@ -24,17 +24,31 @@ export default function Tasks({ session, navigate }) {
       setLoading(false);
       return;
     }
+    
     fetchMarketplace();
+
+    // 🔥 INSTANT SILENT SYNC ENGINE 🔥
+    // This listens for completions (from Blogs or when switching back from YouTube) 
+    // and instantly updates quotas without showing a loading spinner.
+    const handleSilentSync = () => fetchMarketplace(true);
+    window.addEventListener('taskivo_points_updated', handleSilentSync);
+    window.addEventListener('focus', handleSilentSync); 
+    
+    return () => {
+      window.removeEventListener('taskivo_points_updated', handleSilentSync);
+      window.removeEventListener('focus', handleSilentSync);
+    };
   }, [user]);
 
-  async function fetchMarketplace() {
+  // Added isSilent parameter to prevent loading screen flashes
+  async function fetchMarketplace(isSilent = false) {
     try {
-      setLoading(true);
+      if (!isSilent) setLoading(true);
       const { data: profile } = await supabase.from('profiles').select('lockout_until').eq('id', user.id).single();
       
       if (profile?.lockout_until && new Date() < new Date(profile.lockout_until)) {
         setLockout(true);
-        setLoading(false);
+        if (!isSilent) setLoading(false);
         return;
       }
 
@@ -43,7 +57,6 @@ export default function Tasks({ session, navigate }) {
       const todayMidnight = new Date(now);
       todayMidnight.setHours(0, 0, 0, 0);
 
-      // Fetch all network data concurrently for speed
       const [compRes, blogReadsRes, activeTasksRes, activePostsRes] = await Promise.all([
         supabase.from('completions').select('task_id, platform, created_at').eq('user_id', user.id).gte('created_at', twentyFourHoursAgo.toISOString()),
         supabase.from('blog_reads').select('post_slug, created_at').eq('user_id', user.id).gte('created_at', twentyFourHoursAgo.toISOString()),
@@ -54,7 +67,6 @@ export default function Tasks({ session, navigate }) {
       let vCount = 0, bCount = 0, pCount = 0;
       const cooldownMap = {};
 
-      // Process standard campaign histories and lockouts
       (compRes.data || []).forEach(h => {
         const completedAt = new Date(h.created_at);
         if (completedAt >= todayMidnight) {
@@ -67,7 +79,6 @@ export default function Tasks({ session, navigate }) {
         if (hoursLeft > 0) cooldownMap[h.task_id] = hoursLeft;
       });
 
-      // Process internal blog reads and lockouts
       (blogReadsRes.data || []).forEach(b => {
         const completedAt = new Date(b.created_at);
         if (completedAt >= todayMidnight) bCount++; 
@@ -79,12 +90,10 @@ export default function Tasks({ session, navigate }) {
       setQuotas({ videos: vCount, blogs: bCount, premium: pCount });
       setCooldowns(cooldownMap);
 
-      // Map fresh tasks without filtering out the completed ones
       const freshTasks = (activeTasksRes.data || []).map(t => ({
         ...t, is_internal_blog: false
       }));
 
-      // Map fresh internal blogs without filtering them out
       const freshPosts = (activePostsRes.data || []).map(p => ({
         id: 'internal-' + p.slug,
         is_internal_blog: true,
@@ -95,14 +104,13 @@ export default function Tasks({ session, navigate }) {
         created_at: p.created_at
       }));
 
-      // Merge and fully randomize the feed order
       const mergedFeed = [...freshTasks, ...freshPosts].sort(() => 0.5 - Math.random());
         
       setTasks(mergedFeed);
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }
 
@@ -288,7 +296,6 @@ export default function Tasks({ session, navigate }) {
               if (isBlog && quotas.blogs >= 20) quotaHit = true;
               if (isPremium && quotas.premium >= 5) quotaHit = true;
               
-              // Lock the card if it hits the daily quota OR if they just completed it (cooldown active)
               const isLocked = quotaHit || cooldowns[task.id];
               
               let icon = '▶️';
