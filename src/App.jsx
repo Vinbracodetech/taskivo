@@ -116,18 +116,6 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
   );
 }
 
-function ComingSoon({ title }) {
-  return (
-    <div className="page animate-slideUp">
-      <div style={{ textAlign: "center", padding: "80px 20px" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🔧</div>
-        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 8 }}>{title}</div>
-        <div style={{ color: "var(--slate)", fontSize: 14 }}>This page is being built. Check back soon.</div>
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   var rawHash = window.location.hash.replace(/^#\/?/, "");
   var cleanHash = rawHash.split("?")[0] || "landing";
@@ -137,17 +125,31 @@ export default function App() {
   var [user, setUser] = useState(null);
   var [loading, setLoading] = useState(true);
   var { toasts, show: showToast } = useToast();
-  
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
+
+  // 🔥 NEW STATE: Controls the global celebration popup 🔥
+  var [rewardPopup, setRewardPopup] = useState(null);
 
   // 🔥 SILENT SYNC ENGINE: Listens for point updates globally 🔥
   useEffect(function() {
     if (!user) return;
     
-    async function syncPoints() {
+    async function syncPoints(e) {
       var { data } = await supabase.from("profiles").select("points").eq("id", user.id).single();
       if (data) {
         setUser(function(prev) { return { ...prev, points: data.points }; });
+        
+        // Check if the event passed custom details, otherwise default to 10 points and a 🎉
+        var ptsEarned = (e && e.detail && e.detail.points) ? e.detail.points : 10;
+        var emojiIcon = (e && e.detail && e.detail.emoji) ? e.detail.emoji : "🎉";
+        
+        // Trigger the popup
+        setRewardPopup({ points: ptsEarned, emoji: emojiIcon });
+        
+        // Auto-hide the popup after 3.5 seconds
+        setTimeout(function() {
+          setRewardPopup(null);
+        }, 3500);
       }
     }
 
@@ -314,7 +316,6 @@ export default function App() {
             {view === "privacy" && <Privacy />}
             {view === "blog" && <BlogIndex navigate={navigate} />}
             
-            {/* 🔥 UPDATED TO PASS USER & AUTH MODE 🔥 */}
             {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} user={user} setAuthMode={setAuthMode} />}
 
             {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
@@ -339,6 +340,41 @@ export default function App() {
 
         {user && <FloatingNav user={user} navigate={navigate} logout={logout} toggleTheme={toggleTheme} theme={theme} />}
       </div>
+      
+      {/* 🔥 GLOBAL REWARD CELEBRATION OVERLAY 🔥 */}
+      {rewardPopup && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 999999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
+          animation: 'taskivoFadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: 'var(--surface-card)', border: '1px solid var(--lime)',
+            padding: '40px 60px', borderRadius: 24, textAlign: 'center',
+            boxShadow: '0 24px 64px rgba(168,255,62,0.15)',
+            transform: 'scale(1)', animation: 'taskivoPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+          }}>
+            <div style={{ fontSize: 64, marginBottom: 16, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))' }}>{rewardPopup.emoji}</div>
+            <div style={{ fontSize: 12, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 8 }}>Yield Secured</div>
+            <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>
+              +{rewardPopup.points} PTS
+            </div>
+          </div>
+          
+          <style>{`
+            @keyframes taskivoPopIn {
+              0% { transform: scale(0.8); opacity: 0; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes taskivoFadeIn {
+              0% { opacity: 0; }
+              100% { opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
+
       <Toast toasts={toasts} />
     </>
   );
