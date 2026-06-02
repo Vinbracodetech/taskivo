@@ -38,47 +38,54 @@ export default function Tasks({ session, navigate }) {
         return;
       }
 
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const todayMidnight = new Date();
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const todayMidnight = new Date(now);
       todayMidnight.setHours(0, 0, 0, 0);
-      const fetchDate = twentyFourHoursAgo < todayMidnight ? twentyFourHoursAgo : todayMidnight;
 
-      const { data: history } = await supabase
-        .from('completions')
-        .select('task_id, platform, created_at')
-        .eq('user_id', user.id) 
-        .gte('created_at', fetchDate.toISOString());
+      // Fetch all network data concurrently for speed
+      const [compRes, blogReadsRes, activeTasksRes, activePostsRes] = await Promise.all([
+        supabase.from('completions').select('task_id, platform, created_at').eq('user_id', user.id).gte('created_at', twentyFourHoursAgo.toISOString()),
+        supabase.from('blog_reads').select('post_slug, created_at').eq('user_id', user.id).gte('created_at', twentyFourHoursAgo.toISOString()),
+        supabase.from('tasks').select('*').eq('status', 'active'),
+        supabase.from('posts').select('*').eq('status', 'published')
+      ]);
 
       let vCount = 0, bCount = 0, pCount = 0;
       const cooldownMap = {};
 
-      (history || []).forEach(h => {
+      // Process standard campaign histories and lockouts
+      (compRes.data || []).forEach(h => {
         const completedAt = new Date(h.created_at);
         if (completedAt >= todayMidnight) {
           if (h.platform === 'blog') bCount++; 
           else if (h.platform === 'youtube') vCount++;
           else pCount++; 
         }
-        if (completedAt >= twentyFourHoursAgo) {
-          const hoursPassed = (new Date() - completedAt) / 3600000;
-          cooldownMap[h.task_id] = Math.ceil(24 - hoursPassed);
-        }
+        
+        const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
+        if (hoursLeft > 0) cooldownMap[h.task_id] = hoursLeft;
+      });
+
+      // Process internal blog reads and lockouts
+      (blogReadsRes.data || []).forEach(b => {
+        const completedAt = new Date(b.created_at);
+        if (completedAt >= todayMidnight) bCount++; 
+        
+        const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
+        if (hoursLeft > 0) cooldownMap['internal-' + b.post_slug] = hoursLeft;
       });
 
       setQuotas({ videos: vCount, blogs: bCount, premium: pCount });
       setCooldowns(cooldownMap);
 
-      const completedTaskIds = (history || []).map(h => h.task_id);
-      const { data: activeTasks } = await supabase.from('tasks').select('*').eq('status', 'active');
-      const freshTasks = (activeTasks || []).filter(t => !completedTaskIds.includes(t.id)).map(t => ({
+      // Map fresh tasks without filtering out the completed ones
+      const freshTasks = (activeTasksRes.data || []).map(t => ({
         ...t, is_internal_blog: false
       }));
 
-      const { data: blogReads } = await supabase.from('blog_reads').select('post_slug').eq('user_id', user.id);
-      const readSlugs = (blogReads || []).map(b => b.post_slug);
-      
-      const { data: activePosts } = await supabase.from('posts').select('*').eq('status', 'published');
-      const freshPosts = (activePosts || []).filter(p => !readSlugs.includes(p.slug)).map(p => ({
+      // Map fresh internal blogs without filtering them out
+      const freshPosts = (activePostsRes.data || []).map(p => ({
         id: 'internal-' + p.slug,
         is_internal_blog: true,
         slug: p.slug,
@@ -88,14 +95,8 @@ export default function Tasks({ session, navigate }) {
         created_at: p.created_at
       }));
 
-      const nowTime = new Date().getTime();
-      const mergedFeed = [...freshTasks, ...freshPosts].map(t => ({
-        ...t, created_time: new Date(t.created_at || nowTime).getTime()
-      })).sort((a, b) => {
-        const dateDiff = b.created_time - a.created_time;
-        if (Math.abs(dateDiff) > 43200000) return dateDiff; 
-        return 0.5 - Math.random();
-      });
+      // Merge and fully randomize the feed order
+      const mergedFeed = [...freshTasks, ...freshPosts].sort(() => 0.5 - Math.random());
         
       setTasks(mergedFeed);
     } catch (err) {
@@ -128,7 +129,6 @@ export default function Tasks({ session, navigate }) {
   }
 
   const S = {
-    // 🔥 BRIGHTER, VISIBLE ISOMETRIC BACKGROUND 🔥
     pageWrapper: {
       minHeight: '100vh',
       backgroundColor: 'var(--surface)',
@@ -287,6 +287,8 @@ export default function Tasks({ session, navigate }) {
               if (isVideo && quotas.videos >= 3) quotaHit = true;
               if (isBlog && quotas.blogs >= 20) quotaHit = true;
               if (isPremium && quotas.premium >= 5) quotaHit = true;
+              
+              // Lock the card if it hits the daily quota OR if they just completed it (cooldown active)
               const isLocked = quotaHit || cooldowns[task.id];
               
               let icon = '▶️';
@@ -325,10 +327,10 @@ export default function Tasks({ session, navigate }) {
                       <div style={{ fontSize: 20, fontWeight: 800, color: isLocked ? 'var(--slate)' : isInternal ? 'var(--lime)' : 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>+{task.reward_points} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500 }}>PTS</span></div>
                     </div>
                     
-                    {quotaHit ? (
-                      <button disabled style={S.btnLocked}>LIMIT REACHED</button>
-                    ) : cooldowns[task.id] ? (
+                    {cooldowns[task.id] ? (
                       <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]}H WAIT</button>
+                    ) : quotaHit ? (
+                      <button disabled style={S.btnLocked}>LIMIT REACHED</button>
                     ) : (
                       <button onClick={() => {
                           if (task.is_internal_blog) {
