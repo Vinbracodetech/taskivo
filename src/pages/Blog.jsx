@@ -240,7 +240,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
 
       {/* 🔥 THE QUIZ OVERLAY 🔥 */}
       {showQuiz && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ background: 'var(--surface-card)', border: '1px solid var(--lime)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 24px 48px rgba(168,255,62,0.1)' }}>
             <div style={{ fontSize: 10, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Human Verification</div>
             <h3 style={{ fontSize: 20, color: 'var(--ink)', fontFamily: "'Inter', sans-serif", fontWeight: 800, marginBottom: 24, lineHeight: 1.3 }}>{quizQuestion.question}</h3>
@@ -263,15 +263,15 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         </div>
       )}
 
-      {/* 🔥 THE FLOATING MISSION HUD 🔥 */}
+      {/* 🔥 THE FLOATING MISSION HUD (Pushed up to clear mobile nav bars) 🔥 */}
       {isActiveMission && !showQuiz && (
         <div style={{
-          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', bottom: 110, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(20,20,25,0.95)', backdropFilter: 'blur(20px)',
           border: claimed ? '1px solid var(--lime)' : '1px solid rgba(255,255,255,0.1)', 
           borderRadius: 100, padding: claimed ? '8px 8px 8px 24px' : '16px 24px', 
           display: 'flex', alignItems: 'center', gap: 16,
-          boxShadow: '0 16px 40px rgba(0,0,0,0.5)', zIndex: 100, width: 'max-content'
+          boxShadow: '0 16px 40px rgba(0,0,0,0.5)', zIndex: 9999, width: 'max-content'
         }}>
           {claimed ? (
             <>
