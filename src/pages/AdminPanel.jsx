@@ -448,6 +448,9 @@ export function AdminWithdrawals({ showToast }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // 🔥 FIAT CONVERSION RATE (2000 PTS = $1.50) 🔥
+  const conversionRate = 0.00075;
+
   useEffect(() => { fetchWithdrawals(); }, []);
 
   async function fetchWithdrawals() {
@@ -486,6 +489,19 @@ export function AdminWithdrawals({ showToast }) {
     }
   }
 
+  // 🔥 ONE-TAP MOBILE COPY FUNCTION 🔥
+  async function copyBankDetails(req) {
+    const fiatAmount = (req.amount * conversionRate).toFixed(2);
+    const clipboardText = `Name: ${req.account_name}\nBank: ${req.bank_name}\nAccount: ${req.account_number}\nAmount to Pay: $${fiatAmount}`;
+    
+    try {
+      await navigator.clipboard.writeText(clipboardText);
+      if (showToast) showToast('Bank details copied to clipboard!', 'info');
+    } catch (err) {
+      if (showToast) showToast('Failed to copy details.', 'error');
+    }
+  }
+
   if (loading) return (
     <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Loading financial ledger...</div>
@@ -509,37 +525,52 @@ export function AdminWithdrawals({ showToast }) {
           {requests.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>No withdrawal requests found.</div>
           ) : (
-            requests.map(req => (
-              <div key={req.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-                <div>
-                  <div style={{ fontSize: 14, color: '#ffffff', fontWeight: 600, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>{req.account_name}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>{req.bank_name}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>User: {req.profiles?.email}</div>
-                </div>
-                
-                <div style={{ fontSize: 14, color: '#ffffff', fontFamily: 'monospace', letterSpacing: '1px' }}>
-                  {req.account_number}
-                </div>
+            requests.map(req => {
+              const fiatValue = (req.amount * conversionRate).toFixed(2);
 
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#D4AF37', fontFamily: "'Inter', sans-serif" }}>{req.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>PTS</span></div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{new Date(req.created_at).toLocaleDateString()}</div>
-                </div>
+              return (
+                <div key={req.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+                  <div>
+                    <div style={{ fontSize: 14, color: '#ffffff', fontWeight: 600, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>{req.account_name}</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>{req.bank_name}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>User: {req.profiles?.email}</div>
+                  </div>
+                  
+                  <div style={{ fontSize: 14, color: '#ffffff', fontFamily: 'monospace', letterSpacing: '1px' }}>
+                    {req.account_number}
+                  </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  {req.status === 'pending' ? (
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                      <button onClick={() => processRequest(req, 'approve')} style={S.btnSuccess}>Authorize</button>
-                      <button onClick={() => processRequest(req, 'reject')} style={S.btnDanger}>Deny &amp; Refund</button>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#D4AF37', fontFamily: "'Inter', sans-serif" }}>
+                      {req.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>PTS</span>
                     </div>
-                  ) : (
-                    <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: req.status === 'approved' ? 'rgba(168,255,62,0.1)' : 'rgba(239,68,68,0.1)', color: req.status === 'approved' ? '#a8ff3e' : '#ef4444', border: `1px solid ${req.status === 'approved' ? 'rgba(168,255,62,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
-                      {req.status}
-                    </span>
-                  )}
+                    {/* 🔥 EXACT FIAT AMOUNT RENDERED HERE 🔥 */}
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#a8ff3e', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
+                      ≈ ${fiatValue}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{new Date(req.created_at).toLocaleDateString()}</div>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    {req.status === 'pending' ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                        {/* 🔥 ONE-TAP COPY BUTTON FOR MOBILE 🔥 */}
+                        <button onClick={() => copyBankDetails(req)} style={{...S.btnAction, width: '100%', marginBottom: 8}}>📋 Copy Details</button>
+                        
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap', width: '100%' }}>
+                          <button onClick={() => processRequest(req, 'approve')} style={{...S.btnSuccess, flex: 1}}>Authorize</button>
+                          <button onClick={() => processRequest(req, 'reject')} style={{...S.btnDanger, flex: 1}}>Deny</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: req.status === 'approved' ? 'rgba(168,255,62,0.1)' : 'rgba(239,68,68,0.1)', color: req.status === 'approved' ? '#a8ff3e' : '#ef4444', border: `1px solid ${req.status === 'approved' ? 'rgba(168,255,62,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+                        {req.status}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
