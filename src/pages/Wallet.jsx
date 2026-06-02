@@ -11,6 +11,11 @@ export default function Wallet({ user, navigate, showToast }) {
   const [lockedDestination, setLockedDestination] = useState(null);
 
   const minWithdrawal = 2000;
+  
+  // 🔥 DYNAMIC FIAT CONVERSION ENGINE (2000 PTS = $1.50) 🔥
+  const conversionRate = 1.50 / 2000; // 0.00075
+  const fiatBalance = (user ? user.points * conversionRate : 0).toFixed(2);
+  const thresholdFiat = (minWithdrawal * conversionRate).toFixed(2);
 
   useEffect(() => {
     if (!user) return;
@@ -175,12 +180,15 @@ export default function Wallet({ user, navigate, showToast }) {
           <div style={{ ...S.glassCard, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
               <span style={S.label}>Total Liquid Points</span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 12, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                 <div style={S.valueGlow}>{user.points.toLocaleString()}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
+                <div style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, color: 'var(--slate)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)' }}>
+                  ≈ ${fiatBalance}
+                </div>
               </div>
               <div style={{ fontSize: 13, color: 'var(--slate)', fontWeight: 500 }}>
-                Minimum withdrawal threshold: {minWithdrawal.toLocaleString()} PTS
+                Minimum withdrawal threshold: {minWithdrawal.toLocaleString()} PTS (${thresholdFiat})
               </div>
             </div>
 
