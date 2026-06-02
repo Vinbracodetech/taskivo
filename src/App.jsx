@@ -100,7 +100,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
             <button style={{ background: "var(--lime)", color: "#000", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Inter', sans-serif" }} onClick={function() { if(setAuthMode) setAuthMode("register"); navigate("auth"); }}>Get Started</button>
           </div>
         ) : user.role === 'earner' ? (
-          <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" }}>
+          <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease' }}>
             {user.points.toLocaleString()} PTS
           </div>
         ) : (
@@ -139,6 +139,21 @@ export default function App() {
   var { toasts, show: showToast } = useToast();
   
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
+
+  // 🔥 SILENT SYNC ENGINE: Listens for point updates globally 🔥
+  useEffect(function() {
+    if (!user) return;
+    
+    async function syncPoints() {
+      var { data } = await supabase.from("profiles").select("points").eq("id", user.id).single();
+      if (data) {
+        setUser(function(prev) { return { ...prev, points: data.points }; });
+      }
+    }
+
+    window.addEventListener("taskivo_points_updated", syncPoints);
+    return function() { window.removeEventListener("taskivo_points_updated", syncPoints); };
+  }, [user]);
 
   useEffect(function() {
     if (typeof window !== "undefined") {
