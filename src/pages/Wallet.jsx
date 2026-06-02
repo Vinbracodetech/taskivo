@@ -64,14 +64,14 @@ export default function Wallet({ user, navigate, showToast }) {
       return;
     }
     if (!lockedDestination) {
-      if (showToast) showToast('Payout identity missing. Please update your profile.', 'error');
+      if (showToast) showToast('Payout identity missing. Please initiate a task to set up your payout node.', 'error');
       return;
     }
 
     try {
       setSubmitting(true);
       
-      // Submit withdrawal using the LOCKED data, completely ignoring user input
+      // Submit withdrawal using the LOCKED data
       const { error: insertError } = await supabase.from('withdrawals').insert({
         user_id: user.id, 
         amount: amountNum, 
@@ -87,14 +87,20 @@ export default function Wallet({ user, navigate, showToast }) {
       const { error: updateError } = await supabase.from('profiles').update({ points: user.points - amountNum }).eq('id', user.id);
       if (updateError) throw updateError;
 
-      // 🔥 UPDATED SUCCESS MESSAGE TO REINFORCE 24H SLA 🔥
+      // 🔥 FIRE THE GLOBAL SYNC ENGINE 🔥
+      // This forces the Top Nav to instantly update the points without a reload!
+      window.dispatchEvent(new Event('taskivo_points_updated'));
+
       if (showToast) showToast('Transfer initiated. Funds will arrive within 24 hours.', 'success');
       setAmount('');
-      user.points -= amountNum; 
+      
+      // Refresh the ledger table
       fetchLedger();
       
     } catch (err) {
-      if (showToast) showToast('Transaction failed. Please try again.', 'error');
+      console.error("Withdrawal Error:", err);
+      // 🔥 EXPOSE THE EXACT DATABASE ERROR 🔥
+      if (showToast) showToast(err.message || 'Transaction failed. Please try again.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -228,7 +234,6 @@ export default function Wallet({ user, navigate, showToast }) {
                 {submitting ? 'Processing...' : isEligible && lockedDestination ? 'Initiate Transfer' : 'Transfer Locked'}
               </button>
 
-              {/* 🔥 NEW 24H SLA MICROCOPY 🔥 */}
               <div style={{ fontSize: 12, color: 'var(--slate)', textAlign: 'center', marginTop: 14, fontWeight: 500 }}>
                 ⏱️ Approved payouts are processed and disbursed within 24 hours.
               </div>
