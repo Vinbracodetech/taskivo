@@ -466,26 +466,52 @@ export function AdminWithdrawals({ showToast }) {
     }
   }
 
+  // 🔥 COMPLETELY REWRITTEN BULLETPROOF PAYOUT ENGINE 🔥
   async function processRequest(req, action) {
     if (!window.confirm(`Are you sure you want to ${action} this payout for ${req.amount} PTS?`)) return;
 
     try {
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
       
-      const { error } = await supabase.from('withdrawals').update({ status: newStatus }).eq('id', req.id);
-      if (error) throw error;
-
+      // 1. If rejecting, we MUST safely refund the points BEFORE touching the withdrawal ledger
       if (action === 'reject') {
-        const { data: userProfile } = await supabase.from('profiles').select('points').eq('id', req.user_id).single();
-        if (userProfile) {
-          await supabase.from('profiles').update({ points: userProfile.points + req.amount }).eq('id', req.user_id);
-        }
+        const { data: userProfile, error: fetchError } = await supabase
+          .from('profiles')
+          .select('points')
+          .eq('id', req.user_id)
+          .single();
+          
+        if (fetchError) throw new Error("Cannot read earner balance: " + fetchError.message);
+        if (!userProfile) throw new Error("Earner profile not found in database.");
+
+        const refundAmount = parseInt(req.amount, 10);
+        const currentBalance = parseInt(userProfile.points, 10) || 0;
+        
+        const { error: refundError } = await supabase
+          .from('profiles')
+          .update({ points: currentBalance + refundAmount })
+          .eq('id', req.user_id);
+          
+        if (refundError) throw new Error("Database blocked the refund: " + refundError.message);
       }
 
+      // 2. Only AFTER a safe refund (or if approving) do we lock in the ledger status
+      const { error: statusError } = await supabase
+        .from('withdrawals')
+        .update({ status: newStatus })
+        .eq('id', req.id);
+        
+      if (statusError) throw new Error("Failed to update ledger status: " + statusError.message);
+
+      // Update UI state
       setRequests(requests.map(r => r.id === req.id ? { ...r, status: newStatus } : r));
-      if (showToast) showToast(`Payout ${newStatus}.`, 'success');
+      if (showToast) showToast(action === 'reject' ? 'Payout denied & points refunded.' : 'Payout authorized.', 'success');
+      
     } catch (err) {
-      if (showToast) showToast(`Failed to ${action} payout.`, 'error');
+      console.error("Payout Action Error:", err);
+      // 🔥 MASSIVE POPUP EXPOSING EXACT DATABASE ERROR FOR MOBILE DEBUGGING 🔥
+      alert("ACTION FAILED! Reason: " + err.message);
+      if (showToast) showToast(`Failed to process payout.`, 'error');
     }
   }
 
