@@ -274,8 +274,8 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
         search_keyword: platform === 'SEO Search' ? keyword : null,
         secret_code: platform === 'SEO Search' ? secretCode : 'HOUSE_BYPASS',
         status: 'active',
-        target_views: 999999, // Practically unlimited views for internal tasks
-        is_house_campaign: true, // The bypass flag!
+        target_views: 999999,
+        is_house_campaign: true,
         creator_id: user?.id || 'admin'
       };
 
@@ -284,7 +284,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
 
       if (showToast) showToast("House Campaign broadcasted to networks instantly!", "success");
       setTitle(''); setUrl(''); setKeyword(''); setSecretCode('');
-      if (onDeploy) onDeploy(); // Instantly refresh the table below
+      if (onDeploy) onDeploy();
     } catch (err) {
       if (showToast) showToast("Error broadcasting house campaign.", "error");
     } finally {
@@ -395,7 +395,6 @@ export function AdminTasks({ showToast }) {
     <div style={S.pageWrapper}>
       <div style={S.page}>
         
-        {/* 🚀 THE NEW HOUSE DEPLOYER INJECTED HERE 🚀 */}
         <AdminHouseDeployer showToast={showToast} onDeploy={fetchTasks} />
 
         <h1 style={S.header}>Campaign Moderation</h1>
@@ -522,26 +521,6 @@ export function AdminWithdrawals({ showToast }) {
     }
   }
 
-      // 2. Only AFTER a safe refund (or if approving) do we lock in the ledger status
-      const { error: statusError } = await supabase
-        .from('withdrawals')
-        .update({ status: newStatus })
-        .eq('id', req.id);
-        
-      if (statusError) throw new Error("Failed to update ledger status: " + statusError.message);
-
-      // Update UI state
-      setRequests(requests.map(r => r.id === req.id ? { ...r, status: newStatus } : r));
-      if (showToast) showToast(action === 'reject' ? 'Payout denied & points refunded.' : 'Payout authorized.', 'success');
-      
-    } catch (err) {
-      console.error("Payout Action Error:", err);
-      // 🔥 MASSIVE POPUP EXPOSING EXACT DATABASE ERROR FOR MOBILE DEBUGGING 🔥
-      alert("ACTION FAILED! Reason: " + err.message);
-      if (showToast) showToast(`Failed to process payout.`, 'error');
-    }
-  }
-
   // 🔥 ONE-TAP MOBILE COPY FUNCTION 🔥
   async function copyBankDetails(req) {
     const fiatAmount = (req.amount * conversionRate).toFixed(2);
@@ -597,7 +576,6 @@ export function AdminWithdrawals({ showToast }) {
                     <div style={{ fontSize: 16, fontWeight: 800, color: '#D4AF37', fontFamily: "'Inter', sans-serif" }}>
                       {req.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>PTS</span>
                     </div>
-                    {/* 🔥 EXACT FIAT AMOUNT RENDERED HERE 🔥 */}
                     <div style={{ fontSize: 14, fontWeight: 800, color: '#a8ff3e', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
                       ≈ ${fiatValue}
                     </div>
@@ -607,7 +585,6 @@ export function AdminWithdrawals({ showToast }) {
                   <div style={{ textAlign: 'right' }}>
                     {req.status === 'pending' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-                        {/* 🔥 ONE-TAP COPY BUTTON FOR MOBILE 🔥 */}
                         <button onClick={() => copyBankDetails(req)} style={{...S.btnAction, width: '100%', marginBottom: 8}}>📋 Copy Details</button>
                         
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap', width: '100%' }}>
