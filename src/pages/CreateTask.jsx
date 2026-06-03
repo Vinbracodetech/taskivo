@@ -346,34 +346,31 @@ export default function CreateTask({ session, navigate, showToast }) {
 
           {/* 🔥 STEP 2: SUCCESS & INTEGRATION SCREEN 🔥 */}
           {step === 2 && deployedTask && (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ width: 64, height: 64, background: 'rgba(168, 255, 62, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid rgba(168, 255, 62, 0.5)' }}>
-                <span style={{ fontSize: 24 }}>🚀</span>
-              </div>
-              <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: '#ffffff', margin: '0 0 12px 0', fontWeight: 800 }}>Campaign Deployed!</h1>
-              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)', margin: '0 0 32px 0' }}>Your capital is locked in escrow. The network is ready.</p>
-
-              {form.platform === 'blog' ? (
-                <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.3)', border: '1px solid #D4AF37', borderRadius: 16, padding: 24, marginTop: 16 }}>
-                  <h3 style={{ margin: '0 0 16px 0', color: '#ffffff', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', fontSize: 14, letterSpacing: '1px' }}>Integration Required</h3>
-                  <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: 20 }}>
-                    To enable Zero-Bot verification, copy the code below and paste it into the HTML of your target article (usually at the very bottom of the post). It will automatically reveal your Secret Payload Code to earners who complete the full {deployedTask.watch_duration}s dwell time.
-                  </p>
-                  
-                  <div style={{ position: 'relative' }}>
-                    <pre style={{ background: '#000000', padding: 24, borderRadius: 12, overflowX: 'auto', fontSize: 12, color: '#10b981', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'monospace', lineHeight: 1.5 }}>
+            <div style={{ position: 'relative' }}>
+  <pre style={{ background: '#000000', padding: 24, borderRadius: 12, overflowX: 'auto', fontSize: 12, color: '#10b981', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'monospace', lineHeight: 1.5 }}>
 {`<div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;">
-  <span style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Waiting for timer...</span>
+  <span style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Revealing payload in: <strong id="t-timer" style="color:#ef4444;">${deployedTask.watch_duration}</strong>s</span>
 </div>
 
 <script>
-  setTimeout(function() {
-    document.getElementById('taskivo-node').innerHTML = 
-      '<strong style="color: #10b981; font-family: sans-serif;">Verification Complete! Your Code is: <span style="background: #eee; padding: 4px 8px; border-radius: 4px; letter-spacing: 2px;">${deployedTask.secret_code}</span></strong>';
-  }, ${deployedTask.watch_duration * 1000});
+  (function() {
+    var timeLeft = ${deployedTask.watch_duration};
+    var timerEl = document.getElementById('t-timer');
+    var nodeEl = document.getElementById('taskivo-node');
+
+    var countdown = setInterval(function() {
+      timeLeft--;
+      if (timerEl) timerEl.innerText = timeLeft;
+
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        nodeEl.innerHTML = '<strong style="color: #10b981; font-family: sans-serif;">Verification Complete! Your Code is: <span style="background: #eee; padding: 4px 8px; border-radius: 4px; letter-spacing: 2px; color: #000;">${deployedTask.secret_code}</span></strong>';
+      }
+    }, 1000);
+  })();
 </script>`}
-                    </pre>
-                  </div>
+  </pre>
+</div>
 
                   <p style={{ fontSize: 13, color: '#ef4444', marginTop: 20, fontWeight: 700 }}>
                     ⚠️ If you do not install this script, earners will not be able to find your secret code, and your campaign will stall.
