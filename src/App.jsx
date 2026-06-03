@@ -130,26 +130,35 @@ export default function App() {
   // 🔥 NEW STATE: Controls the global celebration popup 🔥
   var [rewardPopup, setRewardPopup] = useState(null);
 
-  // 🔥 SILENT SYNC ENGINE: Listens for point updates globally 🔥
+  // 🔥 SMART SYNC ENGINE: Compares points before triggering popups 🔥
   useEffect(function() {
     if (!user) return;
     
     async function syncPoints(e) {
       var { data } = await supabase.from("profiles").select("points").eq("id", user.id).single();
       if (data) {
-        setUser(function(prev) { return { ...prev, points: data.points }; });
+        const oldBalance = user.points;
+        const newBalance = data.points;
+
+        // 1. Silently update the balance in the navigation bar
+        setUser(function(prev) { return { ...prev, points: newBalance }; });
         
-        // Check if the event passed custom details, otherwise default to 10 points and a 🎉
-        var ptsEarned = (e && e.detail && e.detail.points) ? e.detail.points : 10;
-        var emojiIcon = (e && e.detail && e.detail.emoji) ? e.detail.emoji : "🎉";
-        
-        // Trigger the popup
-        setRewardPopup({ points: ptsEarned, emoji: emojiIcon });
-        
-        // Auto-hide the popup after 3.5 seconds
-        setTimeout(function() {
-          setRewardPopup(null);
-        }, 3500);
+        // 2. Only show the celebration popup if their points actually INCREASED!
+        if (newBalance > oldBalance) {
+          const exactPointsEarned = newBalance - oldBalance;
+          
+          // Use event details if available, otherwise use exact math
+          var ptsEarned = (e && e.detail && e.detail.points) ? e.detail.points : exactPointsEarned;
+          var emojiIcon = (e && e.detail && e.detail.emoji) ? e.detail.emoji : "🎉";
+          
+          // Trigger the popup
+          setRewardPopup({ points: ptsEarned, emoji: emojiIcon });
+          
+          // Auto-hide the popup after 3.5 seconds
+          setTimeout(function() {
+            setRewardPopup(null);
+          }, 3500);
+        }
       }
     }
 
