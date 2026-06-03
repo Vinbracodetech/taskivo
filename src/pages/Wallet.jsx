@@ -259,7 +259,6 @@ export default function Wallet({ user, navigate, showToast }) {
           ) : (
             <div style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 20, overflowX: 'auto', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
               
-              {/* 🔥 NEW MIN-WIDTH WRAPPER FORCES ALIGNMENT ON MOBILE 🔥 */}
               <div style={{ minWidth: 600 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr 1.5fr 1fr', gap: 16, padding: '16px 24px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <span style={S.label}>Date</span>
@@ -273,6 +272,9 @@ export default function Wallet({ user, navigate, showToast }) {
                     const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                     const isLast = index === withdrawals.length - 1;
                     
+                    // 🔥 Calculate the cash value for THIS specific past transaction 🔥
+                    const fiatValue = (item.amount * conversionRate).toFixed(2);
+                    
                     return (
                       <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr 1.5fr 1fr', gap: 16, padding: '20px 24px', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
                         
@@ -283,8 +285,14 @@ export default function Wallet({ user, navigate, showToast }) {
                           <div style={{ fontSize: 12, color: 'var(--slate)', fontFamily: 'monospace', letterSpacing: '1px' }}>****{item.account_number?.slice(-4) || 'XXXX'}</div>
                         </div>
                         
-                        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', textAlign: 'right', fontFamily: "'Inter', sans-serif" }}>
-                          {item.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 600 }}>PTS</span>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>
+                            {item.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 600 }}>PTS</span>
+                          </div>
+                          {/* 🔥 NEW: Exact USD Value rendered in the ledger row 🔥 */}
+                          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--lime)', marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
+                            ≈ ${fiatValue}
+                          </div>
                         </div>
                         
                         <div style={{ textAlign: 'right' }}>
