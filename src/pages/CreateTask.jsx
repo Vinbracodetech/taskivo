@@ -8,7 +8,7 @@ export default function CreateTask({ session, navigate, showToast }) {
   const [localError, setLocalError] = useState(null); 
   const [freeCredits, setFreeCredits] = useState(0); 
   
-  // 🔥 NEW: Deployment States
+  // 🔥 Deployment States
   const [step, setStep] = useState(1); 
   const [deployedTask, setDeployedTask] = useState(null);
   
@@ -18,7 +18,7 @@ export default function CreateTask({ session, navigate, showToast }) {
     url: '',
     search_keyword: '', 
     secret_code: '',    
-    watch_duration: 120, // 🔥 Locked to 120 seconds globally
+    watch_duration: 120, // Locked to 120 seconds globally
     package: 'traction',
     paymentGateway: 'paystack'
   });
@@ -99,7 +99,7 @@ export default function CreateTask({ session, navigate, showToast }) {
       url: form.url,
       search_keyword: form.platform === 'blog' ? form.search_keyword : null,
       secret_code: form.platform === 'blog' ? form.secret_code : null,
-      watch_duration: 120, // 🔥 Force 120 seconds into the DB
+      watch_duration: 120, // Force 120 seconds into the DB
       target_views: selectedPackageData.views, 
       current_views: 0, 
       status: 'active', 
@@ -126,7 +126,7 @@ export default function CreateTask({ session, navigate, showToast }) {
 
     if (showToast) showToast('Campaign is LIVE on the network!', 'success');
     
-    // 🔥 Trigger Success & Snippet Screen instead of navigating away
+    // Trigger Success & Snippet Screen
     setDeployedTask(newTask);
     setStep(2);
   }
@@ -140,7 +140,6 @@ export default function CreateTask({ session, navigate, showToast }) {
       return;
     }
     
-    // Extra validation for SEO tasks
     if (form.platform === 'blog' && (!form.search_keyword || !form.secret_code)) {
       setLocalError('SEO Campaigns require a Search Keyword and a Secret Code.');
       return;
@@ -181,7 +180,6 @@ export default function CreateTask({ session, navigate, showToast }) {
     }
   }
 
-  // 🔥 PREMIUM FINTECH STYLE OBJECT 🔥
   const S = {
     pageWrapper: {
       minHeight: '100vh',
@@ -281,7 +279,7 @@ export default function CreateTask({ session, navigate, showToast }) {
                 </div>
               )}
 
-              {/* 🔥 LOCKED TO 120 SECONDS 🔥 */}
+              {/* LOCKED TO 120 SECONDS */}
               {!isManual && (
                 <div>
                   <span style={S.label}>Verification Duration (Seconds)</span>
@@ -346,8 +344,22 @@ export default function CreateTask({ session, navigate, showToast }) {
 
           {/* 🔥 STEP 2: SUCCESS & INTEGRATION SCREEN 🔥 */}
           {step === 2 && deployedTask && (
-            <div style={{ position: 'relative' }}>
-  <pre style={{ background: '#000000', padding: 24, borderRadius: 12, overflowX: 'auto', fontSize: 12, color: '#10b981', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'monospace', lineHeight: 1.5 }}>
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div style={{ width: 64, height: 64, background: 'rgba(168, 255, 62, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid rgba(168, 255, 62, 0.5)' }}>
+                <span style={{ fontSize: 24 }}>🚀</span>
+              </div>
+              <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: '#ffffff', margin: '0 0 12px 0', fontWeight: 800 }}>Campaign Deployed!</h1>
+              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)', margin: '0 0 32px 0' }}>Your capital is locked in escrow. The network is ready.</p>
+
+              {form.platform === 'blog' ? (
+                <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.3)', border: '1px solid #D4AF37', borderRadius: 16, padding: 24, marginTop: 16 }}>
+                  <h3 style={{ margin: '0 0 16px 0', color: '#ffffff', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', fontSize: 14, letterSpacing: '1px' }}>Integration Required</h3>
+                  <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: 20 }}>
+                    To enable Zero-Bot verification, copy the code below and paste it into the HTML of your target article (usually at the very bottom of the post).
+                  </p>
+                  
+                  <div style={{ position: 'relative' }}>
+                    <pre style={{ background: '#000000', padding: 24, borderRadius: 12, overflowX: 'auto', fontSize: 12, color: '#10b981', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'monospace', lineHeight: 1.5 }}>
 {`<div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;">
   <span style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Revealing payload in: <strong id="t-timer" style="color:#ef4444;">${deployedTask.watch_duration}</strong>s</span>
 </div>
@@ -369,8 +381,8 @@ export default function CreateTask({ session, navigate, showToast }) {
     }, 1000);
   })();
 </script>`}
-  </pre>
-</div>
+                    </pre>
+                  </div>
 
                   <p style={{ fontSize: 13, color: '#ef4444', marginTop: 20, fontWeight: 700 }}>
                     ⚠️ If you do not install this script, earners will not be able to find your secret code, and your campaign will stall.
