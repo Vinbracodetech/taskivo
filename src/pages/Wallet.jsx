@@ -103,10 +103,7 @@ export default function Wallet({ user, navigate, showToast }) {
       
     } catch (err) {
       console.error("Withdrawal Error:", err);
-      
-      // 🔥 FORCES A MASSIVE POPUP ON YOUR PHONE WITH THE EXACT DATABASE ERROR 🔥
       alert("DATABASE REJECTED IT! Reason: " + JSON.stringify(err, null, 2));
-      
       if (showToast) showToast(err.message || 'Transaction failed.', 'error');
     } finally {
       setSubmitting(false);
@@ -260,42 +257,46 @@ export default function Wallet({ user, navigate, showToast }) {
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--slate)', letterSpacing: '0.5px' }}>No transaction history found on this account.</div>
             </div>
           ) : (
-            <div style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 20, overflow: 'hidden', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1fr', gap: 16, padding: '16px 24px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.05)' }} className="hide-on-mobile">
-                <span style={S.label}>Date</span>
-                <span style={S.label}>Destination</span>
-                <span style={{ ...S.label, textAlign: 'right' }}>Amount</span>
-                <span style={{ ...S.label, textAlign: 'right' }}>Status</span>
-              </div>
+            <div style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 20, overflowX: 'auto', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+              
+              {/* 🔥 NEW MIN-WIDTH WRAPPER FORCES ALIGNMENT ON MOBILE 🔥 */}
+              <div style={{ minWidth: 600 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr 1.5fr 1fr', gap: 16, padding: '16px 24px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={S.label}>Date</span>
+                  <span style={S.label}>Destination</span>
+                  <span style={{ ...S.label, textAlign: 'right' }}>Amount</span>
+                  <span style={{ ...S.label, textAlign: 'right' }}>Status</span>
+                </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {withdrawals.map(function(item, index) {
-                  const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                  const isLast = index === withdrawals.length - 1;
-                  
-                  return (
-                    <div key={item.id} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16, padding: '20px 24px', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
-                      
-                      <div style={{ fontSize: 13, color: 'var(--slate)', fontWeight: 500 }}>{date}</div>
-                      
-                      <div>
-                        <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>{item.bank_name}</div>
-                        <div style={{ fontSize: 12, color: 'var(--slate)', fontFamily: 'monospace', letterSpacing: '1px' }}>****{item.account_number?.slice(-4) || 'XXXX'}</div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {withdrawals.map(function(item, index) {
+                    const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const isLast = index === withdrawals.length - 1;
+                    
+                    return (
+                      <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr 1.5fr 1fr', gap: 16, padding: '20px 24px', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
+                        
+                        <div style={{ fontSize: 13, color: 'var(--slate)', fontWeight: 500 }}>{date}</div>
+                        
+                        <div>
+                          <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600, marginBottom: 4 }}>{item.bank_name}</div>
+                          <div style={{ fontSize: 12, color: 'var(--slate)', fontFamily: 'monospace', letterSpacing: '1px' }}>****{item.account_number?.slice(-4) || 'XXXX'}</div>
+                        </div>
+                        
+                        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', textAlign: 'right', fontFamily: "'Inter', sans-serif" }}>
+                          {item.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 600 }}>PTS</span>
+                        </div>
+                        
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ ...S.statusBadge(item.status), fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', fontFamily: "'Inter', sans-serif" }}>
+                            {item.status}
+                          </span>
+                        </div>
+                        
                       </div>
-                      
-                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', textAlign: 'right', fontFamily: "'Inter', sans-serif" }}>
-                        {item.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 600 }}>PTS</span>
-                      </div>
-                      
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ ...S.statusBadge(item.status), fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', display: 'inline-block', fontFamily: "'Inter', sans-serif" }}>
-                          {item.status}
-                        </span>
-                      </div>
-                      
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
