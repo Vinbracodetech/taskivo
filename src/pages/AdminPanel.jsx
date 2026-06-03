@@ -487,13 +487,40 @@ export function AdminWithdrawals({ showToast }) {
         const refundAmount = parseInt(req.amount, 10);
         const currentBalance = parseInt(userProfile.points, 10) || 0;
         
-        const { error: refundError } = await supabase
+        // 2. Perform Refund AND force Supabase to return the receipt using .select()
+        const { data: updatedProfile, error: refundError } = await supabase
           .from('profiles')
           .update({ points: currentBalance + refundAmount })
-          .eq('id', req.user_id);
+          .eq('id', req.user_id)
+          .select(); // <--- THIS PREVENTS SILENT FAILURES
           
         if (refundError) throw new Error("Database blocked the refund: " + refundError.message);
+        
+        // 🔥 If Supabase silently blocked it (0 rows updated), this catches it!
+        if (!updatedProfile || updatedProfile.length === 0) {
+           throw new Error("RLS Blocked the refund! The database refused to update the earner's profile.");
+        }
       }
+
+      // 3. Only AFTER a safe refund (or if approving) do we lock in the ledger status
+      const { error: statusError } = await supabase
+        .from('withdrawals')
+        .update({ status: newStatus })
+        .eq('id', req.id);
+        
+      if (statusError) throw new Error("Failed to update ledger status: " + statusError.message);
+
+      // Update UI state
+      setRequests(requests.map(r => r.id === req.id ? { ...r, status: newStatus } : r));
+      if (showToast) showToast(action === 'reject' ? 'Payout denied & points refunded.' : 'Payout authorized.', 'success');
+      
+    } catch (err) {
+      console.error("Payout Action Error:", err);
+      // 🔥 MASSIVE POPUP EXPOSING EXACT DATABASE ERROR FOR MOBILE DEBUGGING 🔥
+      alert("ACTION FAILED! Reason: " + err.message);
+      if (showToast) showToast(`Failed to process payout.`, 'error');
+    }
+  }
 
       // 2. Only AFTER a safe refund (or if approving) do we lock in the ledger status
       const { error: statusError } = await supabase
