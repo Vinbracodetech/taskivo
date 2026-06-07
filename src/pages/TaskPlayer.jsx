@@ -15,8 +15,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [cooldown, setCooldown] = useState(null);
   const [handle, setHandle] = useState('');
   const [proofUrl, setProofUrl] = useState('');
-  const [proofText, setProofText] = useState(''); // 🔥 Added for Manual QA text
-  const [seoCodeInput, setSeoCodeInput] = useState(''); // 🔥 Added for SEO Payload
+  const [proofText, setProofText] = useState(''); // Added for Manual QA text
+  const [seoCodeInput, setSeoCodeInput] = useState(''); // Added for SEO Payload
   const [gateUnlocked, setGateUnlocked] = useState(false);
   const [cheatWarning, setCheatWarning] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -113,13 +113,43 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   async function claimTask() {
     setSubmitting(true);
     
-    // Validation Layer
+    // 🔥 1. VALIDATION & BURNABLE TOKEN LAYER 🔥
     if (isBlog) {
-      if (seoCodeInput.trim().toUpperCase() !== task.secret_code?.trim().toUpperCase()) {
-        alert("Invalid payload code. Did you stay on the page until the timer ended?");
+      const token = seoCodeInput.trim();
+      // UUIDs are typically 36 characters long, we check for a minimum length to prevent trash inputs
+      if (!token || token.length < 20) {
+        alert("Invalid payload format. Please ensure you copied the entire Single-Use Code.");
         setSubmitting(false);
         return;
       }
+
+      // Check if the token is valid, belongs to this task, and hasn't been used yet
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('task_sessions')
+        .select('*')
+        .eq('id', token)
+        .eq('task_id', task.id) 
+        .eq('status', 'claimed') // 'claimed' means the server timer finished but it hasn't been redeemed by an Earner yet
+        .single();
+
+      if (sessionError || !sessionData) {
+        alert("🚨 Invalid, expired, or previously used Secret Code. You must generate your own unique code by visiting the target asset.");
+        setSubmitting(false);
+        return;
+      }
+
+      // BURN THE TOKEN: Mark it as redeemed so it can never be used again
+      const { error: burnError } = await supabase
+        .from('task_sessions')
+        .update({ status: 'redeemed', user_id: user.id })
+        .eq('id', sessionData.id);
+
+      if (burnError) {
+        alert("Network error burning token. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+
     } else if (isManualTask) {
       if (!proofUrl.trim() && !proofText.trim()) { 
         alert("Please provide a valid evidence link or written notes for the Creator."); 
@@ -134,7 +164,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       }
     }
     
-    // Status MUST be 'pending' exactly to trigger your Creator QA Queue
+    // 🔥 2. DATABASE INSERTION 🔥
+    // Status MUST be 'pending' exactly to trigger your Creator QA Queue for manual tasks
     const finalStatus = isManualTask ? 'pending' : 'approved';
 
     const insertData = { 
@@ -220,15 +251,15 @@ export default function TaskPlayer({ session, navigate, taskId }) {
               <li>Search for this exact phrase: <strong style={{ color: 'var(--ink)', background: 'var(--lime-dim)', padding: '2px 6px', borderRadius: 4 }}>{task.search_keyword}</strong></li>
               <li>Find the link for <strong>{new URL(task.url).hostname}</strong> and click it.</li>
               <li>Scroll to the bottom of the article and wait for the verification timer to finish.</li>
-              <li>Copy the Secret Code and paste it below.</li>
+              <li>Copy the Single-Use Secret Code and paste it below.</li>
             </ol>
             
-            <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Secret Payload Code</div>
+            <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Single-Use Payload Code</div>
             <input 
               placeholder="Paste exact code here..." 
               value={seoCodeInput} 
               onChange={e => setSeoCodeInput(e.target.value)} 
-              style={{ ...S.input, fontFamily: 'monospace', textTransform: 'uppercase' }} 
+              style={{ ...S.input, fontFamily: 'monospace' }} 
             />
             
             <button onClick={claimTask} disabled={submitting || !seoCodeInput} style={{ ...S.btnGreen, opacity: (submitting || !seoCodeInput) ? 0.5 : 1 }}>
