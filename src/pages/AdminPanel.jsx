@@ -255,12 +255,13 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
   const [url, setUrl] = useState('');
   const [rewardPoints, setRewardPoints] = useState(50);
   const [keyword, setKeyword] = useState('');
-  const [secretCode, setSecretCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deployedTask, setDeployedTask] = useState(null); // 🔥 Added to hold successful deployments
 
   async function handleDeploy(e) {
     e.preventDefault();
     if (!title || !url) return alert("Title and Target URL are mandatory payload details.");
+    if (platform === 'SEO Search' && !keyword) return alert("Target Keyword is required for SEO Search.");
     setSubmitting(true);
 
     try {
@@ -272,19 +273,27 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
         url,
         reward_points: parseInt(rewardPoints),
         search_keyword: platform === 'SEO Search' ? keyword : null,
-        secret_code: platform === 'SEO Search' ? secretCode : 'HOUSE_BYPASS',
+        secret_code: platform === 'SEO Search' ? null : 'HOUSE_BYPASS', // 🔥 Null strictly enforced for SEO burnable tokens
         status: 'active',
         target_views: 999999,
         is_house_campaign: true,
-        creator_id: user?.id || 'admin'
+        creator_id: user?.id || 'admin',
+        watch_duration: platform === 'SEO Search' ? 120 : 30 // Force 120s for SEO
       };
 
-      const { error } = await supabase.from('tasks').insert(newHouseTask);
+      // Select single so we can get the generated task ID for the snippet
+      const { data, error } = await supabase.from('tasks').insert(newHouseTask).select().single();
       if (error) throw error;
 
       if (showToast) showToast("House Campaign broadcasted to networks instantly!", "success");
-      setTitle(''); setUrl(''); setKeyword(''); setSecretCode('');
+      setTitle(''); setUrl(''); setKeyword('');
       if (onDeploy) onDeploy();
+
+      // Show the snippet screen if it's an SEO task
+      if (platform === 'SEO Search') {
+        setDeployedTask(data);
+      }
+
     } catch (err) {
       if (showToast) showToast("Error broadcasting house campaign.", "error");
     } finally {
@@ -292,6 +301,72 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
     }
   }
 
+  // 🔥 SUCCESS & INTEGRATION SCREEN 🔥
+  if (deployedTask) {
+    return (
+      <div style={{ ...S.glassCard, marginBottom: 48 }}>
+        <h3 style={{ ...S.header, fontSize: 22, margin: '0 0 8px 0', color: '#D4AF37' }}>House Campaign Deployed</h3>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, margin: '0 0 24px 0' }}>
+          Your internal SEO campaign is live. Paste this exact snippet into your Taskivo Blog post via the Content Engine.
+        </p>
+
+        <div style={{ position: 'relative' }}>
+          <pre style={{ background: '#000000', padding: 24, borderRadius: 12, overflowX: 'auto', fontSize: 12, color: '#10b981', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'monospace', lineHeight: 1.5, textAlign: 'left' }}>
+{`<div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;">
+  <span id="t-status" style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Establishing connection...</span>
+  <div id="t-timer" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 10px;"></div>
+</div>
+
+<script>
+(function() {
+  var taskId = '${deployedTask.id}';
+  var statusEl = document.getElementById('t-status');
+  var timerEl = document.getElementById('t-timer');
+  
+  // 1. Start Secure Session
+  fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
+    method: 'POST', body: JSON.stringify({ task_id: taskId })
+  }).then(res => res.json()).then(data => {
+    if(!data.session_id) return;
+    
+    statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";
+    var timeLeft = 120;
+    
+    // 2. Visual Countdown
+    var countdown = setInterval(function() {
+      if (document.hidden) return; // Pauses visual timer if they leave tab
+      timeLeft--;
+      timerEl.innerText = timeLeft + "s";
+      
+      // 3. Request Burnable Token
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        statusEl.innerText = "Verifying telemetry with server...";
+        timerEl.innerText = "";
+        
+        fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/claim', {
+          method: 'POST', body: JSON.stringify({ session_id: data.session_id })
+        }).then(res => res.json()).then(final => {
+          if (final.secret_code) {
+             document.getElementById('taskivo-node').innerHTML = '<strong style="color: #10b981; font-family: sans-serif;">Verification Complete! Your Single-Use Code is:<br><br><span style="background: #eee; padding: 8px 12px; border-radius: 4px; letter-spacing: 1px; color: #000; word-break: break-all;">' + final.secret_code + '</span></strong>';
+          }
+        });
+      }
+    }, 1000);
+  });
+})();
+</script>`}
+          </pre>
+        </div>
+        
+        <button onClick={() => setDeployedTask(null)} style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#ffffff', padding: '12px 24px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', marginTop: 24 }}>
+          Initialize Another Campaign
+        </button>
+      </div>
+    );
+  }
+
+  // Normal Form Render
   return (
     <div style={{ ...S.glassCard, marginBottom: 48 }}>
       <h3 style={{ ...S.header, fontSize: 22, margin: '0 0 8px 0', color: '#ffffff' }}>God-Mode Deployer</h3>
@@ -325,15 +400,10 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
         </div>
 
         {platform === 'SEO Search' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, background: 'rgba(212, 175, 55, 0.05)', padding: 16, borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Target Keyword</label>
-              <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Taskivo platform" style={S.input} required />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Secret Code Payload</label>
-              <input type="text" value={secretCode} onChange={e => setSecretCode(e.target.value)} placeholder="CryptoCodeX" style={S.input} required />
-            </div>
+          <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: 16, borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Target Keyword</label>
+            <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Taskivo platform" style={S.input} required />
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: '12px 0 0 0' }}>The system will automatically generate a dynamic Burnable Token snippet for you upon deployment.</p>
           </div>
         )}
 
