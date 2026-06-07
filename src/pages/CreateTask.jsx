@@ -342,7 +342,7 @@ export default function CreateTask({ session, navigate, showToast }) {
             </form>
           )}
 
-          {/* 🔥 STEP 2: SUCCESS & INTEGRATION SCREEN 🔥 */}
+          {/* 🔥 STEP 2: SUCCESS & BURNABLE TOKEN INTEGRATION SCREEN 🔥 */}
           {step === 2 && deployedTask && (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
               <div style={{ width: 64, height: 64, background: 'rgba(168, 255, 62, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid rgba(168, 255, 62, 0.5)' }}>
@@ -355,37 +355,60 @@ export default function CreateTask({ session, navigate, showToast }) {
                 <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.3)', border: '1px solid #D4AF37', borderRadius: 16, padding: 24, marginTop: 16 }}>
                   <h3 style={{ margin: '0 0 16px 0', color: '#ffffff', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', fontSize: 14, letterSpacing: '1px' }}>Integration Required</h3>
                   <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: 20 }}>
-                    To enable Zero-Bot verification, copy the code below and paste it into the HTML of your target article (usually at the very bottom of the post).
+                    To enable Zero-Bot verification and Single-Use Burnable Tokens, copy the code below and paste it into the HTML of your target article (usually at the very bottom of the post).
                   </p>
                   
                   <div style={{ position: 'relative' }}>
                     <pre style={{ background: '#000000', padding: 24, borderRadius: 12, overflowX: 'auto', fontSize: 12, color: '#10b981', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'monospace', lineHeight: 1.5 }}>
 {`<div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;">
-  <span style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Revealing payload in: <strong id="t-timer" style="color:#ef4444;">${deployedTask.watch_duration}</strong>s</span>
+  <span id="t-status" style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Establishing connection...</span>
+  <div id="t-timer" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 10px;"></div>
 </div>
 
 <script>
-  (function() {
-    var timeLeft = ${deployedTask.watch_duration};
-    var timerEl = document.getElementById('t-timer');
-    var nodeEl = document.getElementById('taskivo-node');
-
+(function() {
+  var taskId = '${deployedTask.id}';
+  var statusEl = document.getElementById('t-status');
+  var timerEl = document.getElementById('t-timer');
+  
+  // 1. Start Secure Session
+  fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
+    method: 'POST', body: JSON.stringify({ task_id: taskId })
+  }).then(res => res.json()).then(data => {
+    if(!data.session_id) return;
+    
+    statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";
+    var timeLeft = 120;
+    
+    // 2. Visual Countdown
     var countdown = setInterval(function() {
+      if (document.hidden) return; // Pauses visual timer if they leave tab
       timeLeft--;
-      if (timerEl) timerEl.innerText = timeLeft;
-
+      timerEl.innerText = timeLeft + "s";
+      
+      // 3. Request Burnable Token
       if (timeLeft <= 0) {
         clearInterval(countdown);
-        nodeEl.innerHTML = '<strong style="color: #10b981; font-family: sans-serif;">Verification Complete! Your Code is: <span style="background: #eee; padding: 4px 8px; border-radius: 4px; letter-spacing: 2px; color: #000;">${deployedTask.secret_code}</span></strong>';
+        statusEl.innerText = "Verifying telemetry with server...";
+        timerEl.innerText = "";
+        
+        fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/claim', {
+          method: 'POST', body: JSON.stringify({ session_id: data.session_id })
+        }).then(res => res.json()).then(final => {
+          if (final.secret_code) {
+             document.getElementById('taskivo-node').innerHTML = '<strong style="color: #10b981; font-family: sans-serif;">Verification Complete! Your Single-Use Code is:<br><br><span style="background: #eee; padding: 8px 12px; border-radius: 4px; letter-spacing: 1px; color: #000; word-break: break-all;">' + final.secret_code + '</span></strong>';
+          }
+        });
       }
     }, 1000);
-  })();
+  });
+})();
 </script>`}
                     </pre>
                   </div>
 
                   <p style={{ fontSize: 13, color: '#ef4444', marginTop: 20, fontWeight: 700 }}>
-                    ⚠️ If you do not install this script, earners will not be able to find your secret code, and your campaign will stall.
+                    ⚠️ If you do not install this script, earners will not be able to generate their burnable tokens, and your campaign will stall.
                   </p>
                 </div>
               ) : (
