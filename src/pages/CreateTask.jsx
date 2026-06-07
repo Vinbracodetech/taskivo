@@ -16,8 +16,7 @@ export default function CreateTask({ session, navigate, showToast }) {
     title: '',
     platform: 'youtube',
     url: '',
-    search_keyword: '', 
-    secret_code: '',    
+    search_keyword: '',     
     watch_duration: 120, // Locked to 120 seconds globally
     package: 'traction',
     paymentGateway: 'paystack'
@@ -98,7 +97,7 @@ export default function CreateTask({ session, navigate, showToast }) {
       platform: form.platform, 
       url: form.url,
       search_keyword: form.platform === 'blog' ? form.search_keyword : null,
-      secret_code: form.platform === 'blog' ? form.secret_code : null,
+      secret_code: null, // 🔥 Hardcoded to null since the server generates tokens now
       watch_duration: 120, // Force 120 seconds into the DB
       target_views: selectedPackageData.views, 
       current_views: 0, 
@@ -140,8 +139,9 @@ export default function CreateTask({ session, navigate, showToast }) {
       return;
     }
     
-    if (form.platform === 'blog' && (!form.search_keyword || !form.secret_code)) {
-      setLocalError('SEO Campaigns require a Search Keyword and a Secret Code.');
+    // 🔥 Removed the secret_code validation requirement
+    if (form.platform === 'blog' && !form.search_keyword) {
+      setLocalError('SEO Campaigns require a Search Keyword.');
       return;
     }
 
@@ -262,20 +262,16 @@ export default function CreateTask({ session, navigate, showToast }) {
                 <input style={S.input} type="url" name="url" placeholder="https://..." value={form.url} onChange={handleInput} required />
               </div>
 
-              {/* DYNAMIC SEO FIELDS */}
+              {/* 🔥 UPDATED DYNAMIC SEO FIELDS (Secret code removed) 🔥 */}
               {form.platform === 'blog' && (
                 <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: 24, borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)', marginBottom: 24 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
-                    <div>
-                      <span style={S.label}>Google Search Keyword</span>
-                      <input style={{...S.input, marginBottom: 0}} type="text" name="search_keyword" placeholder="e.g. Best FinTech 2026" value={form.search_keyword} onChange={handleInput} required />
-                    </div>
-                    <div>
-                      <span style={S.label}>Verification Secret Code</span>
-                      <input style={{...S.input, marginBottom: 0}} type="text" name="secret_code" placeholder="e.g. 9X2P1" value={form.secret_code} onChange={handleInput} required />
-                    </div>
+                  <div>
+                    <span style={S.label}>Google Search Keyword</span>
+                    <input style={{...S.input, marginBottom: 0}} type="text" name="search_keyword" placeholder="e.g. Best FinTech 2026" value={form.search_keyword} onChange={handleInput} required />
                   </div>
-                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: '12px 0 0 0' }}>Earners will search for the keyword, find your URL, wait for the timer, and must input this exact code to get paid.</p>
+                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: '16px 0 0 0', lineHeight: 1.5 }}>
+                    Earners will search for this keyword, find your URL, and wait for the strict 120s dwell timer. Our network will automatically generate a Single-Use Burnable Token for them once completed. No manual code setup is required.
+                  </p>
                 </div>
               )}
 
