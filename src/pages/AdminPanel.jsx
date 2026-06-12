@@ -290,15 +290,17 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
       if (onDeploy) onDeploy();
 
       // Show the snippet screen if it's an SEO task
-      if (platform === 'SEO Search') {
-        setDeployedTask(data);
-      }
+        if (platform === 'SEO Search') {
+          setDeployedTask(data);
+        }
 
-    } catch (err) {
-      if (showToast) showToast("Error broadcasting house campaign.", "error");
-    } finally {
-      setSubmitting(false);
-    }
+      } catch (err) {
+        console.error(err);
+        alert("DEPLOYMENT FAILED: " + err.message); // 🔥 ADDED THIS LINE
+        if (showToast) showToast("Error broadcasting house campaign.", "error");
+      } finally {
+        setSubmitting(false);
+      }
   }
 
   // 🔥 SUCCESS & INTEGRATION SCREEN 🔥
