@@ -6,9 +6,13 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
   const [stats, setStats] = useState({ totalCampaigns: 0, activeSlots: 0, verifiedEngagements: 0 });
   const [recentCampaigns, setRecentCampaigns] = useState([]);
   
-  // 🔥 NEW QA QUEUE STATES 🔥
+  // 🔥 QA QUEUE STATES 🔥
   const [pendingReviews, setPendingReviews] = useState([]);
   const [processingId, setProcessingId] = useState(null);
+
+  // 🔥 SCRIPT VAULT STATES 🔥
+  const [scriptModal, setScriptModal] = useState({ isOpen: false, task: null });
+  const [copied, setCopied] = useState(false);
 
   useEffect(function() {
     if (!user) return;
@@ -88,11 +92,63 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
     }
   }
 
+  // 🔥 COPY SCRIPT LOGIC 🔥
+  async function copyNodeScript() {
+    if (!scriptModal.task) return;
+    
+    const scriptToCopy = `<div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;">
+  <span id="t-status" style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Establishing connection...</span>
+  <div id="t-timer" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 10px;"></div>
+</div>
+
+<script>
+(function() {
+  var taskId = '${scriptModal.task.id}';
+  var statusEl = document.getElementById('t-status');
+  var timerEl = document.getElementById('t-timer');
+  
+  fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
+    method: 'POST', body: JSON.stringify({ task_id: taskId })
+  }).then(res => res.json()).then(data => {
+    if(!data.session_id) return;
+    statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";
+    var timeLeft = 120;
+    var countdown = setInterval(function() {
+      if (document.hidden) return;
+      timeLeft--;
+      timerEl.innerText = timeLeft + "s";
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        statusEl.innerText = "Verifying telemetry with server...";
+        timerEl.innerText = "";
+        fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/claim', {
+          method: 'POST', body: JSON.stringify({ session_id: data.session_id })
+        }).then(res => res.json()).then(final => {
+          if (final.secret_code) {
+             document.getElementById('taskivo-node').innerHTML = '<strong style="color: #10b981; font-family: sans-serif;">Verification Complete! Your Single-Use Code is:<br><br><span style="background: #eee; padding: 8px 12px; border-radius: 4px; letter-spacing: 1px; color: #000; word-break: break-all;">' + final.secret_code + '</span></strong>';
+          }
+        });
+      }
+    }, 1000);
+  });
+})();
+</script>`;
+
+    try {
+      await navigator.clipboard.writeText(scriptToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+      if (showToast) showToast('Node Script copied to clipboard!', 'success');
+    } catch (err) {
+      if (showToast) showToast('Failed to copy script.', 'error');
+    }
+  }
+
   // 🔥 PREMIUM FINTECH STYLE OBJECT 🔥
   const S = {
     pageWrapper: {
       minHeight: '100vh',
-      backgroundColor: '#0a0a0c', // Deepest rich black
+      backgroundColor: '#0a0a0c', 
       backgroundImage: `
         radial-gradient(circle at 15% 50px, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
         radial-gradient(circle at 85% 30%, rgba(168, 255, 62, 0.04) 0%, transparent 50%),
@@ -103,11 +159,10 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
     },
     page: { padding: '40px 5%', maxWidth: 1200, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
     
-    // Frosted Glass Analytic Cards
     glassCard: { 
       background: 'rgba(255, 255, 255, 0.02)', 
       border: '1px solid rgba(255, 255, 255, 0.06)',
-      borderTop: '1px solid rgba(255, 255, 255, 0.1)', // Sleek top highlight
+      borderTop: '1px solid rgba(255, 255, 255, 0.1)', 
       borderRadius: 20, 
       padding: 32, 
       boxShadow: '0 16px 40px rgba(0,0,0,0.2)',
@@ -115,19 +170,15 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
       WebkitBackdropFilter: 'blur(16px)'
     },
 
-    // Strict, Elite Typography
     header: { fontFamily: "'Inter', sans-serif", fontSize: 32, color: '#ffffff', fontWeight: 700, margin: '0 0 8px 0', letterSpacing: '-0.5px' },
     subHeader: { color: 'rgba(255, 255, 255, 0.6)', margin: '0 0 32px 0', fontSize: 15, fontWeight: 400 },
     
-    // Financial Metrics (Big, bold numbers)
     metricValue: { fontFamily: "'Inter', sans-serif", fontSize: 36, color: '#ffffff', fontWeight: 800, letterSpacing: '-1px', margin: '8px 0' },
     metricLabel: { fontSize: 11, color: '#D4AF37', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' },
     
-    // Elite Buttons (Sleek, sharp corners)
     btnPrimary: { background: '#D4AF37', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s', textTransform: 'uppercase', letterSpacing: '0.5px' },
     btnSecondary: { background: 'rgba(255,255,255,0.05)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'background 0.2s' },
 
-    // Integrated QA Styles mapped to FinTech UI
     qaCard: { background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 16, padding: 24, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 16, backdropFilter: 'blur(12px)' },
     btnApprove: { background: 'rgba(168, 255, 62, 0.9)', border: 'none', color: '#000', padding: '10px 16px', borderRadius: 6, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' },
     btnReject: { background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#ef4444', padding: '10px 16px', borderRadius: 6, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' }
@@ -247,7 +298,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
                 <span style={S.metricLabel}>Campaign Designation</span>
                 <span style={S.metricLabel}>Network</span>
                 <span style={S.metricLabel}>Fulfillment Trajectory</span>
-                <span style={{ ...S.metricLabel, textAlign: 'right' }}>Status</span>
+                <span style={{ ...S.metricLabel, textAlign: 'right' }}>Actions / Status</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -277,10 +328,19 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
                         </div>
                       </div>
                       
-                      <div style={{ textAlign: 'right' }}>
+                      {/* 🔥 NEW ACTIONS & STATUS LAYOUT 🔥 */}
+                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                         <span style={{ background: campaign.status === 'active' ? 'rgba(212, 175, 55, 0.1)' : 'rgba(255, 255, 255, 0.05)', color: campaign.status === 'active' ? '#D4AF37' : 'rgba(255,255,255,0.5)', border: `1px solid ${campaign.status === 'active' ? 'rgba(212, 175, 55, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`, fontSize: 10, fontWeight: 800, padding: '6px 12px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '1.5px', display: 'inline-block' }}>
                           {campaign.status}
                         </span>
+
+                        {campaign.platform === 'blog' && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setScriptModal({ isOpen: true, task: campaign }); }} 
+                            style={{ background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)', padding: '6px 12px', borderRadius: 4, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            {"</>"} Get Node Script
+                          </button>
+                        )}
                       </div>
                       
                     </div>
@@ -290,6 +350,77 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
             </div>
           )}
         </div>
+
+        {/* 🔥 SCRIPT VAULT MODAL (CREATOR SIDE) 🔥 */}
+        {scriptModal.isOpen && scriptModal.task && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div style={{ background: '#0a0a0c', border: '1px solid #D4AF37', borderRadius: 20, width: '100%', maxWidth: 700, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.5)' }}>
+              
+              <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: '#ffffff', fontFamily: "'Inter', sans-serif", fontSize: 18 }}>Secure Node Vault</h3>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Campaign: {scriptModal.task.title}</div>
+                </div>
+                <button onClick={() => setScriptModal({ isOpen: false, task: null })} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 24, cursor: 'pointer', opacity: 0.5 }}>×</button>
+              </div>
+
+              <div style={{ padding: 32 }}>
+                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginTop: 0, marginBottom: 24 }}>
+                  Paste this snippet directly into the HTML of your target article to enable zero-bot verification. 
+                  This script is permanently bound to Task ID: <span style={{ fontFamily: 'monospace', color: '#D4AF37' }}>{scriptModal.task.id.substring(0,8)}...</span>
+                </p>
+                
+                <div style={{ background: '#000000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 20, position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: -10, left: 20, background: '#D4AF37', color: '#000', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px' }}>Universal Script</div>
+                  <div style={{ fontSize: 13, color: '#10b981', fontFamily: 'monospace', lineHeight: 1.6, overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 250, overflowY: 'auto' }}>
+                    &lt;!-- Taskivo Node Integration --&gt;<br/>
+                    &lt;div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;"&gt;<br/>
+                    &nbsp;&nbsp;&lt;span id="t-status" style="font-family: sans-serif; font-size: 14px; color: #666;"&gt;Taskivo Secure Node active. Establishing connection...&lt;/span&gt;<br/>
+                    &nbsp;&nbsp;&lt;div id="t-timer" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 10px;"&gt;&lt;/div&gt;<br/>
+                    &lt;/div&gt;<br/><br/>
+                    &lt;script&gt;<br/>
+                    (function() {"{"}<br/>
+                    &nbsp;&nbsp;var taskId = '{scriptModal.task.id}';<br/>
+                    &nbsp;&nbsp;var statusEl = document.getElementById('t-status');<br/>
+                    &nbsp;&nbsp;var timerEl = document.getElementById('t-timer');<br/>
+                    &nbsp;&nbsp;fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;method: 'POST', body: JSON.stringify({"{"} task_id: taskId {"}"})<br/>
+                    &nbsp;&nbsp;{"}"}).then(res =&gt; res.json()).then(data =&gt; {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;if(!data.session_id) return;<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;var timeLeft = 120;<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;var countdown = setInterval(function() {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (document.hidden) return;<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timeLeft--;<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timerEl.innerText = timeLeft + "s";<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (timeLeft &lt;= 0) {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clearInterval(countdown);<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;statusEl.innerText = "Verifying telemetry with server...";<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timerEl.innerText = "";<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/claim', {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method: 'POST', body: JSON.stringify({"{"} session_id: data.session_id {"}"})<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"}"}).then(res =&gt; res.json()).then(final =&gt; {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (final.secret_code) {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;document.getElementById('taskivo-node').innerHTML = '&lt;strong style="color: #10b981; font-family: sans-serif;"&gt;Verification Complete! Your Single-Use Code is:&lt;br&gt;&lt;br&gt;&lt;span style="background: #eee; padding: 8px 12px; border-radius: 4px; letter-spacing: 1px; color: #000; word-break: break-all;"&gt;' + final.secret_code + '&lt;/span&gt;&lt;/strong&gt;';<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"}"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"}"});<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"}"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;{"}"}, 1000);<br/>
+                    &nbsp;&nbsp;{"}"});<br/>
+                    {"}"})();<br/>
+                    &lt;/script&gt;
+                  </div>
+                </div>
+
+                <button onClick={copyNodeScript} style={{ width: '100%', background: copied ? '#10b981' : '#D4AF37', border: 'none', color: '#000', padding: '16px', borderRadius: 12, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 24, transition: 'all 0.2s' }}>
+                  {copied ? '✓ COPIED TO CLIPBOARD' : '📋 COPY FULL SCRIPT TO CLIPBOARD'}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
