@@ -274,7 +274,6 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
     setLoading(true);
 
     try {
-      // Safely grab user directly
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user?.id) throw new Error("Cannot verify Admin identity.");
 
@@ -298,10 +297,9 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
 
       if (showToast) showToast("House Campaign broadcasted to networks instantly!", "success");
       
-      // Update the table in the background WITHOUT wiping our current UI state
+      // Background refresh so the screen doesn't wipe
       if (onDeploy) setTimeout(() => onDeploy(), 500);
 
-      // Trigger the Snippet Screen perfectly matching Creator logic
       setDeployedTask(newTask);
       setStep(2);
 
@@ -319,7 +317,6 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
     setStep(1);
   }
 
-  // 🔥 STEP 2: SUCCESS & BURNABLE TOKEN INTEGRATION SCREEN 🔥
   if (step === 2 && deployedTask) {
     return (
       <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 20, padding: 32, marginBottom: 48, textAlign: 'center' }}>
@@ -391,7 +388,6 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
     );
   }
 
-  // 🔥 STEP 1: FORM DEPLOYMENT 🔥
   return (
     <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 20, padding: 32, marginBottom: 48 }}>
       <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, margin: '0 0 8px 0', color: '#ffffff' }}>God-Mode Deployer</h3>
@@ -440,20 +436,22 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
   );
 }
 
-// ── 3. ADMIN TASKS MODULE ──
+// ── 3. ADMIN TASKS MODULE (WITH SCRIPT VAULT) ──
 export function AdminTasks({ showToast }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [scriptModal, setScriptModal] = useState({ isOpen: false, task: null });
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => { fetchTasks(); }, []);
 
-  async function fetchTasks() {
+  async function fetchTasks(isBackground = false) {
     try {
-      setLoading(true);
+      if (!isBackground) setLoading(true);
       const { data } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
       setTasks(data || []);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   }
 
@@ -480,6 +478,57 @@ export function AdminTasks({ showToast }) {
     }
   }
 
+  async function copyNodeScript() {
+    if (!scriptModal.task) return;
+    
+    const scriptToCopy = `<div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;">
+  <span id="t-status" style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Establishing connection...</span>
+  <div id="t-timer" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 10px;"></div>
+</div>
+
+<script>
+(function() {
+  var taskId = '${scriptModal.task.id}';
+  var statusEl = document.getElementById('t-status');
+  var timerEl = document.getElementById('t-timer');
+  
+  fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
+    method: 'POST', body: JSON.stringify({ task_id: taskId })
+  }).then(res => res.json()).then(data => {
+    if(!data.session_id) return;
+    statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";
+    var timeLeft = 120;
+    var countdown = setInterval(function() {
+      if (document.hidden) return;
+      timeLeft--;
+      timerEl.innerText = timeLeft + "s";
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        statusEl.innerText = "Verifying telemetry with server...";
+        timerEl.innerText = "";
+        fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/claim', {
+          method: 'POST', body: JSON.stringify({ session_id: data.session_id })
+        }).then(res => res.json()).then(final => {
+          if (final.secret_code) {
+             document.getElementById('taskivo-node').innerHTML = '<strong style="color: #10b981; font-family: sans-serif;">Verification Complete! Your Single-Use Code is:<br><br><span style="background: #eee; padding: 8px 12px; border-radius: 4px; letter-spacing: 1px; color: #000; word-break: break-all;">' + final.secret_code + '</span></strong>';
+          }
+        });
+      }
+    }, 1000);
+  });
+})();
+</script>`;
+
+    try {
+      await navigator.clipboard.writeText(scriptToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+      if (showToast) showToast('Node Script copied to clipboard!', 'success');
+    } catch (err) {
+      if (showToast) showToast('Failed to copy script.', 'error');
+    }
+  }
+
   if (loading) return (
     <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Loading campaigns...</div>
@@ -490,7 +539,7 @@ export function AdminTasks({ showToast }) {
     <div style={S.pageWrapper}>
       <div style={S.page}>
         
-        <AdminHouseDeployer showToast={showToast} onDeploy={fetchTasks} />
+        <AdminHouseDeployer showToast={showToast} onDeploy={() => fetchTasks(true)} />
 
         <h1 style={S.header}>Campaign Moderation</h1>
         <p style={S.subHeader}>Audit, suspend, or terminate active creator campaigns.</p>
@@ -525,6 +574,11 @@ export function AdminTasks({ showToast }) {
               </div>
               
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                {t.platform === 'blog' && (
+                  <button onClick={() => setScriptModal({ isOpen: true, task: t })} style={{...S.btnAction, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)'}}>
+                    {"</>"} Get Node Script
+                  </button>
+                )}
                 {t.status !== 'active' && <button onClick={() => updateStatus(t.id, 'active')} style={S.btnSuccess}>Activate</button>}
                 {t.status !== 'paused' && <button onClick={() => updateStatus(t.id, 'paused')} style={S.btnAction}>Pause</button>}
                 <button onClick={() => hardDeleteTask(t.id)} style={S.btnDanger}>Drop</button>
@@ -532,6 +586,77 @@ export function AdminTasks({ showToast }) {
             </div>
           ))}
         </div>
+
+        {/* 🔥 SCRIPT VAULT MODAL 🔥 */}
+        {scriptModal.isOpen && scriptModal.task && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div style={{ background: '#0a0a0c', border: '1px solid #D4AF37', borderRadius: 20, width: '100%', maxWidth: 700, overflow: 'hidden', boxShadow: '0 24px 50px rgba(0,0,0,0.5)' }}>
+              
+              <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: '#ffffff', fontFamily: "'Inter', sans-serif", fontSize: 18 }}>Secure Node Vault</h3>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Campaign: {scriptModal.task.title}</div>
+                </div>
+                <button onClick={() => setScriptModal({ isOpen: false, task: null })} style={{ background: 'transparent', border: 'none', color: '#ffffff', fontSize: 24, cursor: 'pointer', opacity: 0.5 }}>×</button>
+              </div>
+
+              <div style={{ padding: 32 }}>
+                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginTop: 0, marginBottom: 24 }}>
+                  Paste this snippet directly into the HTML of your target article to enable zero-bot verification. 
+                  This script is permanently bound to Task ID: <span style={{ fontFamily: 'monospace', color: '#D4AF37' }}>{scriptModal.task.id.substring(0,8)}...</span>
+                </p>
+                
+                <div style={{ background: '#000000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 20, position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: -10, left: 20, background: '#D4AF37', color: '#000', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px' }}>Universal Script</div>
+                  <div style={{ fontSize: 13, color: '#10b981', fontFamily: 'monospace', lineHeight: 1.6, overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 250, overflowY: 'auto' }}>
+                    &lt;!-- Taskivo Node Integration --&gt;<br/>
+                    &lt;div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;"&gt;<br/>
+                    &nbsp;&nbsp;&lt;span id="t-status" style="font-family: sans-serif; font-size: 14px; color: #666;"&gt;Taskivo Secure Node active. Establishing connection...&lt;/span&gt;<br/>
+                    &nbsp;&nbsp;&lt;div id="t-timer" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 10px;"&gt;&lt;/div&gt;<br/>
+                    &lt;/div&gt;<br/><br/>
+                    &lt;script&gt;<br/>
+                    (function() {"{"}<br/>
+                    &nbsp;&nbsp;var taskId = '{scriptModal.task.id}';<br/>
+                    &nbsp;&nbsp;var statusEl = document.getElementById('t-status');<br/>
+                    &nbsp;&nbsp;var timerEl = document.getElementById('t-timer');<br/>
+                    &nbsp;&nbsp;fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;method: 'POST', body: JSON.stringify({"{"} task_id: taskId {"}"})<br/>
+                    &nbsp;&nbsp;{"}"}).then(res =&gt; res.json()).then(data =&gt; {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;if(!data.session_id) return;<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;var timeLeft = 120;<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;var countdown = setInterval(function() {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (document.hidden) return;<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timeLeft--;<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timerEl.innerText = timeLeft + "s";<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (timeLeft &lt;= 0) {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clearInterval(countdown);<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;statusEl.innerText = "Verifying telemetry with server...";<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timerEl.innerText = "";<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/claim', {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;method: 'POST', body: JSON.stringify({"{"} session_id: data.session_id {"}"})<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"}"}).then(res =&gt; res.json()).then(final =&gt; {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (final.secret_code) {"{"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;document.getElementById('taskivo-node').innerHTML = '&lt;strong style="color: #10b981; font-family: sans-serif;"&gt;Verification Complete! Your Single-Use Code is:&lt;br&gt;&lt;br&gt;&lt;span style="background: #eee; padding: 8px 12px; border-radius: 4px; letter-spacing: 1px; color: #000; word-break: break-all;"&gt;' + final.secret_code + '&lt;/span&gt;&lt;/strong&gt;';<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"}"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"}"});<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"}"}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;{"}"}, 1000);<br/>
+                    &nbsp;&nbsp;{"}"});<br/>
+                    {"}"})();<br/>
+                    &lt;/script&gt;
+                  </div>
+                </div>
+
+                <button onClick={copyNodeScript} style={{ width: '100%', background: copied ? '#10b981' : '#D4AF37', border: 'none', color: '#000', padding: '16px', borderRadius: 12, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 24, transition: 'all 0.2s' }}>
+                  {copied ? '✓ COPIED TO CLIPBOARD' : '📋 COPY FULL SCRIPT TO CLIPBOARD'}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
@@ -542,7 +667,6 @@ export function AdminWithdrawals({ showToast }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 FIAT CONVERSION RATE (2000 PTS = $1.50) 🔥
   const conversionRate = 0.00075;
 
   useEffect(() => { fetchWithdrawals(); }, []);
@@ -550,77 +674,47 @@ export function AdminWithdrawals({ showToast }) {
   async function fetchWithdrawals() {
     try {
       setLoading(true);
-      const { data } = await supabase.from('withdrawals').select(`
-        *,
-        profiles!inner(email)
-      `).order('created_at', { ascending: false });
+      const { data } = await supabase.from('withdrawals').select(`*, profiles!inner(email)`).order('created_at', { ascending: false });
       setRequests(data || []);
     } finally {
       setLoading(false);
     }
   }
 
-  // 🔥 COMPLETELY REWRITTEN BULLETPROOF PAYOUT ENGINE 🔥
   async function processRequest(req, action) {
     if (!window.confirm(`Are you sure you want to ${action} this payout for ${req.amount} PTS?`)) return;
 
     try {
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
       
-      // 1. If rejecting, we MUST safely refund the points BEFORE touching the withdrawal ledger
       if (action === 'reject') {
-        const { data: userProfile, error: fetchError } = await supabase
-          .from('profiles')
-          .select('points')
-          .eq('id', req.user_id)
-          .single();
-          
+        const { data: userProfile, error: fetchError } = await supabase.from('profiles').select('points').eq('id', req.user_id).single();
         if (fetchError) throw new Error("Cannot read earner balance: " + fetchError.message);
         if (!userProfile) throw new Error("Earner profile not found in database.");
 
         const refundAmount = parseInt(req.amount, 10);
         const currentBalance = parseInt(userProfile.points, 10) || 0;
         
-        // 2. Perform Refund AND force Supabase to return the receipt using .select()
-        const { data: updatedProfile, error: refundError } = await supabase
-          .from('profiles')
-          .update({ points: currentBalance + refundAmount })
-          .eq('id', req.user_id)
-          .select(); // <--- THIS PREVENTS SILENT FAILURES
-          
+        const { data: updatedProfile, error: refundError } = await supabase.from('profiles').update({ points: currentBalance + refundAmount }).eq('id', req.user_id).select();
         if (refundError) throw new Error("Database blocked the refund: " + refundError.message);
-        
-        // 🔥 If Supabase silently blocked it (0 rows updated), this catches it!
-        if (!updatedProfile || updatedProfile.length === 0) {
-           throw new Error("RLS Blocked the refund! The database refused to update the earner's profile.");
-        }
+        if (!updatedProfile || updatedProfile.length === 0) throw new Error("RLS Blocked the refund!");
       }
 
-      // 3. Only AFTER a safe refund (or if approving) do we lock in the ledger status
-      const { error: statusError } = await supabase
-        .from('withdrawals')
-        .update({ status: newStatus })
-        .eq('id', req.id);
-        
+      const { error: statusError } = await supabase.from('withdrawals').update({ status: newStatus }).eq('id', req.id);
       if (statusError) throw new Error("Failed to update ledger status: " + statusError.message);
 
-      // Update UI state
       setRequests(requests.map(r => r.id === req.id ? { ...r, status: newStatus } : r));
       if (showToast) showToast(action === 'reject' ? 'Payout denied & points refunded.' : 'Payout authorized.', 'success');
       
     } catch (err) {
-      console.error("Payout Action Error:", err);
-      // 🔥 MASSIVE POPUP EXPOSING EXACT DATABASE ERROR FOR MOBILE DEBUGGING 🔥
       alert("ACTION FAILED! Reason: " + err.message);
       if (showToast) showToast(`Failed to process payout.`, 'error');
     }
   }
 
-  // 🔥 ONE-TAP MOBILE COPY FUNCTION 🔥
   async function copyBankDetails(req) {
     const fiatAmount = (req.amount * conversionRate).toFixed(2);
     const clipboardText = `Name: ${req.account_name}\nBank: ${req.bank_name}\nAccount: ${req.account_number}\nAmount to Pay: $${fiatAmount}`;
-    
     try {
       await navigator.clipboard.writeText(clipboardText);
       if (showToast) showToast('Bank details copied to clipboard!', 'info');
@@ -681,7 +775,6 @@ export function AdminWithdrawals({ showToast }) {
                     {req.status === 'pending' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
                         <button onClick={() => copyBankDetails(req)} style={{...S.btnAction, width: '100%', marginBottom: 8}}>📋 Copy Details</button>
-                        
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap', width: '100%' }}>
                           <button onClick={() => processRequest(req, 'approve')} style={{...S.btnSuccess, flex: 1}}>Authorize</button>
                           <button onClick={() => processRequest(req, 'reject')} style={{...S.btnDanger, flex: 1}}>Deny</button>
