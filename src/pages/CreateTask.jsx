@@ -97,7 +97,7 @@ export default function CreateTask({ session, navigate, showToast }) {
       platform: form.platform, 
       url: form.url,
       search_keyword: form.platform === 'blog' ? form.search_keyword : null,
-      secret_code: null, // 🔥 Hardcoded to null since the server generates tokens now
+      secret_code: null, // 🔥 Network generates Burnable Token automatically
       watch_duration: 120, // Force 120 seconds into the DB
       target_views: selectedPackageData.views, 
       current_views: 0, 
@@ -125,7 +125,6 @@ export default function CreateTask({ session, navigate, showToast }) {
 
     if (showToast) showToast('Campaign is LIVE on the network!', 'success');
     
-    // Trigger Success & Snippet Screen
     setDeployedTask(newTask);
     setStep(2);
   }
@@ -139,7 +138,6 @@ export default function CreateTask({ session, navigate, showToast }) {
       return;
     }
     
-    // 🔥 Removed the secret_code validation requirement
     if (form.platform === 'blog' && !form.search_keyword) {
       setLocalError('SEO Campaigns require a Search Keyword.');
       return;
@@ -262,7 +260,6 @@ export default function CreateTask({ session, navigate, showToast }) {
                 <input style={S.input} type="url" name="url" placeholder="https://..." value={form.url} onChange={handleInput} required />
               </div>
 
-              {/* 🔥 UPDATED DYNAMIC SEO FIELDS (Secret code removed) 🔥 */}
               {form.platform === 'blog' && (
                 <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: 24, borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)', marginBottom: 24 }}>
                   <div>
@@ -275,7 +272,6 @@ export default function CreateTask({ session, navigate, showToast }) {
                 </div>
               )}
 
-              {/* LOCKED TO 120 SECONDS */}
               {!isManual && (
                 <div>
                   <span style={S.label}>Verification Duration (Seconds)</span>
@@ -367,7 +363,6 @@ export default function CreateTask({ session, navigate, showToast }) {
   var statusEl = document.getElementById('t-status');
   var timerEl = document.getElementById('t-timer');
   
-  // 1. Start Secure Session
   fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
     method: 'POST', body: JSON.stringify({ task_id: taskId })
   }).then(res => res.json()).then(data => {
@@ -376,13 +371,11 @@ export default function CreateTask({ session, navigate, showToast }) {
     statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";
     var timeLeft = 120;
     
-    // 2. Visual Countdown
     var countdown = setInterval(function() {
       if (document.hidden) return; // Pauses visual timer if they leave tab
       timeLeft--;
       timerEl.innerText = timeLeft + "s";
       
-      // 3. Request Burnable Token
       if (timeLeft <= 0) {
         clearInterval(countdown);
         statusEl.innerText = "Verifying telemetry with server...";
