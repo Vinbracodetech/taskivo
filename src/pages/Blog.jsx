@@ -292,24 +292,30 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
 
   async function handleAutoClaim() {
     if (!localUser) return; 
-    
     setClaiming(true);
+    
     try {
-      const { data: existing } = await supabase.from('blog_reads').select('*').eq('user_id', localUser.id).eq('post_slug', slug).single();
+      // 1. Try to record the read
+      const { error: readErr } = await supabase.from('blog_reads').insert({ user_id: localUser.id, post_slug: slug });
+      if (readErr) throw new Error("Blog Reads Table Error: " + readErr.message);
       
-      if (!existing) {
-        await supabase.from('blog_reads').insert({ user_id: localUser.id, post_slug: slug });
-        const { data: profile } = await supabase.from('profiles').select('points').eq('id', localUser.id).single();
-        await supabase.from('profiles').update({ points: profile.points + 10 }).eq('id', localUser.id);
-        
-        // Dispatch global event so Nav bars can instantly update points if listening
-        window.dispatchEvent(new Event('taskivo_points_updated'));
-      }
+      // 2. Try to get current points
+      const { data: profile, error: profErr } = await supabase.from('profiles').select('points').eq('id', localUser.id).single();
+      if (profErr) throw new Error("Profile Fetch Error: " + profErr.message);
       
+      // 3. Try to update points
+      const { error: updateErr } = await supabase.from('profiles').update({ points: (profile.points || 0) + 10 }).eq('id', localUser.id);
+      if (updateErr) throw new Error("Profile Update Error (RLS blocking): " + updateErr.message);
+      
+      // If it survives all that, claim is successful!
+      window.dispatchEvent(new Event('taskivo_points_updated'));
       setClaimed(true);
       localStorage.removeItem('taskivo_active_mission');
+      
     } catch(err) {
-      console.error("Auto-claim error", err);
+      // 🚨 THIS WILL POP UP AND TELL US EXACTLY WHAT DATABASE RULE IS BLOCKING YOU
+      alert("DATABASE BLOCK: " + err.message);
+      console.error(err);
     } finally {
       setClaiming(false); 
     }
