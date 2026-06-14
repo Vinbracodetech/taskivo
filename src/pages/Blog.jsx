@@ -28,11 +28,12 @@ const S = {
   }
 };
 
-// 🔥 THE DEBUG SECURE NODE COMPONENT 🔥
+// 🔥 THE PRODUCTION SECURE NODE COMPONENT 🔥
 export function TaskivoSecureNode({ currentUrl }) {
-  const [status, setStatus] = useState(`Awake. Checking database for: ${currentUrl}`);
+  const [status, setStatus] = useState("Taskivo Secure Node active. Establishing connection...");
   const [timeLeft, setTimeLeft] = useState(null);
   const [token, setToken] = useState(null);
+  const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
     let countdownInterval;
@@ -47,12 +48,10 @@ export function TaskivoSecureNode({ currentUrl }) {
         
         const initData = await initRes.json();
 
-        // If the server rejects the URL, it prints this instead of hiding
-        if (!initData.session_id) {
-          setStatus(`NO MATCH FOUND: The database has no active campaigns exactly matching: ${currentUrl}`);
-          return;
-        }
+        // If no match is found, the component stays completely invisible
+        if (!initData.session_id) return;
 
+        setIsActive(true);
         setStatus("Tracking Organic Dwell Time. Do not switch tabs.");
         setTimeLeft(initData.duration || 120);
 
@@ -87,7 +86,7 @@ export function TaskivoSecureNode({ currentUrl }) {
         }, 1000);
 
       } catch (err) {
-        setStatus("CRITICAL CRASH: Failed to contact Edge Function.");
+        console.error("Node error:", err);
       }
     }
 
@@ -97,6 +96,9 @@ export function TaskivoSecureNode({ currentUrl }) {
       if (countdownInterval) clearInterval(countdownInterval);
     };
   }, [currentUrl]);
+
+  // If no campaign is active, render absolutely nothing
+  if (!isActive) return null;
 
   return (
     <div style={{ padding: '24px', textAlign: 'center', border: '1px dashed rgba(168,255,62,0.3)', borderRadius: '12px', marginTop: '48px', marginBottom: '24px', background: 'var(--surface-card)', clear: 'both' }}>
@@ -109,9 +111,7 @@ export function TaskivoSecureNode({ currentUrl }) {
         </strong>
       ) : (
         <>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: status.includes('NO MATCH') ? '#ef4444' : 'var(--slate)' }}>
-            {status}
-          </span>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'var(--slate)' }}>{status}</span>
           {timeLeft !== null && (
             <div style={{ fontSize: '28px', fontWeight: '800', color: '#ef4444', marginTop: '12px', fontFamily: 'monospace' }}>
               {timeLeft}s
