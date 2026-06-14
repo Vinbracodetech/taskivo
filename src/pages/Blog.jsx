@@ -28,7 +28,7 @@ const S = {
   }
 };
 
-// 🔥 THE PRODUCTION SECURE NODE COMPONENT 🔥
+// 🔥 FAST-DEBUG SECURE NODE COMPONENT 🔥
 export function TaskivoSecureNode({ currentUrl }) {
   const [status, setStatus] = useState("Taskivo Secure Node active. Establishing connection...");
   const [timeLeft, setTimeLeft] = useState(null);
@@ -48,14 +48,14 @@ export function TaskivoSecureNode({ currentUrl }) {
         
         const initData = await initRes.json();
 
-        // If no match is found, the component stays completely invisible
         if (!initData.session_id) return;
 
         setIsActive(true);
-        setStatus("Tracking Organic Dwell Time. Do not switch tabs.");
-        setTimeLeft(initData.duration || 120);
-
-        let currentTime = initData.duration || 120;
+        setStatus("Tracking Organic Dwell Time (Debug Speed)...");
+        
+        // 🔥 TEMPORARY 5-SECOND TIMER FOR TESTING 🔥
+        setTimeLeft(5);
+        let currentTime = 5;
 
         countdownInterval = setInterval(async () => {
           if (document.hidden) return; 
@@ -80,7 +80,8 @@ export function TaskivoSecureNode({ currentUrl }) {
               setToken(claimData.secret_code);
               setStatus("Verification Complete!");
             } else {
-              setStatus("Verification failed. Server rejection.");
+              // 🔥 PRINTS THE EXACT DATABASE ERROR 🔥
+              setStatus(`SERVER ERROR: ${claimData.error || JSON.stringify(claimData)}`);
             }
           }
         }, 1000);
@@ -97,7 +98,6 @@ export function TaskivoSecureNode({ currentUrl }) {
     };
   }, [currentUrl]);
 
-  // If no campaign is active, render absolutely nothing
   if (!isActive) return null;
 
   return (
@@ -111,7 +111,9 @@ export function TaskivoSecureNode({ currentUrl }) {
         </strong>
       ) : (
         <>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'var(--slate)' }}>{status}</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: status.includes('SERVER ERROR') ? '#ef4444' : 'var(--slate)' }}>
+            {status}
+          </span>
           {timeLeft !== null && (
             <div style={{ fontSize: '28px', fontWeight: '800', color: '#ef4444', marginTop: '12px', fontFamily: 'monospace' }}>
               {timeLeft}s
