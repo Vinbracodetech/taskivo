@@ -20,7 +20,8 @@ import CreatorTasks from "./pages/CreatorTasks.jsx";
 import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
 import CreatorApprovals from "./pages/CreatorApprovals.jsx";
 
-import { About, Terms, Privacy } from "./pages/StaticPages.jsx";
+// 🔥 Added Disclaimer to the import list
+import { About, Terms, Privacy, Disclaimer } from "./pages/StaticPages.jsx";
 import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
 import {
   AdminOverview,
@@ -127,10 +128,8 @@ export default function App() {
   var { toasts, show: showToast } = useToast();
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
 
-  // 🔥 NEW STATE: Controls the global celebration popup 🔥
   var [rewardPopup, setRewardPopup] = useState(null);
 
-  // 🔥 SMART SYNC ENGINE: Compares points before triggering popups 🔥
   useEffect(function() {
     if (!user) return;
     
@@ -140,21 +139,15 @@ export default function App() {
         const oldBalance = user.points;
         const newBalance = data.points;
 
-        // 1. Silently update the balance in the navigation bar
         setUser(function(prev) { return { ...prev, points: newBalance }; });
         
-        // 2. Only show the celebration popup if their points actually INCREASED!
         if (newBalance > oldBalance) {
           const exactPointsEarned = newBalance - oldBalance;
-          
-          // Use event details if available, otherwise use exact math
           var ptsEarned = (e && e.detail && e.detail.points) ? e.detail.points : exactPointsEarned;
           var emojiIcon = (e && e.detail && e.detail.emoji) ? e.detail.emoji : "🎉";
           
-          // Trigger the popup
           setRewardPopup({ points: ptsEarned, emoji: emojiIcon });
           
-          // Auto-hide the popup after 3.5 seconds
           setTimeout(function() {
             setRewardPopup(null);
           }, 3500);
@@ -320,11 +313,14 @@ export default function App() {
           <div className="animate-fadeIn" key={view}>
             {view === "landing" && <Landing navigate={navigate} setAuthMode={setAuthMode} />}
             {view === "auth" && <Auth authMode={authMode} setAuthMode={setAuthMode} navigate={navigate} loadProfile={loadProfile} />}
+            
+            {/* 🔥 Added the Disclaimer View 🔥 */}
             {view === "about" && <About />}
             {view === "terms" && <Terms />}
             {view === "privacy" && <Privacy />}
-            {view === "blog" && <BlogIndex navigate={navigate} />}
+            {view === "disclaimer" && <Disclaimer />}
             
+            {view === "blog" && <BlogIndex navigate={navigate} />}
             {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} user={user} setAuthMode={setAuthMode} />}
 
             {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
