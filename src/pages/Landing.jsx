@@ -379,7 +379,7 @@ export default function Landing({ navigate, setAuthMode }) {
       {/* 🔥 PUBLIC SUPPORT BLOCK 🔥 */}
       <div style={{ background: C.ink, padding: '80px 5%', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 800, color: C.white, fontFamily: "'Syne', sans-serif", marginBottom: 16, letterSpacing: '-0.5px' }}>Need Assistance?</h2>
+          <h2 style={{ fontSize: 26, fontWeight: 700, color: C.white, fontFamily: "'DM Sans', sans-serif", marginBottom: 16, letterSpacing: '-0.5px' }}>Need Assistance?</h2>
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, marginBottom: 40, lineHeight: 1.6 }}>
             For partnership inquiries, deployment issues, or general questions, bypass the bots and reach our core team directly.
           </p>
