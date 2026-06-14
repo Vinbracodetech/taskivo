@@ -8,7 +8,7 @@ export default function Dashboard({ user, navigate, showToast }) {
   const [stats, setStats] = useState({ completions: 0 });
   const [referralCopied, setReferralCopied] = useState(false);
 
-  // 🔥 UPGRADED PROFILE STATES 🔥
+  // Profile States
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({ 
     full_name: user.full_name || '', 
@@ -18,9 +18,16 @@ export default function Dashboard({ user, navigate, showToast }) {
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // 🔥 NEW: Support Ticket States
+  const [tickets, setTickets] = useState([]);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [submittingTicket, setSubmittingTicket] = useState(false);
+  const [ticketForm, setTicketForm] = useState({ category: 'Missing Points', message: '' });
+
   useEffect(() => {
     if (!user) return;
     fetchDashboardData();
+    fetchTickets();
     // SILENTLY TRIGGER THE DEVICE TRACKER
     enforceDeviceFingerprint(user.id);
   }, [user]);
@@ -28,19 +35,61 @@ export default function Dashboard({ user, navigate, showToast }) {
   async function fetchDashboardData() {
     try {
       setLoading(true);
-      
-      // Lightweight query: Only fetching total lifetime completions for the stat card
       const { count } = await supabase
         .from('completions')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id);
         
       setStats({ completions: count || 0 });
-
     } catch (err) {
       if (showToast) showToast('Failed to sync dashboard stats', 'error');
     } finally {
       setLoading(false);
+    }
+  }
+
+  // 🔥 NEW: Fetch Tickets
+  async function fetchTickets() {
+    try {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setTickets(data);
+      }
+    } catch (err) {
+      console.error("Error fetching tickets:", err);
+    }
+  }
+
+  // 🔥 NEW: Submit Ticket
+  async function handleSubmitTicket() {
+    if (!ticketForm.message.trim()) {
+      if (showToast) showToast('Please enter a detailed message.', 'error');
+      return;
+    }
+    
+    setSubmittingTicket(true);
+    try {
+      const { error } = await supabase.from('support_tickets').insert({
+        user_id: user.id,
+        category: ticketForm.category,
+        message: ticketForm.message
+      });
+
+      if (error) throw error;
+
+      if (showToast) showToast('Support ticket submitted successfully.', 'success');
+      setShowTicketModal(false);
+      setTicketForm({ category: 'Missing Points', message: '' });
+      fetchTickets(); // Refresh list
+    } catch (err) {
+      if (showToast) showToast(`Submission failed: ${err.message}`, 'error');
+    } finally {
+      setSubmittingTicket(false);
     }
   }
 
@@ -104,11 +153,8 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   const minWithdrawal = 2000;
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
-  
-  // Status check for the UI Badge only
   const isVerified = Boolean(user.payout_account && user.payout_bank_name);
 
-  // 🔥 PROPRIETARY PREMIUM AESTHETIC STYLES 🔥
   const S = {
     pageWrapper: {
       minHeight: '100vh',
@@ -122,7 +168,6 @@ export default function Dashboard({ user, navigate, showToast }) {
     },
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
     
-    // Glassmorphism Cards
     glassCard: { 
       background: 'var(--surface-card)', 
       border: '1px solid rgba(255,255,255,0.05)', 
@@ -146,13 +191,11 @@ export default function Dashboard({ user, navigate, showToast }) {
       overflow: 'hidden' 
     },
     
-    // Standard UI Elements
     label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 16, display: 'block', fontFamily: "'Inter', sans-serif" },
     valueGlow: { fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
     btnPrimary: { background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', boxShadow: '0 8px 16px rgba(168,255,62,0.2)', textAlign: 'center', transition: 'all 0.2s' },
     btnSecondary: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', textAlign: 'center', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' },
     
-    // Structural Elements
     avatarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: 20 },
     avatarBlock: { display: 'flex', alignItems: 'center', gap: 16 },
     avatar: { width: 64, height: 64, borderRadius: '50%', background: 'var(--lime)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", border: '2px solid rgba(255,255,255,0.05)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' },
@@ -160,11 +203,16 @@ export default function Dashboard({ user, navigate, showToast }) {
     verified: { background: 'rgba(168,255,62,0.1)', color: 'var(--lime)', border: '1px solid var(--lime)' },
     unverified: { background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' },
     
-    // Modal System
     modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 },
     modalCard: { background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 16px 48px rgba(0,0,0,0.4)', maxHeight: '90vh', overflowY: 'auto', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)' },
     modalLabel: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--slate)', marginBottom: 8, display: 'block', fontFamily: "'Inter', sans-serif" },
-    input: { width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, color: 'var(--ink)', fontSize: 15, marginBottom: 20, outline: 'none', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.2s' }
+    input: { width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, color: 'var(--ink)', fontSize: 15, marginBottom: 20, outline: 'none', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.2s' },
+
+    // 🔥 NEW: Support Ticket Styles
+    ticketCard: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, marginBottom: 16 },
+    statusOpen: { background: 'rgba(239, 160, 68, 0.1)', color: '#efa044', border: '1px solid rgba(239, 160, 68, 0.3)' },
+    statusResolved: { background: 'rgba(168,255,62,0.1)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.3)' },
+    resolutionBox: { marginTop: 16, padding: 16, background: 'rgba(168,255,62,0.05)', borderLeft: '3px solid var(--lime)', borderRadius: '0 8px 8px 0', fontSize: 13, color: 'var(--ink)' }
   };
 
   return (
@@ -231,8 +279,7 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         </div>
 
-        {/* PREMIUM GOLD CARD */}
-        <div style={{ ...S.premiumCard, marginBottom: 56, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+        <div style={{ ...S.premiumCard, marginBottom: 48, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
           <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--gold)', color: 'var(--gold)', background: 'rgba(255,215,0,0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
               ✦ VIP Network Bonus
@@ -248,6 +295,88 @@ export default function Dashboard({ user, navigate, showToast }) {
           </button>
         </div>
 
+        {/* 🔥 NEW: HELP & SUPPORT SECTION 🔥 */}
+        <div style={{ ...S.glassCard, position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+            <div>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, color: 'var(--ink)', margin: '0 0 4px 0', fontWeight: 800, letterSpacing: '-0.5px' }}>Help & Support</h2>
+              <p style={{ color: 'var(--slate)', fontSize: 14, margin: 0 }}>Submit a ticket to the central administration.</p>
+            </div>
+            <button onClick={() => setShowTicketModal(true)} style={S.btnPrimary}>+ New Ticket</button>
+          </div>
+
+          {tickets.length === 0 ? (
+            <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--slate)', fontSize: 14, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              No open tickets. You are all caught up!
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {tickets.map(ticket => (
+                <div key={ticket.id} style={S.ticketCard}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      {ticket.category}
+                    </div>
+                    <div style={{ ...S.badge, ...(ticket.status === 'resolved' ? S.statusResolved : S.statusOpen) }}>
+                      {ticket.status}
+                    </div>
+                  </div>
+                  <p style={{ color: 'var(--slate)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>{ticket.message}</p>
+                  
+                  {ticket.status === 'resolved' && ticket.resolution_note && (
+                    <div style={S.resolutionBox}>
+                      <strong style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>Admin Resolution:</strong>
+                      {ticket.resolution_note}
+                    </div>
+                  )}
+                  
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 16 }}>
+                    Submitted: {new Date(ticket.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* SUPPORT TICKET MODAL */}
+        {showTicketModal && (
+          <div style={S.modalOverlay}>
+            <div style={S.modalCard}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: 'var(--ink)', marginBottom: 8, letterSpacing: '-0.5px' }}>Submit Request</h2>
+              <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Our team will review your ticket and reply with a resolution note directly in your dashboard.</p>
+              
+              <label style={S.modalLabel}>Issue Category</label>
+              <select 
+                style={S.input} 
+                value={ticketForm.category} 
+                onChange={e => setTicketForm({...ticketForm, category: e.target.value})}
+              >
+                <option value="Missing Points">Missing Points</option>
+                <option value="Payout Issue">Payout / Withdrawal Issue</option>
+                <option value="Bug Report">Platform Bug Report</option>
+                <option value="General Question">General Question</option>
+              </select>
+
+              <label style={S.modalLabel}>Detailed Message</label>
+              <textarea 
+                style={{ ...S.input, minHeight: 120, resize: 'vertical' }} 
+                placeholder="Explain the issue thoroughly so we can assist you quickly..." 
+                value={ticketForm.message} 
+                onChange={e => setTicketForm({...ticketForm, message: e.target.value})} 
+              />
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                <button onClick={() => setShowTicketModal(false)} style={{ ...S.btnSecondary, flex: 1 }}>Cancel</button>
+                <button onClick={handleSubmitTicket} disabled={submittingTicket} style={{ ...S.btnPrimary, flex: 1, opacity: submittingTicket ? 0.5 : 1 }}>
+                  {submittingTicket ? 'Submitting...' : 'Send to Admin'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PROFILE EDIT MODAL */}
         {showEditModal && (
           <div style={S.modalOverlay}>
             <div style={S.modalCard}>
