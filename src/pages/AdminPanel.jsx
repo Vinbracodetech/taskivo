@@ -48,13 +48,22 @@ const S = {
   btnSuccess: { background: 'rgba(168, 255, 62, 0.1)', border: '1px solid rgba(168, 255, 62, 0.3)', color: '#a8ff3e', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'Inter', sans-serif" },
   
   input: { background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 8, color: '#ffffff', padding: '12px 16px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.2s' },
-  select: { background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 8, color: '#ffffff', padding: '12px 16px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif", appearance: 'none', transition: 'border-color 0.2s' }
+  select: { background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 8, color: '#ffffff', padding: '12px 16px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif", appearance: 'none', transition: 'border-color 0.2s' },
+
+  modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  modalCard: { background: '#0a0a0c', border: '1px solid #D4AF37', borderRadius: 20, width: '100%', maxWidth: 500, padding: 32, boxShadow: '0 24px 50px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' },
+  modalLabel: { fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 8, display: 'block', fontFamily: "'Inter', sans-serif" },
 };
 
-// ── 1. ADMIN OVERVIEW MODULE ──
+// ── 1. ADMIN OVERVIEW MODULE (WITH SUPPORT DESK) ──
 export function AdminOverview({ navigate, showToast }) {
   const [stats, setStats] = useState({ users: 0, tasks: 0, pendingWithdrawals: 0, completions: 0 });
   const [loading, setLoading] = useState(true);
+  
+  // 🔥 SUPPORT DESK STATES 🔥
+  const [tickets, setTickets] = useState([]);
+  const [resolvingId, setResolvingId] = useState(null);
+  const [resolutionNotes, setResolutionNotes] = useState({});
 
   useEffect(() => {
     async function fetchSystemStats() {
@@ -71,6 +80,15 @@ export function AdminOverview({ navigate, showToast }) {
           pendingWithdrawals: withReq.count || 0,
           completions: compReq.count || 0
         });
+        
+        // Fetch open and recently resolved tickets
+        const { data: ticketData } = await supabase
+          .from('support_tickets')
+          .select('*, profiles(email, full_name, role)')
+          .order('created_at', { ascending: false });
+        
+        if (ticketData) setTickets(ticketData);
+
       } catch (err) {
         if (showToast) showToast('Failed to load system telemetry', 'error');
       } finally {
@@ -79,6 +97,30 @@ export function AdminOverview({ navigate, showToast }) {
     }
     fetchSystemStats();
   }, [showToast]);
+
+  async function resolveTicket(ticketId) {
+    const note = resolutionNotes[ticketId];
+    if (!note || !note.trim()) {
+      if (showToast) showToast('Please enter a resolution note.', 'error');
+      return;
+    }
+    
+    setResolvingId(ticketId);
+    try {
+      const { error } = await supabase.from('support_tickets')
+        .update({ status: 'resolved', resolution_note: note, resolved_at: new Date().toISOString() })
+        .eq('id', ticketId);
+      
+      if (error) throw error;
+      
+      if (showToast) showToast('Ticket resolved and user notified.', 'success');
+      setTickets(tickets.map(t => t.id === ticketId ? { ...t, status: 'resolved', resolution_note: note } : t));
+    } catch (err) {
+      if (showToast) showToast('Failed to resolve ticket.', 'error');
+    } finally {
+      setResolvingId(null);
+    }
+  }
 
   if (loading) return (
     <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -112,20 +154,80 @@ export function AdminOverview({ navigate, showToast }) {
         </div>
 
         <h2 style={{ ...S.header, fontSize: 20, marginBottom: 24 }}>Control Modules</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 48 }}>
           <div onClick={() => navigate('admin-users')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}>
             <h3 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: 18, fontFamily: "'Inter', sans-serif" }}>Identity &amp; Access</h3>
             <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, margin: 0 }}>Modify roles, suspend accounts, and edit balances.</p>
           </div>
           <div onClick={() => navigate('admin-tasks')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}>
             <h3 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: 18, fontFamily: "'Inter', sans-serif" }}>Campaign Moderation</h3>
-            <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, margin: 0 }}>Approve, pause, or terminate creator campaigns.</p>
+            <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, margin: 0 }}>Approve, modify, or terminate creator campaigns.</p>
           </div>
           <div onClick={() => navigate('admin-withdrawals')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}>
             <h3 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: 18, fontFamily: "'Inter', sans-serif" }}>Financial Treasury</h3>
             <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, margin: 0 }}>Process and audit earner withdrawal requests.</p>
           </div>
         </div>
+
+        {/* 🔥 ADMIN SUPPORT DESK 🔥 */}
+        <h2 style={{ ...S.header, fontSize: 20, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+          Support Desk 
+          {tickets.filter(t => t.status === 'open').length > 0 && (
+             <span style={{ background: '#ef4444', color: '#fff', fontSize: 11, padding: '2px 8px', borderRadius: 100 }}>{tickets.filter(t => t.status === 'open').length} Open</span>
+          )}
+        </h2>
+        
+        {tickets.length === 0 ? (
+          <div style={{ ...S.glassCard, textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>No support tickets exist in the system.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {tickets.map(ticket => (
+              <div key={ticket.id} style={{ ...S.glassCard, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <span style={{ background: ticket.profiles?.role === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: ticket.profiles?.role === 'creator' ? '#D4AF37' : '#a8ff3e', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase' }}>
+                        {ticket.profiles?.role || 'User'}
+                      </span>
+                      <span style={{ color: '#ffffff', fontSize: 14, fontWeight: 700 }}>{ticket.profiles?.full_name || ticket.profiles?.email}</span>
+                    </div>
+                    <div style={{ color: '#D4AF37', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>{ticket.category}</div>
+                  </div>
+                  <div style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: ticket.status === 'resolved' ? 'rgba(168,255,62,0.1)' : 'rgba(239,160,68,0.1)', color: ticket.status === 'resolved' ? '#a8ff3e' : '#efa044', border: `1px solid ${ticket.status === 'resolved' ? 'rgba(168,255,62,0.3)' : 'rgba(239,160,68,0.3)'}` }}>
+                    {ticket.status}
+                  </div>
+                </div>
+                
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: 16, borderRadius: 8, color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 1.6, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  {ticket.message}
+                </div>
+
+                {ticket.status === 'open' ? (
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Type your resolution note here..." 
+                      style={{ ...S.input, flex: 1, marginBottom: 0 }} 
+                      value={resolutionNotes[ticket.id] || ''}
+                      onChange={(e) => setResolutionNotes({...resolutionNotes, [ticket.id]: e.target.value})}
+                    />
+                    <button 
+                      onClick={() => resolveTicket(ticket.id)} 
+                      disabled={resolvingId === ticket.id}
+                      style={{ ...S.btnSuccess, padding: '12px 24px', opacity: resolvingId === ticket.id ? 0.5 : 1 }}>
+                      Resolve & Notify
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: 16, borderRadius: 8, borderLeft: '3px solid #D4AF37' }}>
+                    <strong style={{ display: 'block', fontSize: 11, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Admin Resolution:</strong>
+                    <span style={{ color: '#ffffff', fontSize: 13 }}>{ticket.resolution_note}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -254,7 +356,6 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
   const [step, setStep] = useState(1);
   const [deployedTask, setDeployedTask] = useState(null);
   
-  // 🔥 NEW AUTOMATION STATES
   const [internalPosts, setInternalPosts] = useState([]);
   const [targetType, setTargetType] = useState('external');
   
@@ -266,7 +367,6 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
     reward_points: 50
   });
 
-  // Fetch available blog posts automatically
   useEffect(() => {
     async function fetchInternalBlogs() {
       const { data } = await supabase.from('posts').select('title, slug').eq('status', 'published');
@@ -279,7 +379,6 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  // 🔥 NEW AUTOMATION: Instantly fill perfect URL from dropdown
   function handleInternalSelect(e) {
     const slug = e.target.value;
     if (!slug) {
@@ -330,11 +429,10 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
 
       setDeployedTask(newTask);
       
-      // If it's an internal blog, we skip the script copy screen entirely because the Node is already hardcoded!
       if (targetType === 'internal') {
-        setStep(3); // Go to instant success screen
+        setStep(3);
       } else {
-        setStep(2); // Show script copy screen for external sites
+        setStep(2);
       }
 
     } catch (err) {
@@ -447,7 +545,6 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
 
       <form onSubmit={handleDeploy} style={{ display: 'grid', gap: 16 }}>
         
-        {/* 🔥 NEW AUTOMATION DROPDOWNS 🔥 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Target Type</label>
@@ -499,7 +596,8 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
         {form.platform === 'blog' && (
           <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: 16, borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)' }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Google Search Keyword</label>
-            <input type="text" name="search_keyword" value={form.search_keyword} onChange={handleInput} placeholder="Taskivo updates" style={{ ...S.input, marginBottom: 0 }} required disabled={targetType === 'internal'} />
+            {/* 🔥 FIX: Disabled attribute removed so Admins can customize internal keywords 🔥 */}
+            <input type="text" name="search_keyword" value={form.search_keyword} onChange={handleInput} placeholder="Taskivo updates" style={{ ...S.input, marginBottom: 0 }} required />
             <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: '12px 0 0 0' }}>The system will automatically generate a dynamic Burnable Token snippet for you upon deployment.</p>
           </div>
         )}
@@ -512,12 +610,17 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
   );
 }
 
-// ── 3. ADMIN TASKS MODULE (WITH SCRIPT VAULT) ──
+// ── 3. ADMIN TASKS MODULE (WITH CAMPAIGN EDITOR) ──
 export function AdminTasks({ showToast }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scriptModal, setScriptModal] = useState({ isOpen: false, task: null });
   const [copied, setCopied] = useState(false);
+  
+  // 🔥 CAMPAIGN EDITOR STATES 🔥
+  const [editModal, setEditModal] = useState({ isOpen: false, task: null });
+  const [editForm, setEditForm] = useState({ url: '', reward_points: '', search_keyword: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => { fetchTasks(); }, []);
 
@@ -551,6 +654,39 @@ export function AdminTasks({ showToast }) {
       if (showToast) showToast('Campaign permanently deleted.', 'success');
     } catch (err) {
       if (showToast) showToast('Deletion failed.', 'error');
+    }
+  }
+
+  // 🔥 CAMPAIGN EDITOR LOGIC 🔥
+  function openEditModal(task) {
+    setEditForm({ 
+      url: task.url || '', 
+      reward_points: task.reward_points || '', 
+      search_keyword: task.search_keyword || '' 
+    });
+    setEditModal({ isOpen: true, task });
+  }
+
+  async function saveEditedTask() {
+    setSavingEdit(true);
+    try {
+      const { error } = await supabase.from('tasks')
+        .update({ 
+          url: editForm.url, 
+          reward_points: parseInt(editForm.reward_points, 10), 
+          search_keyword: editForm.search_keyword 
+        })
+        .eq('id', editModal.task.id);
+        
+      if (error) throw error;
+      
+      if (showToast) showToast('Campaign parameters updated.', 'success');
+      setEditModal({ isOpen: false, task: null });
+      fetchTasks(true);
+    } catch (err) {
+      if (showToast) showToast('Failed to update campaign parameters.', 'error');
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -618,10 +754,10 @@ export function AdminTasks({ showToast }) {
         <AdminHouseDeployer showToast={showToast} onDeploy={() => fetchTasks(true)} />
 
         <h1 style={S.header}>Campaign Moderation</h1>
-        <p style={S.subHeader}>Audit, suspend, or terminate active creator campaigns.</p>
+        <p style={S.subHeader}>Audit, modify parameters, or terminate active creator campaigns.</p>
 
         <div style={S.tableContainer}>
-          <div style={{ ...S.tableHeader, gridTemplateColumns: '2fr 1fr 1fr 1.5fr' }} className="hide-on-mobile">
+          <div style={{ ...S.tableHeader, gridTemplateColumns: '2fr 1fr 1fr 2fr' }} className="hide-on-mobile">
             <span>Campaign details</span>
             <span>Platform &amp; Target</span>
             <span>Status</span>
@@ -652,9 +788,13 @@ export function AdminTasks({ showToast }) {
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                 {t.platform === 'blog' && (
                   <button onClick={() => setScriptModal({ isOpen: true, task: t })} style={{...S.btnAction, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)'}}>
-                    {"</>"} Get Node Script
+                    {"</>"} Script
                   </button>
                 )}
+                
+                {/* 🔥 EDIT CAMPAIGN BUTTON 🔥 */}
+                <button onClick={() => openEditModal(t)} style={S.btnAction}>Edit</button>
+                
                 {t.status !== 'active' && <button onClick={() => updateStatus(t.id, 'active')} style={S.btnSuccess}>Activate</button>}
                 {t.status !== 'paused' && <button onClick={() => updateStatus(t.id, 'paused')} style={S.btnAction}>Pause</button>}
                 <button onClick={() => hardDeleteTask(t.id)} style={S.btnDanger}>Drop</button>
@@ -662,6 +802,51 @@ export function AdminTasks({ showToast }) {
             </div>
           ))}
         </div>
+
+        {/* 🔥 EDIT CAMPAIGN MODAL 🔥 */}
+        {editModal.isOpen && editModal.task && (
+          <div style={S.modalOverlay}>
+            <div style={S.modalCard}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: '#ffffff', marginBottom: 8, letterSpacing: '-0.5px' }}>Modify Campaign</h2>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Override parameters for "{editModal.task.title}"</p>
+              
+              <label style={S.modalLabel}>Target URL</label>
+              <input 
+                style={S.input} 
+                type="url" 
+                value={editForm.url} 
+                onChange={e => setEditForm({...editForm, url: e.target.value})} 
+              />
+
+              <label style={S.modalLabel}>Reward Points (PTS)</label>
+              <input 
+                style={S.input} 
+                type="number" 
+                value={editForm.reward_points} 
+                onChange={e => setEditForm({...editForm, reward_points: e.target.value})} 
+              />
+
+              {editModal.task.platform === 'blog' && (
+                <>
+                  <label style={S.modalLabel}>Google Search Keyword</label>
+                  <input 
+                    style={S.input} 
+                    type="text" 
+                    value={editForm.search_keyword} 
+                    onChange={e => setEditForm({...editForm, search_keyword: e.target.value})} 
+                  />
+                </>
+              )}
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                <button onClick={() => setEditModal({ isOpen: false, task: null })} style={{ ...S.btnAction, flex: 1, padding: '14px' }}>Cancel</button>
+                <button onClick={saveEditedTask} disabled={savingEdit} style={{ ...S.btnSuccess, flex: 1, padding: '14px', background: '#D4AF37', color: '#000', border: 'none', opacity: savingEdit ? 0.5 : 1 }}>
+                  {savingEdit ? 'Updating...' : 'Save Parameters'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 🔥 SCRIPT VAULT MODAL 🔥 */}
         {scriptModal.isOpen && scriptModal.task && (
