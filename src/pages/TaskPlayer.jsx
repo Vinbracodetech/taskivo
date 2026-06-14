@@ -116,8 +116,9 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     // 🔥 1. VALIDATION & BURNABLE TOKEN LAYER 🔥
     if (isBlog) {
       const token = seoCodeInput.trim();
-      // UUIDs are typically 36 characters long, we check for a minimum length to prevent trash inputs
-      if (!token || token.length < 20) {
+      
+      // 🔥 NEW VALIDATION: Must start with TSK- and be exactly 10 characters long
+      if (!token || !token.startsWith('TSK-') || token.length !== 10) {
         alert("Invalid payload format. Please ensure you copied the entire Single-Use Code.");
         setSubmitting(false);
         return;
