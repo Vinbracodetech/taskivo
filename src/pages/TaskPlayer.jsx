@@ -6,7 +6,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [loading, setLoading] = useState(true);
   const [task, setTask] = useState(null);
   
-  // Timer States (For Automated Tasks)
+  // Timer States
   const [timer, setTimer] = useState(0);
   const [isLive, setIsLive] = useState(false);
   const [verification, setVerification] = useState(false);
@@ -25,14 +25,12 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
   useEffect(() => {
     async function init() {
-      // Check cooldown
       const { data: c } = await supabase.from('completions').select('created_at').eq('task_id', taskId).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
       if (c) {
         const h = (new Date() - new Date(c.created_at)) / 3600000;
         if (h < 24) { setCooldown(Math.ceil(24 - h)); setLoading(false); return; }
       }
       
-      // Fetch task
       const { data: t } = await supabase.from('tasks').select('*').eq('id', taskId).single();
       if (t) { 
         setTask(t); 
@@ -46,11 +44,9 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const isManualTask = task?.platform === 'ugc' || task?.platform === 'qa_testing';
   const isBlog = task?.platform === 'blog';
 
-  // 🔥 AUTOMATED TIMER LOGIC (Only runs if it's a YouTube task) 🔥
   useEffect(() => {
     if (!task || cooldown || verification || isManualTask || isBlog) return;
     
-    // For YouTube specifically
     if (task.platform === 'youtube') {
       const loadPlayer = () => {
         if (ytPlayerRef.current) return; 
@@ -81,9 +77,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     }
   }, [task, cooldown, verification, isManualTask, isBlog]);
 
-  // Tab-Switch Detection
   useEffect(() => {
-    if (isManualTask || isBlog) return; // Allow tab switching for external proofs and Google Search
+    if (isManualTask || isBlog) return; 
     const handleVisibility = () => {
       if (document.hidden) {
         setIsLive(false);
@@ -95,7 +90,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [verification, isManualTask, isBlog]);
 
-  // Countdown execution
   useEffect(() => {
     if (isManualTask || isBlog) return;
     if (timer <= 0 && task && !verification) {
@@ -113,40 +107,45 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   async function claimTask() {
     setSubmitting(true);
     
-    // 🔥 1. VALIDATION & BURNABLE TOKEN LAYER 🔥
     if (isBlog) {
       const token = seoCodeInput.trim();
       
-      // 🔥 NEW VALIDATION: Must start with TSK- and be exactly 10 characters long
+      // 🚨 CACHE-BUSTER LIFE SIGN 🚨
+      // If this pop-up does not appear on your screen, your browser is using an old file.
+      alert("SYSTEM CHECK: New code is active! Processing Token: " + token);
+      
+      // Strict length and prefix validation
       if (!token || !token.startsWith('TSK-') || token.length !== 10) {
-        alert("Invalid payload format. Please ensure you copied the entire Single-Use Code.");
+        alert("FORMAT ERROR: Code must be exactly 10 characters and start with TSK-");
         setSubmitting(false);
         return;
       }
 
-      // 🔥 CORRECTED DATABASE SEARCH: Looks in secret_code column for 'completed' status
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('task_sessions')
-        .select('*')
-        .eq('secret_code', token)
-        .eq('task_id', task.id) 
-        .eq('status', 'completed')
-        .single();
+      // Safe database lookup
+      try {
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('task_sessions')
+          .select('*')
+          .eq('secret_code', token)
+          .eq('task_id', task.id) 
+          .eq('status', 'completed')
+          .single();
 
-      if (sessionError || !sessionData) {
-        alert("🚨 Invalid, expired, or previously used Secret Code. You must generate your own unique code by visiting the target asset.");
-        setSubmitting(false);
-        return;
-      }
+        if (sessionError || !sessionData) {
+          alert(`DATABASE REJECTION: Could not find active token ${token}. It may be expired or already used.`);
+          setSubmitting(false);
+          return;
+        }
 
-      // BURN THE TOKEN: Mark it as redeemed so it can never be used again
-      const { error: burnError } = await supabase
-        .from('task_sessions')
-        .update({ status: 'redeemed', user_id: user.id })
-        .eq('id', sessionData.id);
+        const { error: burnError } = await supabase
+          .from('task_sessions')
+          .update({ status: 'redeemed', user_id: user.id })
+          .eq('id', sessionData.id);
 
-      if (burnError) {
-        alert("Network error burning token. Please try again.");
+        if (burnError) throw burnError;
+
+      } catch (dbErr) {
+        alert("CRITICAL DATABASE ERROR: " + dbErr.message);
         setSubmitting(false);
         return;
       }
@@ -165,8 +164,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       }
     }
     
-    // 🔥 2. DATABASE INSERTION 🔥
-    // Status MUST be 'pending' exactly to trigger your Creator QA Queue for manual tasks
     const finalStatus = isManualTask ? 'pending' : 'approved';
 
     const insertData = { 
@@ -183,15 +180,13 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     const { error } = await supabase.from('completions').insert(insertData);
     
     if (error) { 
-      alert(`Database Error: ${error.message}`); 
+      alert(`Final Insertion Error: ${error.message}`); 
     } else {
       if (isManualTask) {
         alert("Submitted! The Creator will review your proof and release the points to your treasury shortly.");
       } else {
-        alert("Verified! Points successfully deposited.");
+        alert("✅ Verified! Points successfully deposited.");
         if (user) user.points = (user.points || 0) + task.reward_points;
-        
-        // Background update for automated task views
         await supabase.from('tasks').update({ current_views: task.current_views + 1 }).eq('id', task.id);
       }
       navigate('tasks');
@@ -202,7 +197,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Decrypting asset...</div>;
   if (cooldown) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>⏱️ Cooldown Active: {cooldown}h left</div>;
 
-  // ── DYNAMIC UI STATES ──
   let statusText = 'PLAYBACK PAUSED';
   let statusColor = '#ef4444';
 
@@ -236,14 +230,12 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         <div style={S.header}>{statusText}</div>
         {cheatWarning && !verification && <div style={S.cheatToast}>{cheatWarning}</div>}
         
-        {/* ── AUTOMATED YOUTUBE RENDERER ── */}
         {!isManualTask && task.platform === 'youtube' && (
           <div style={{ display: verification ? 'none' : 'block', pointerEvents: isLive ? 'none' : 'auto' }}>
             <div id="yt-frame" style={{ width: '100%', height: 350 }}></div>
           </div>
         )}
 
-        {/* ── SEO SEARCH PROTOCOL ── */}
         {isBlog && (
           <div style={S.verifBox}>
             <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 16, fontFamily: "var(--font-display)", textAlign: 'left' }}>Search Protocol</h3>
@@ -269,7 +261,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           </div>
         )}
 
-        {/* ── MANUAL UGC / QA PORTAL ── */}
         {isManualTask && (
            <div style={S.verifBox}>
               <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 12, fontFamily: "var(--font-display)" }}>Manual Submission Required</h3>
@@ -305,7 +296,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
            </div>
         )}
         
-        {/* ── AUTOMATED CLAIM FORM (Unlocked after YouTube timer) ── */}
         {verification && !isManualTask && !isBlog && (
           <div style={S.verifBox}>
             <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 24, fontFamily: "var(--font-display)" }}>Engagement Required</h3>
