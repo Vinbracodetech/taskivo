@@ -15,8 +15,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [cooldown, setCooldown] = useState(null);
   const [handle, setHandle] = useState('');
   const [proofUrl, setProofUrl] = useState('');
-  const [proofText, setProofText] = useState(''); // Added for Manual QA text
-  const [seoCodeInput, setSeoCodeInput] = useState(''); // Added for SEO Payload
+  const [proofText, setProofText] = useState(''); 
+  const [seoCodeInput, setSeoCodeInput] = useState(''); 
   const [gateUnlocked, setGateUnlocked] = useState(false);
   const [cheatWarning, setCheatWarning] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -124,13 +124,13 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         return;
       }
 
-      // Check if the token is valid, belongs to this task, and hasn't been used yet
+      // 🔥 CORRECTED DATABASE SEARCH: Looks in secret_code column for 'completed' status
       const { data: sessionData, error: sessionError } = await supabase
         .from('task_sessions')
         .select('*')
-        .eq('id', token)
+        .eq('secret_code', token)
         .eq('task_id', task.id) 
-        .eq('status', 'claimed') // 'claimed' means the server timer finished but it hasn't been redeemed by an Earner yet
+        .eq('status', 'completed')
         .single();
 
       if (sessionError || !sessionData) {
