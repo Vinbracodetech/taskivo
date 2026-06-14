@@ -6,6 +6,9 @@ export default function Tasks({ session, navigate }) {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   
+  // 🔥 NEW: Category Filter State
+  const [activeCategory, setActiveCategory] = useState('All');
+  
   const [displayCount, setDisplayCount] = useState(15);
   
   const [quotas, setQuotas] = useState({ videos: 0, blogs: 0, premium: 0 });
@@ -17,6 +20,9 @@ export default function Tasks({ session, navigate }) {
   const [savingPayout, setSavingPayout] = useState(false);
   const [payoutError, setPayoutError] = useState('');
 
+  // 🔥 NEW: Success Toast State
+  const [toastMessage, setToastMessage] = useState('');
+
   useEffect(() => {
     if (!user) return;
     if (!user.payout_account || !user.payout_bank_name) {
@@ -27,10 +33,14 @@ export default function Tasks({ session, navigate }) {
     
     fetchMarketplace();
 
-    // 🔥 INSTANT SILENT SYNC ENGINE 🔥
-    // This listens for completions (from Blogs or when switching back from YouTube) 
-    // and instantly updates quotas without showing a loading spinner.
-    const handleSilentSync = () => fetchMarketplace(true);
+    // 🔥 INSTANT SILENT SYNC ENGINE (Now with Visual Feedback!)
+    const handleSilentSync = () => {
+      fetchMarketplace(true);
+      // Trigger a visual success message on the Tasks page
+      setToastMessage('+ Yield Secured! Network balances synchronized.');
+      setTimeout(() => setToastMessage(''), 4000); // Hide after 4 seconds
+    };
+
     window.addEventListener('taskivo_points_updated', handleSilentSync);
     window.addEventListener('focus', handleSilentSync); 
     
@@ -40,7 +50,6 @@ export default function Tasks({ session, navigate }) {
     };
   }, [user]);
 
-  // Added isSilent parameter to prevent loading screen flashes
   async function fetchMarketplace(isSilent = false) {
     try {
       if (!isSilent) setLoading(true);
@@ -104,7 +113,10 @@ export default function Tasks({ session, navigate }) {
         created_at: p.created_at
       }));
 
-      const mergedFeed = [...freshTasks, ...freshPosts].sort(() => 0.5 - Math.random());
+      // 🔥 FIXED: Now strictly sorting by Newest First instead of Random!
+      const mergedFeed = [...freshTasks, ...freshPosts].sort((a, b) => {
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
         
       setTasks(mergedFeed);
     } catch (err) {
@@ -136,6 +148,18 @@ export default function Tasks({ session, navigate }) {
     }
   }
 
+  // 🔥 NEW: Advanced Filtering Logic
+  const filteredTasks = tasks.filter(task => {
+    if (activeCategory === 'All') return true;
+    if (activeCategory === 'SEO Tasks') return task.platform === 'blog' && !task.is_internal_blog;
+    if (activeCategory === 'Internal Tasks') return task.is_internal_blog;
+    if (activeCategory === 'Video Tasks') return task.platform === 'youtube';
+    if (activeCategory === 'Premium Tasks') return task.platform === 'ugc' || task.platform === 'qa_testing';
+    return true;
+  });
+
+  const displayedTasks = filteredTasks.slice(0, displayCount);
+
   const S = {
     pageWrapper: {
       minHeight: '100vh',
@@ -150,9 +174,27 @@ export default function Tasks({ session, navigate }) {
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
     headerWrap: { marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 20 },
     
-    quotaPanel: { background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 24, display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 40, boxShadow: '0 8px 32px rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)' },
+    quotaPanel: { background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 24, display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)' },
     quotaItem: { flex: '1 1 120px', display: 'flex', flexDirection: 'column', gap: 8 },
     
+    // 🔥 NEW: Styles for the Category Tabs
+    tabContainer: { display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16, marginBottom: 24, scrollbarWidth: 'none' },
+    tabBtn: (isActive) => ({
+      background: isActive ? 'var(--lime)' : 'var(--surface-card)',
+      color: isActive ? '#000' : 'var(--slate)',
+      border: isActive ? '1px solid var(--lime)' : '1px solid rgba(255,255,255,0.1)',
+      padding: '10px 20px',
+      borderRadius: 100,
+      fontSize: 13,
+      fontWeight: 800,
+      cursor: 'pointer',
+      whiteSpace: 'nowrap',
+      fontFamily: "'Inter', sans-serif",
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px',
+      transition: 'all 0.2s'
+    }),
+
     taskCard: (isPremium, isInternal) => ({ 
       background: 'var(--surface-card)', 
       border: '1px solid rgba(255,255,255,0.03)', 
@@ -175,7 +217,10 @@ export default function Tasks({ session, navigate }) {
     payoutCard: { background: 'var(--surface-card)', border: '1px solid var(--lime)', borderRadius: 24, padding: 40, width: '100%', maxWidth: 460, boxShadow: '0 16px 48px rgba(168,255,62,0.05)', textAlign: 'center', backdropFilter: 'blur(10px)' },
     input: { width: '100%', padding: '16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--ink)', fontSize: 15, marginBottom: 20, outline: 'none', boxSizing: 'border-box' },
     label: { fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--slate)', marginBottom: 8, display: 'block', textAlign: 'left', fontFamily: "'Inter', sans-serif" },
-    errorBox: { background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '12px 16px', borderRadius: 12, fontSize: 13, fontWeight: 700, marginBottom: 24 }
+    errorBox: { background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '12px 16px', borderRadius: 12, fontSize: 13, fontWeight: 700, marginBottom: 24 },
+    
+    // 🔥 NEW: Floating Toast Style
+    toast: { position: 'fixed', bottom: 30, right: 30, background: 'var(--lime)', color: '#000', padding: '16px 24px', borderRadius: 100, fontSize: 14, fontWeight: 800, fontFamily: "'Inter', sans-serif", boxShadow: '0 16px 32px rgba(168,255,62,0.3)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: 12, animation: 'slideUp 0.3s ease-out' }
   };
 
   if (loading) return (
@@ -228,10 +273,16 @@ export default function Tasks({ session, navigate }) {
     );
   }
 
-  const displayedTasks = tasks.slice(0, displayCount);
-
   return (
     <div style={S.pageWrapper}>
+      {/* 🔥 THE NEW SUCCESS TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div style={S.toast}>
+          <span style={{ fontSize: 20 }}>✅</span>
+          {toastMessage}
+        </div>
+      )}
+
       <div style={S.page}>
         <div style={S.headerWrap}>
           <div>
@@ -277,11 +328,20 @@ export default function Tasks({ session, navigate }) {
           </div>
         </div>
 
-        {tasks.length === 0 ? (
+        {/* 🔥 THE NEW CATEGORY TABS UI 🔥 */}
+        <div style={S.tabContainer}>
+          {['All', 'Internal Tasks', 'SEO Tasks', 'Video Tasks', 'Premium Tasks'].map(cat => (
+            <button key={cat} onClick={() => setActiveCategory(cat)} style={S.tabBtn(activeCategory === cat)}>
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {filteredTasks.length === 0 ? (
            <div style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', backdropFilter: 'blur(10px)' }}>
              <div style={{ fontSize: 48, marginBottom: 16 }}>🛰️</div>
-             <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>Network Exhausted</div>
-             <div style={{ fontSize: 14, color: 'var(--slate)', maxWidth: 300, margin: '8px auto 0' }}>All available campaigns have met their target metrics. Return shortly for new drops.</div>
+             <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>No {activeCategory !== 'All' ? activeCategory : 'Tasks'} Available</div>
+             <div style={{ fontSize: 14, color: 'var(--slate)', maxWidth: 300, margin: '8px auto 0' }}>All available campaigns in this sector have met their targets. Return shortly.</div>
            </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
@@ -358,7 +418,7 @@ export default function Tasks({ session, navigate }) {
           </div>
         )}
 
-        {tasks.length > displayCount && (
+        {filteredTasks.length > displayCount && (
           <div style={{ textAlign: 'center', marginTop: 48 }}>
             <button 
               onClick={() => setDisplayCount(prev => prev + 15)}
