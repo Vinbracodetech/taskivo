@@ -376,13 +376,31 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </section>
 
+      {/* 🔥 PUBLIC SUPPORT BLOCK 🔥 */}
+      <div style={{ background: C.ink, padding: '80px 5%', textAlign: 'center' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 32, fontWeight: 800, color: C.white, fontFamily: "'Syne', sans-serif", marginBottom: 16, letterSpacing: '-0.5px' }}>Need Assistance?</h2>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, marginBottom: 40, lineHeight: 1.6 }}>
+            For partnership inquiries, deployment issues, or general questions, bypass the bots and reach our core team directly.
+          </p>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a href="mailto:support@taskivo.online" style={{ background: C.lime, color: C.ink, textDecoration: 'none', padding: '14px 28px', borderRadius: 8, fontSize: 14, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", transition: 'opacity 0.2s' }}>
+              ✉️ Email Support
+            </a>
+            <a href="https://twitter.com/taskivo" target="_blank" rel="noreferrer" style={{ background: 'transparent', border: `1px solid ${C.darkLine}`, color: C.white, textDecoration: 'none', padding: '14px 28px', borderRadius: 8, fontSize: 14, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", transition: 'background 0.2s' }}>
+              Follow on X
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* ── FOOTER ── */}
       <footer style={{ background: C.white, borderTop: `1px solid ${C.line}`, padding: '64px 5% 32px' }}>
         <div className="lp-footer-grid" style={{ maxWidth: 1100, margin: '0 auto', marginBottom: 48 }}>
           <div className="lp-footer-brand-span">
             <div className="heading" style={{ color: C.ink, fontSize: 22, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: C.lime, display: 'inline-block' }}></span>Taskivo</div>
             <p style={{ color: C.slate, fontSize: 14, lineHeight: 1.6, maxWidth: 300, marginBottom: 24 }}>A modern omnichannel engagement infrastructure bridging global businesses with a distributed contributor network.</p>
-            <div style={{ fontSize: 12, color: C.slate, fontWeight: 500 }}>hello@taskivo.online</div>
+            <div style={{ fontSize: 13, color: C.ink, fontWeight: 700 }}>support@taskivo.online</div>
           </div>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>Product</div>
@@ -395,7 +413,7 @@ export default function Landing({ navigate, setAuthMode }) {
             <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>Company</div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("about"); }}>About Us</span></li>
-              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("blog"); }}>Blog</span></li>
+              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("blog"); }}>Intelligence Blog</span></li>
             </ul>
           </div>
           <div>
@@ -406,7 +424,7 @@ export default function Landing({ navigate, setAuthMode }) {
             </ul>
           </div>
         </div>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${C.line}`, paddingTop: 24, color: C.slate, fontSize: 13 }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${C.line}`, paddingTop: 24, color: C.slate, fontSize: 13, flexWrap: 'wrap', gap: 16 }}>
           <div>© {new Date().getFullYear()} Taskivo. All rights reserved. B2B Beta Platform.</div>
           <div style={{ display: 'flex', gap: 16 }}><span>Built for verifiable engagement.</span></div>
         </div>
