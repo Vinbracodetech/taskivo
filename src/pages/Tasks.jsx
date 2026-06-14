@@ -6,12 +6,11 @@ export default function Tasks({ session, navigate }) {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   
-  // 🔥 NEW: Category Filter State
   const [activeCategory, setActiveCategory] = useState('All');
-  
   const [displayCount, setDisplayCount] = useState(15);
   
-  const [quotas, setQuotas] = useState({ videos: 0, blogs: 0, premium: 0 });
+  // 🔥 UPDATED: Quotas now split seoBlogs and internalBlogs
+  const [quotas, setQuotas] = useState({ videos: 0, seoBlogs: 0, internalBlogs: 0, premium: 0 });
   const [lockout, setLockout] = useState(false);
   const [cooldowns, setCooldowns] = useState({});
 
@@ -20,7 +19,6 @@ export default function Tasks({ session, navigate }) {
   const [savingPayout, setSavingPayout] = useState(false);
   const [payoutError, setPayoutError] = useState('');
 
-  // 🔥 NEW: Success Toast State
   const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
@@ -33,12 +31,10 @@ export default function Tasks({ session, navigate }) {
     
     fetchMarketplace();
 
-    // 🔥 INSTANT SILENT SYNC ENGINE (Now with Visual Feedback!)
     const handleSilentSync = () => {
       fetchMarketplace(true);
-      // Trigger a visual success message on the Tasks page
       setToastMessage('+ Yield Secured! Network balances synchronized.');
-      setTimeout(() => setToastMessage(''), 4000); // Hide after 4 seconds
+      setTimeout(() => setToastMessage(''), 4000); 
     };
 
     window.addEventListener('taskivo_points_updated', handleSilentSync);
@@ -73,13 +69,14 @@ export default function Tasks({ session, navigate }) {
         supabase.from('posts').select('*').eq('status', 'published')
       ]);
 
-      let vCount = 0, bCount = 0, pCount = 0;
+      // 🔥 UPDATED: Tracking SEO and Internal separately
+      let vCount = 0, seoCount = 0, intCount = 0, pCount = 0;
       const cooldownMap = {};
 
       (compRes.data || []).forEach(h => {
         const completedAt = new Date(h.created_at);
         if (completedAt >= todayMidnight) {
-          if (h.platform === 'blog') bCount++; 
+          if (h.platform === 'blog') seoCount++; 
           else if (h.platform === 'youtube') vCount++;
           else pCount++; 
         }
@@ -90,13 +87,13 @@ export default function Tasks({ session, navigate }) {
 
       (blogReadsRes.data || []).forEach(b => {
         const completedAt = new Date(b.created_at);
-        if (completedAt >= todayMidnight) bCount++; 
+        if (completedAt >= todayMidnight) intCount++; // Internal blogs count separately
         
         const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
         if (hoursLeft > 0) cooldownMap['internal-' + b.post_slug] = hoursLeft;
       });
 
-      setQuotas({ videos: vCount, blogs: bCount, premium: pCount });
+      setQuotas({ videos: vCount, seoBlogs: seoCount, internalBlogs: intCount, premium: pCount });
       setCooldowns(cooldownMap);
 
       const freshTasks = (activeTasksRes.data || []).map(t => ({
@@ -113,7 +110,6 @@ export default function Tasks({ session, navigate }) {
         created_at: p.created_at
       }));
 
-      // 🔥 FIXED: Now strictly sorting by Newest First instead of Random!
       const mergedFeed = [...freshTasks, ...freshPosts].sort((a, b) => {
         return new Date(b.created_at) - new Date(a.created_at);
       });
@@ -148,7 +144,6 @@ export default function Tasks({ session, navigate }) {
     }
   }
 
-  // 🔥 NEW: Advanced Filtering Logic
   const filteredTasks = tasks.filter(task => {
     if (activeCategory === 'All') return true;
     if (activeCategory === 'SEO Tasks') return task.platform === 'blog' && !task.is_internal_blog;
@@ -177,7 +172,6 @@ export default function Tasks({ session, navigate }) {
     quotaPanel: { background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 24, display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)' },
     quotaItem: { flex: '1 1 120px', display: 'flex', flexDirection: 'column', gap: 8 },
     
-    // 🔥 NEW: Styles for the Category Tabs
     tabContainer: { display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 16, marginBottom: 24, scrollbarWidth: 'none' },
     tabBtn: (isActive) => ({
       background: isActive ? 'var(--lime)' : 'var(--surface-card)',
@@ -195,10 +189,10 @@ export default function Tasks({ session, navigate }) {
       transition: 'all 0.2s'
     }),
 
-    taskCard: (isPremium, isInternal) => ({ 
+    taskCard: (isPremium, isInternalStyle) => ({ 
       background: 'var(--surface-card)', 
       border: '1px solid rgba(255,255,255,0.03)', 
-      borderLeft: `4px solid ${isPremium ? '#D4AF37' : isInternal ? '#A8FF3E' : 'rgba(255,255,255,0.1)'}`,
+      borderLeft: `4px solid ${isPremium ? '#D4AF37' : isInternalStyle ? '#A8FF3E' : 'rgba(255,255,255,0.1)'}`,
       borderRadius: 16, 
       padding: '24px', 
       display: 'flex', 
@@ -210,7 +204,7 @@ export default function Tasks({ session, navigate }) {
       transition: 'transform 0.2s, box-shadow 0.2s'
     }),
     
-    btnActive: (isPremium, isInternal) => ({ background: isPremium ? 'var(--gold)' : isInternal ? 'var(--lime-dim)' : 'var(--lime)', color: isInternal ? 'var(--lime)' : '#000', border: isInternal ? '1px solid var(--lime)' : 'none', padding: '10px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' }),
+    btnActive: (isPremium, isInternalStyle) => ({ background: isPremium ? 'var(--gold)' : isInternalStyle ? 'var(--lime-dim)' : 'var(--lime)', color: isInternalStyle ? 'var(--lime)' : '#000', border: isInternalStyle ? '1px solid var(--lime)' : 'none', padding: '10px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' }),
     btnLocked: { background: 'var(--surface)', color: 'var(--slate)', border: '1px solid var(--line)', padding: '10px 24px', borderRadius: 100, fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif" },
     
     payoutOverlay: { position: 'relative', minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
@@ -219,7 +213,6 @@ export default function Tasks({ session, navigate }) {
     label: { fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--slate)', marginBottom: 8, display: 'block', textAlign: 'left', fontFamily: "'Inter', sans-serif" },
     errorBox: { background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '12px 16px', borderRadius: 12, fontSize: 13, fontWeight: 700, marginBottom: 24 },
     
-    // 🔥 NEW: Floating Toast Style
     toast: { position: 'fixed', bottom: 30, right: 30, background: 'var(--lime)', color: '#000', padding: '16px 24px', borderRadius: 100, fontSize: 14, fontWeight: 800, fontFamily: "'Inter', sans-serif", boxShadow: '0 16px 32px rgba(168,255,62,0.3)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: 12, animation: 'slideUp 0.3s ease-out' }
   };
 
@@ -275,7 +268,6 @@ export default function Tasks({ session, navigate }) {
 
   return (
     <div style={S.pageWrapper}>
-      {/* 🔥 THE NEW SUCCESS TOAST NOTIFICATION */}
       {toastMessage && (
         <div style={S.toast}>
           <span style={{ fontSize: 20 }}>✅</span>
@@ -292,6 +284,7 @@ export default function Tasks({ session, navigate }) {
           <button onClick={() => navigate('user-dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s', backdropFilter: 'blur(5px)' }}>My Hub →</button>
         </div>
 
+        {/* 🔥 THE NEW SPLIT QUOTA PANEL 🔥 */}
         <div style={S.quotaPanel}>
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Video Metrics</span>
@@ -306,12 +299,24 @@ export default function Tasks({ session, navigate }) {
           <div style={{ width: 1, background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} className="hide-on-mobile" />
           
           <div style={S.quotaItem}>
-            <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>SEO Dwell</span>
+            <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>SEO Tasks</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.blogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 20</span>
+              {quotas.seoBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.blogs / 20) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.seoBlogs / 10) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+            </div>
+          </div>
+
+          <div style={{ width: 1, background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} className="hide-on-mobile" />
+
+          <div style={S.quotaItem}>
+            <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Internal Intel</span>
+            <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
+              {quotas.internalBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 20</span>
+            </div>
+            <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
+              <div style={{ width: `${(quotas.internalBlogs / 20) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
             </div>
           </div>
 
@@ -328,7 +333,6 @@ export default function Tasks({ session, navigate }) {
           </div>
         </div>
 
-        {/* 🔥 THE NEW CATEGORY TABS UI 🔥 */}
         <div style={S.tabContainer}>
           {['All', 'Internal Tasks', 'SEO Tasks', 'Video Tasks', 'Premium Tasks'].map(cat => (
             <button key={cat} onClick={() => setActiveCategory(cat)} style={S.tabBtn(activeCategory === cat)}>
@@ -346,25 +350,29 @@ export default function Tasks({ session, navigate }) {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
             {displayedTasks.map(task => {
+              // 🔥 UPDATED: Independent validation for Quota limits
               const isVideo = task.platform === 'youtube';
-              const isBlog = task.platform === 'blog';
+              const isSeoBlog = task.platform === 'blog' && !task.is_internal_blog && !task.is_house_campaign;
+              const isInternalBlog = task.is_internal_blog;
               const isPremium = task.platform === 'ugc' || task.platform === 'qa_testing';
-              const isInternal = task.is_internal_blog || task.is_house_campaign;
+              
+              const isInternalStyle = task.is_internal_blog || task.is_house_campaign;
               
               let quotaHit = false;
               if (isVideo && quotas.videos >= 3) quotaHit = true;
-              if (isBlog && quotas.blogs >= 20) quotaHit = true;
+              if (isSeoBlog && quotas.seoBlogs >= 10) quotaHit = true;
+              if (isInternalBlog && quotas.internalBlogs >= 20) quotaHit = true;
               if (isPremium && quotas.premium >= 5) quotaHit = true;
               
               const isLocked = quotaHit || cooldowns[task.id];
               
               let icon = '▶️';
-              if (isBlog || isInternal) icon = '📄';
+              if (isSeoBlog || isInternalStyle) icon = '📄';
               if (task.platform === 'ugc') icon = '📸';
               if (task.platform === 'qa_testing') icon = '🛠️';
 
               return (
-                <div key={task.id} style={{ ...S.taskCard(isPremium, isInternal), opacity: isLocked ? 0.6 : 1 }}>
+                <div key={task.id} style={{ ...S.taskCard(isPremium, isInternalStyle), opacity: isLocked ? 0.6 : 1 }}>
                   
                   {isPremium && (
                     <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(212,175,55,0.1)', color: '#D4AF37', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', border: '1px solid rgba(212,175,55,0.2)' }}>
@@ -373,11 +381,11 @@ export default function Tasks({ session, navigate }) {
                   )}
 
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: isInternal ? 'var(--lime-dim)' : 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: isInternalStyle ? 'var(--lime-dim)' : 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                       {icon}
                     </div>
                     <div style={{ flex: 1, paddingRight: isPremium ? 70 : 0 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: isInternal ? 'var(--lime)' : 'var(--slate)', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.5px' }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: isInternalStyle ? 'var(--lime)' : 'var(--slate)', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.5px' }}>
                         {task.is_house_campaign ? 'Official Task' : task.platform}
                       </div>
                       <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.3 }}>{task.title}</div>
@@ -391,7 +399,7 @@ export default function Tasks({ session, navigate }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 'auto', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div>
                       <div style={{ fontSize: 10, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Yield</div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: isLocked ? 'var(--slate)' : isInternal ? 'var(--lime)' : 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>+{task.reward_points} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500 }}>PTS</span></div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: isLocked ? 'var(--slate)' : isInternalStyle ? 'var(--lime)' : 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>+{task.reward_points} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500 }}>PTS</span></div>
                     </div>
                     
                     {cooldowns[task.id] ? (
@@ -409,7 +417,7 @@ export default function Tasks({ session, navigate }) {
                             }
                             navigate(`player/${task.id}`);
                           }
-                      }} style={S.btnActive(isPremium, isInternal)}>Initiate</button>
+                      }} style={S.btnActive(isPremium, isInternalStyle)}>Initiate</button>
                     )}
                   </div>
                 </div>
