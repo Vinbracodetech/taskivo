@@ -254,6 +254,10 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
   const [step, setStep] = useState(1);
   const [deployedTask, setDeployedTask] = useState(null);
   
+  // 🔥 NEW AUTOMATION STATES
+  const [internalPosts, setInternalPosts] = useState([]);
+  const [targetType, setTargetType] = useState('external');
+  
   const [form, setForm] = useState({
     title: '',
     platform: 'blog',
@@ -262,8 +266,33 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
     reward_points: 50
   });
 
+  // Fetch available blog posts automatically
+  useEffect(() => {
+    async function fetchInternalBlogs() {
+      const { data } = await supabase.from('posts').select('title, slug').eq('status', 'published');
+      if (data) setInternalPosts(data);
+    }
+    fetchInternalBlogs();
+  }, []);
+
   function handleInput(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  // 🔥 NEW AUTOMATION: Instantly fill perfect URL from dropdown
+  function handleInternalSelect(e) {
+    const slug = e.target.value;
+    if (!slug) {
+      setForm(prev => ({ ...prev, url: '', title: '' }));
+      return;
+    }
+    const post = internalPosts.find(p => p.slug === slug);
+    setForm(prev => ({
+      ...prev,
+      url: `https://www.taskivo.online/article-${slug}`,
+      title: `Read: ${post.title}`,
+      search_keyword: 'Taskivo'
+    }));
   }
 
   async function handleDeploy(e) {
@@ -283,9 +312,9 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
         platform: form.platform,
         url: form.url,
         search_keyword: form.platform === 'blog' ? form.search_keyword : null,
-        secret_code: null, // Network generates Burnable Token automatically
-        watch_duration: form.platform === 'blog' ? 120 : 30, // Strict 120s for SEO
-        target_views: 999999, // Unlimited for House
+        secret_code: null, 
+        watch_duration: form.platform === 'blog' ? 120 : 30, 
+        target_views: 999999, 
         current_views: 0, 
         status: 'active',
         reward_points: parseInt(form.reward_points, 10),
@@ -297,11 +326,16 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
 
       if (showToast) showToast("House Campaign broadcasted to networks instantly!", "success");
       
-      // Background refresh so the screen doesn't wipe
       if (onDeploy) setTimeout(() => onDeploy(), 500);
 
       setDeployedTask(newTask);
-      setStep(2);
+      
+      // If it's an internal blog, we skip the script copy screen entirely because the Node is already hardcoded!
+      if (targetType === 'internal') {
+        setStep(3); // Go to instant success screen
+      } else {
+        setStep(2); // Show script copy screen for external sites
+      }
 
     } catch (err) {
       console.error(err);
@@ -314,6 +348,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
   function resetDeployer() {
     setForm({ title: '', platform: 'blog', url: '', search_keyword: '', reward_points: 50 });
     setDeployedTask(null);
+    setTargetType('external');
     setStep(1);
   }
 
@@ -330,7 +365,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
           <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.3)', border: '1px solid #D4AF37', borderRadius: 16, padding: 24, marginTop: 16 }}>
             <h3 style={{ margin: '0 0 16px 0', color: '#ffffff', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', fontSize: 14, letterSpacing: '1px' }}>Integration Required</h3>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: 20 }}>
-              To enable Zero-Bot verification and Single-Use Tokens for this internal post, paste this exact snippet into the Taskivo Content Engine.
+              To enable Zero-Bot verification and Single-Use Tokens for this external post, paste this exact snippet into the target webpage HTML.
             </p>
             
             <div style={{ position: 'relative' }}>
@@ -387,6 +422,23 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
       </div>
     );
   }
+  
+  if (step === 3 && deployedTask) {
+    return (
+      <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 20, padding: 40, marginBottom: 48, textAlign: 'center' }}>
+        <div style={{ width: 64, height: 64, background: 'rgba(168, 255, 62, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid rgba(168, 255, 62, 0.5)' }}>
+          <span style={{ fontSize: 24 }}>✅</span>
+        </div>
+        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, margin: '0 0 8px 0', color: '#ffffff' }}>Internal Post Boosted</h3>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, margin: '0 0 24px 0' }}>
+          This internal Taskivo article is now boosted with a <strong>{deployedTask.reward_points} PTS</strong> reward. Because it is an internal post, the verification node is already active. No script copying is required.
+        </p>
+        <button onClick={resetDeployer} style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#ffffff', padding: '12px 24px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase' }}>
+          Deploy Another Campaign
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 20, padding: 32, marginBottom: 48 }}>
@@ -394,9 +446,33 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
       <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, margin: '0 0 24px 0' }}>Launch unrestricted official campaigns onto the live worker index.</p>
 
       <form onSubmit={handleDeploy} style={{ display: 'grid', gap: 16 }}>
+        
+        {/* 🔥 NEW AUTOMATION DROPDOWNS 🔥 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Target Type</label>
+            <select value={targetType} onChange={(e) => { setTargetType(e.target.value); setForm({...form, url: '', title: ''}); }} style={S.select}>
+              <option value="external" style={{ color: '#000' }}>External URL / B2B Client</option>
+              <option value="internal" style={{ color: '#000' }}>Internal Taskivo Blog</option>
+            </select>
+          </div>
+          
+          {targetType === 'internal' && form.platform === 'blog' && (
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Select Internal Article</label>
+              <select onChange={handleInternalSelect} style={S.select}>
+                <option value="" style={{ color: '#000' }}>-- Choose an article --</option>
+                {internalPosts.map(p => (
+                  <option key={p.slug} value={p.slug} style={{ color: '#000' }}>{p.title}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
         <div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Task Title</label>
-          <input type="text" name="title" value={form.title} onChange={handleInput} placeholder="e.g., Read our latest Platform Update" style={S.input} required />
+          <input type="text" name="title" value={form.title} onChange={handleInput} placeholder="e.g., Read our latest Platform Update" style={S.input} required disabled={targetType === 'internal'} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
@@ -417,13 +493,13 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
 
         <div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Target Destination URL</label>
-          <input type="url" name="url" value={form.url} onChange={handleInput} placeholder="https://..." style={S.input} required />
+          <input type="url" name="url" value={form.url} onChange={handleInput} placeholder="https://..." style={S.input} required disabled={targetType === 'internal'} />
         </div>
 
         {form.platform === 'blog' && (
           <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: 16, borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)' }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Google Search Keyword</label>
-            <input type="text" name="search_keyword" value={form.search_keyword} onChange={handleInput} placeholder="Taskivo updates" style={{ ...S.input, marginBottom: 0 }} required />
+            <input type="text" name="search_keyword" value={form.search_keyword} onChange={handleInput} placeholder="Taskivo updates" style={{ ...S.input, marginBottom: 0 }} required disabled={targetType === 'internal'} />
             <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: '12px 0 0 0' }}>The system will automatically generate a dynamic Burnable Token snippet for you upon deployment.</p>
           </div>
         )}
