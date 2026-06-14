@@ -111,23 +111,20 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       const token = seoCodeInput.trim();
       
       // 🚨 CACHE-BUSTER LIFE SIGN 🚨
-      // If this pop-up does not appear on your screen, your browser is using an old file.
       alert("SYSTEM CHECK: New code is active! Processing Token: " + token);
       
-      // Strict length and prefix validation
       if (!token || !token.startsWith('TSK-') || token.length !== 10) {
         alert("FORMAT ERROR: Code must be exactly 10 characters and start with TSK-");
         setSubmitting(false);
         return;
       }
 
-      // Safe database lookup
       try {
+        // 🔥 THE FIX: Removed .eq('task_id', task.id) to prevent duplicate campaign crashes
         const { data: sessionData, error: sessionError } = await supabase
           .from('task_sessions')
           .select('*')
           .eq('secret_code', token)
-          .eq('task_id', task.id) 
           .eq('status', 'completed')
           .single();
 
