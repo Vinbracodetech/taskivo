@@ -28,7 +28,7 @@ const S = {
   }
 };
 
-// 🔥 FAST-DEBUG SECURE NODE COMPONENT 🔥
+// 🔥 PRODUCTION SECURE NODE COMPONENT 🔥
 export function TaskivoSecureNode({ currentUrl }) {
   const [status, setStatus] = useState("Taskivo Secure Node active. Establishing connection...");
   const [timeLeft, setTimeLeft] = useState(null);
@@ -51,11 +51,11 @@ export function TaskivoSecureNode({ currentUrl }) {
         if (!initData.session_id) return;
 
         setIsActive(true);
-        setStatus("Tracking Organic Dwell Time (Debug Speed)...");
+        setStatus("Tracking Organic Dwell Time...");
         
-        // 🔥 TEMPORARY 5-SECOND TIMER FOR TESTING 🔥
-        setTimeLeft(5);
-        let currentTime = 5;
+        // 🔥 TIMER RESTORED TO 120 SECONDS 🔥
+        setTimeLeft(120);
+        let currentTime = 120;
 
         countdownInterval = setInterval(async () => {
           if (document.hidden) return; 
@@ -80,7 +80,6 @@ export function TaskivoSecureNode({ currentUrl }) {
               setToken(claimData.secret_code);
               setStatus("Verification Complete!");
             } else {
-              // 🔥 PRINTS THE EXACT DATABASE ERROR 🔥
               setStatus(`SERVER ERROR: ${claimData.error || JSON.stringify(claimData)}`);
             }
           }
@@ -295,26 +294,20 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     setClaiming(true);
     
     try {
-      // 1. Try to record the read
       const { error: readErr } = await supabase.from('blog_reads').insert({ user_id: localUser.id, post_slug: slug });
       if (readErr) throw new Error("Blog Reads Table Error: " + readErr.message);
       
-      // 2. Try to get current points
       const { data: profile, error: profErr } = await supabase.from('profiles').select('points').eq('id', localUser.id).single();
       if (profErr) throw new Error("Profile Fetch Error: " + profErr.message);
       
-      // 3. Try to update points
       const { error: updateErr } = await supabase.from('profiles').update({ points: (profile.points || 0) + 10 }).eq('id', localUser.id);
-      if (updateErr) throw new Error("Profile Update Error (RLS blocking): " + updateErr.message);
+      if (updateErr) throw new Error("Profile Update Error: " + updateErr.message);
       
-      // If it survives all that, claim is successful!
       window.dispatchEvent(new Event('taskivo_points_updated'));
       setClaimed(true);
       localStorage.removeItem('taskivo_active_mission');
       
     } catch(err) {
-      // 🚨 THIS WILL POP UP AND TELL US EXACTLY WHAT DATABASE RULE IS BLOCKING YOU
-      alert("DATABASE BLOCK: " + err.message);
       console.error(err);
     } finally {
       setClaiming(false); 
