@@ -29,7 +29,7 @@ const S = {
 };
 
 // 🔥 PRODUCTION SECURE NODE COMPONENT 🔥
-export function TaskivoSecureNode({ currentUrl }) {
+export function TaskivoSecureNode({ slug }) {
   const [status, setStatus] = useState("Taskivo Secure Node active. Establishing connection...");
   const [timeLeft, setTimeLeft] = useState(null);
   const [token, setToken] = useState(null);
@@ -40,20 +40,33 @@ export function TaskivoSecureNode({ currentUrl }) {
 
     async function initializeNode() {
       try {
+        // 🔥 FIX: Instead of sending the full messy window URL, we explicitly match the target format
+        const cleanTargetUrl = `https://taskivo.online/article-${slug}`;
+
         const initRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target_url: currentUrl })
+          body: JSON.stringify({ target_url: cleanTargetUrl })
         });
         
         const initData = await initRes.json();
 
-        if (!initData.session_id) return;
+        if (!initData.session_id) {
+          // If fallback fails, try with www prefix just in case it's stored that way
+          const fallbackUrl = `https://www.taskivo.online/article-${slug}`;
+          const retryRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_url: fallbackUrl })
+          });
+          const retryData = await retryRes.json();
+          if (!retryData.session_id) return;
+          initData.session_id = retryData.session_id;
+        }
 
         setIsActive(true);
         setStatus("Tracking Organic Dwell Time...");
         
-        // 🔥 TIMER RESTORED TO 120 SECONDS 🔥
         setTimeLeft(120);
         let currentTime = 120;
 
@@ -90,12 +103,12 @@ export function TaskivoSecureNode({ currentUrl }) {
       }
     }
 
-    initializeNode();
+    if (slug) initializeNode();
 
     return () => {
       if (countdownInterval) clearInterval(countdownInterval);
     };
-  }, [currentUrl]);
+  }, [slug]);
 
   if (!isActive) return null;
 
@@ -201,15 +214,12 @@ export function BlogIndex({ navigate }) {
 // ── THE ELITE ARTICLE VIEW ──
 export function ArticleView({ navigate, id, user, setAuthMode }) {
   const [post, setPost] = useState(null);
-  
-  // FOOLPROOF AUTH STATE
   const [localUser, setLocalUser] = useState(user);
   
   const [timeLeft, setTimeLeft] = useState(120); 
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
   
-  // Quiz State
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizQuestion, setQuizQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState('');
@@ -237,7 +247,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     fetchPost();
   }, [slug]);
 
-  // WARNING LOCK
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (isActiveMission && !claimed && timeLeft > 0) {
@@ -249,7 +258,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isActiveMission, claimed, timeLeft]);
 
-  // Secure Visibility Timer
   useEffect(() => {
     if (!post || !isActiveMission) return;
     
@@ -334,7 +342,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     <div style={{ ...S.pageWrapper, backgroundAttachment: 'scroll' }}>
       <style>{proseStyles}</style>
 
-      {/* 🔥 THE QUIZ OVERLAY 🔥 */}
       {showQuiz && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ background: 'var(--surface-card)', border: '1px solid var(--lime)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 24px 48px rgba(168,255,62,0.1)' }}>
@@ -359,7 +366,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         </div>
       )}
 
-      {/* 🔥 THE FLOATING MISSION HUD 🔥 */}
       {isActiveMission && !showQuiz && (
         <div style={{
           position: 'fixed', bottom: 110, left: '50%', transform: 'translateX(-50%)',
@@ -394,7 +400,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         </div>
       )}
 
-      {/* 🔥 THE CINEMATIC HERO HEADER 🔥 */}
       <div style={{ 
         position: 'relative', 
         width: '100%', 
@@ -439,8 +444,8 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         
         <div className="article-prose" dangerouslySetInnerHTML={{ __html: post.content }} />
 
-        {/* 🔥 DEBUG SECURE NODE DROPPED IN HERE 🔥 */}
-        <TaskivoSecureNode currentUrl={window.location.href.split('?')[0]} />
+        {/* 🔥 FIX: Passing clean tracking slug instead of fragile browser window URL string 🔥 */}
+        <TaskivoSecureNode slug={slug} />
 
         {!localUser && (
           <div style={{ background: 'linear-gradient(135deg, rgba(168,255,62,0.1) 0%, transparent 100%)', border: '1px solid var(--lime)', borderRadius: 24, padding: 40, textAlign: 'center', marginTop: 80, backdropFilter: 'blur(10px)' }}>
