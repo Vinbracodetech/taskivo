@@ -439,7 +439,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         <div className="article-prose" dangerouslySetInnerHTML={{ __html: post.content }} />
 
         {/* 🔥 DEBUG SECURE NODE DROPPED IN HERE 🔥 */}
-        <TaskivoSecureNode currentUrl={window.location.href.split('?')[0].split('#')[0]} />
+        <TaskivoSecureNode currentUrl={window.location.href.split('?')[0]} />
 
         {!localUser && (
           <div style={{ background: 'linear-gradient(135deg, rgba(168,255,62,0.1) 0%, transparent 100%)', border: '1px solid var(--lime)', borderRadius: 24, padding: 40, textAlign: 'center', marginTop: 80, backdropFilter: 'blur(10px)' }}>
