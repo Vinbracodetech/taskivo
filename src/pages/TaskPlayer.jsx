@@ -110,9 +110,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     if (isBlog) {
       const token = seoCodeInput.trim();
       
-      // 🚨 CACHE-BUSTER LIFE SIGN 🚨
-      alert("SYSTEM CHECK: New code is active! Processing Token: " + token);
-      
       if (!token || !token.startsWith('TSK-') || token.length !== 10) {
         alert("FORMAT ERROR: Code must be exactly 10 characters and start with TSK-");
         setSubmitting(false);
@@ -120,7 +117,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       }
 
       try {
-        // 🔥 THE FIX: Removed .eq('task_id', task.id) to prevent duplicate campaign crashes
         const { data: sessionData, error: sessionError } = await supabase
           .from('task_sessions')
           .select('*')
@@ -216,7 +212,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     verifBox: { padding: 40, background: 'var(--surface-card)', textAlign: 'center' },
     input: { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)', outline: 'none' },
     btnRed: { background: '#ef4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 13, letterSpacing: '0.5px' },
-    btnGreen: { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16, fontFamily: "var(--font-display)" },
+    btnGreen: { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16, fontFamily: "var(--font-display)", textTransform: 'uppercase' },
     warningBox: { background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 16, marginBottom: 24, textAlign: 'left' },
     cheatToast: { background: '#ef4444', color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' }
   };
@@ -233,27 +229,54 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           </div>
         )}
 
+        {/* 🔥 UPGRADED MISSION BRIEFING UI 🔥 */}
         {isBlog && (
-          <div style={S.verifBox}>
-            <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 16, fontFamily: "var(--font-display)", textAlign: 'left' }}>Search Protocol</h3>
-            <ol style={{ paddingLeft: 20, margin: 0, color: 'var(--slate)', lineHeight: 1.8, fontSize: 14, textAlign: 'left', marginBottom: 24 }}>
-              <li>Open a new browser tab and go to <strong>Google.com</strong></li>
-              <li>Search for this exact phrase: <strong style={{ color: 'var(--ink)', background: 'var(--lime-dim)', padding: '2px 6px', borderRadius: 4 }}>{task.search_keyword}</strong></li>
-              <li>Find the link for <strong>{new URL(task.url).hostname}</strong> and click it.</li>
-              <li>Scroll to the bottom of the article and wait for the verification timer to finish.</li>
-              <li>Copy the Single-Use Secret Code and paste it below.</li>
-            </ol>
+          <div style={{ padding: '32px 24px', background: 'var(--surface-card)' }}>
             
-            <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Single-Use Payload Code</div>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 24, textAlign: 'left', marginBottom: 32, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+              <div style={{ fontSize: 11, color: 'var(--lime)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1.5px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--lime)', borderRadius: '50%', animation: 'pulse 2s infinite' }}></span>
+                Mission Briefing
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Step 1: Search Protocol</div>
+                <div style={{ color: 'var(--ink)', fontSize: 14, lineHeight: 1.5 }}>Open a new browser tab, go to <strong>Google.com</strong>, and search for this exact phrase:</div>
+                <div style={{ background: 'var(--surface-card)', border: '1px dashed var(--slate)', borderRadius: 8, padding: '12px 16px', marginTop: 8, color: 'var(--lime)', fontSize: 16, fontFamily: 'monospace', fontWeight: 700 }}>
+                  {task.search_keyword}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Step 2: Target Acquisition</div>
+                <div style={{ color: 'var(--ink)', fontSize: 14, lineHeight: 1.6 }}>
+                  Look through the Google search results for the website <strong style={{ color: 'var(--lime)' }}>{new URL(task.url).hostname}</strong>. 
+                  <br/><br/>
+                  Specifically, you must click on the article with this exact title:
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderLeft: '3px solid var(--lime)', borderRadius: '0 8px 8px 0', padding: '12px 16px', marginTop: 12, color: '#fff', fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}>
+                  "{task.title}"
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Step 3: Extract Payload</div>
+                <div style={{ color: 'var(--ink)', fontSize: 14, lineHeight: 1.5 }}>
+                  Click the article, scroll to the bottom, and wait for the verification timer to finish. Copy the Single-Use Code it generates.
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 11, fontWeight: 800, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px' }}>Single-Use Payload Code</div>
             <input 
-              placeholder="Paste exact code here..." 
+              placeholder="e.g. TSK-A1B2C3D4E5" 
               value={seoCodeInput} 
               onChange={e => setSeoCodeInput(e.target.value)} 
-              style={{ ...S.input, fontFamily: 'monospace' }} 
+              style={{ ...S.input, fontFamily: 'monospace', fontSize: 16, letterSpacing: '1px', textAlign: 'center' }} 
             />
             
             <button onClick={claimTask} disabled={submitting || !seoCodeInput} style={{ ...S.btnGreen, opacity: (submitting || !seoCodeInput) ? 0.5 : 1 }}>
-              {submitting ? 'VERIFYING...' : 'VERIFY PAYLOAD & CLAIM'}
+              {submitting ? 'VERIFYING...' : 'Verify Payload & Claim'}
             </button>
           </div>
         )}
