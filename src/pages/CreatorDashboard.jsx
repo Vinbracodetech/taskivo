@@ -14,9 +14,16 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
   const [scriptModal, setScriptModal] = useState({ isOpen: false, task: null });
   const [copied, setCopied] = useState(false);
 
+  // 🔥 NEW: SUPPORT DESK STATES 🔥
+  const [tickets, setTickets] = useState([]);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [submittingTicket, setSubmittingTicket] = useState(false);
+  const [ticketForm, setTicketForm] = useState({ category: 'Campaign Moderation', message: '' });
+
   useEffect(function() {
     if (!user) return;
     fetchCreatorData();
+    fetchTickets();
   }, [user]);
 
   async function fetchCreatorData() {
@@ -67,6 +74,51 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
       if (showToast) showToast('Failed to sync terminal data', 'error');
     } finally {
       setLoading(false);
+    }
+  }
+
+  // 🔥 NEW: Fetch Tickets
+  async function fetchTickets() {
+    try {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setTickets(data);
+      }
+    } catch (err) {
+      console.error("Error fetching tickets:", err);
+    }
+  }
+
+  // 🔥 NEW: Submit Ticket
+  async function handleSubmitTicket() {
+    if (!ticketForm.message.trim()) {
+      if (showToast) showToast('Please enter a detailed message.', 'error');
+      return;
+    }
+    
+    setSubmittingTicket(true);
+    try {
+      const { error } = await supabase.from('support_tickets').insert({
+        user_id: user.id,
+        category: ticketForm.category,
+        message: ticketForm.message
+      });
+
+      if (error) throw error;
+
+      if (showToast) showToast('Support ticket dispatched to Admin.', 'success');
+      setShowTicketModal(false);
+      setTicketForm({ category: 'Campaign Moderation', message: '' });
+      fetchTickets();
+    } catch (err) {
+      if (showToast) showToast(`Submission failed: ${err.message}`, 'error');
+    } finally {
+      setSubmittingTicket(false);
     }
   }
 
@@ -181,7 +233,18 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
 
     qaCard: { background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: 16, padding: 24, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 16, backdropFilter: 'blur(12px)' },
     btnApprove: { background: 'rgba(168, 255, 62, 0.9)', border: 'none', color: '#000', padding: '10px 16px', borderRadius: 6, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' },
-    btnReject: { background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#ef4444', padding: '10px 16px', borderRadius: 6, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' }
+    btnReject: { background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#ef4444', padding: '10px 16px', borderRadius: 6, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' },
+
+    // 🔥 NEW: Support Ticket Styles
+    ticketCard: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, marginBottom: 16 },
+    statusOpen: { background: 'rgba(239, 160, 68, 0.1)', color: '#efa044', border: '1px solid rgba(239, 160, 68, 0.3)' },
+    statusResolved: { background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)' },
+    resolutionBox: { marginTop: 16, padding: 16, background: 'rgba(212, 175, 55, 0.05)', borderLeft: '3px solid #D4AF37', borderRadius: '0 8px 8px 0', fontSize: 13, color: '#ffffff' },
+    
+    modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
+    modalCard: { background: '#0a0a0c', border: '1px solid #D4AF37', borderRadius: 20, width: '100%', maxWidth: 500, padding: 32, boxShadow: '0 24px 50px rgba(0,0,0,0.5)', maxHeight: '90vh', overflowY: 'auto' },
+    modalLabel: { fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 8, display: 'block' },
+    input: { background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 8, color: '#ffffff', padding: '12px 16px', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box', marginBottom: 20, fontFamily: "'DM Sans', sans-serif" }
   };
 
   if (loading) {
@@ -279,7 +342,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
         )}
 
         {/* RECENT INJECTIONS SECTION */}
-        <div>
+        <div style={{ marginBottom: 56 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 700, color: '#ffffff', margin: 0, letterSpacing: '-0.5px' }}>Recent Market Injections</h2>
           </div>
@@ -328,7 +391,6 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
                         </div>
                       </div>
                       
-                      {/* 🔥 NEW ACTIONS & STATUS LAYOUT 🔥 */}
                       <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                         <span style={{ background: campaign.status === 'active' ? 'rgba(212, 175, 55, 0.1)' : 'rgba(255, 255, 255, 0.05)', color: campaign.status === 'active' ? '#D4AF37' : 'rgba(255,255,255,0.5)', border: `1px solid ${campaign.status === 'active' ? 'rgba(212, 175, 55, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`, fontSize: 10, fontWeight: 800, padding: '6px 12px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: '1.5px', display: 'inline-block' }}>
                           {campaign.status}
@@ -350,6 +412,88 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
             </div>
           )}
         </div>
+
+        {/* 🔥 NEW: HELP & SUPPORT SECTION (CREATOR) 🔥 */}
+        <div style={{ ...S.glassCard, position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+            <div>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, color: '#ffffff', margin: '0 0 4px 0', fontWeight: 800, letterSpacing: '-0.5px' }}>Help & Support</h2>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, margin: 0 }}>Dispatch a ticket to the central administration.</p>
+            </div>
+            <button onClick={() => setShowTicketModal(true)} style={S.btnPrimary}>+ New Ticket</button>
+          </div>
+
+          {tickets.length === 0 ? (
+            <div style={{ padding: '32px 0', textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              No open tickets. You are all caught up!
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {tickets.map(ticket => (
+                <div key={ticket.id} style={S.ticketCard}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      {ticket.category}
+                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6, letterSpacing: '0.5px', textTransform: 'uppercase', ...(ticket.status === 'resolved' ? S.statusResolved : S.statusOpen) }}>
+                      {ticket.status}
+                    </div>
+                  </div>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>{ticket.message}</p>
+                  
+                  {ticket.status === 'resolved' && ticket.resolution_note && (
+                    <div style={S.resolutionBox}>
+                      <strong style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4, color: '#D4AF37' }}>Admin Resolution:</strong>
+                      {ticket.resolution_note}
+                    </div>
+                  )}
+                  
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 16 }}>
+                    Submitted: {new Date(ticket.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* SUPPORT TICKET MODAL */}
+        {showTicketModal && (
+          <div style={S.modalOverlay}>
+            <div style={S.modalCard}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: '#ffffff', marginBottom: 8, letterSpacing: '-0.5px' }}>Submit Request</h2>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Our team will review your ticket and reply with a resolution note directly in your dashboard.</p>
+              
+              <label style={S.modalLabel}>Issue Category</label>
+              <select 
+                style={S.input} 
+                value={ticketForm.category} 
+                onChange={e => setTicketForm({...ticketForm, category: e.target.value})}
+              >
+                <option value="Campaign Moderation">Campaign Moderation</option>
+                <option value="Billing / Deposit">Billing or Deposit Issue</option>
+                <option value="Dispute Earner">Dispute Earner Engagement</option>
+                <option value="Bug Report">Platform Bug Report</option>
+                <option value="General Question">General Question</option>
+              </select>
+
+              <label style={S.modalLabel}>Detailed Message</label>
+              <textarea 
+                style={{ ...S.input, minHeight: 120, resize: 'vertical' }} 
+                placeholder="Explain the issue thoroughly so we can assist you quickly..." 
+                value={ticketForm.message} 
+                onChange={e => setTicketForm({...ticketForm, message: e.target.value})} 
+              />
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                <button onClick={() => setShowTicketModal(false)} style={{ ...S.btnSecondary, flex: 1 }}>Cancel</button>
+                <button onClick={handleSubmitTicket} disabled={submittingTicket} style={{ ...S.btnPrimary, flex: 1, opacity: submittingTicket ? 0.5 : 1 }}>
+                  {submittingTicket ? 'Submitting...' : 'Send to Admin'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 🔥 SCRIPT VAULT MODAL (CREATOR SIDE) 🔥 */}
         {scriptModal.isOpen && scriptModal.task && (
