@@ -40,7 +40,6 @@ export function TaskivoSecureNode({ slug }) {
 
     async function initializeNode() {
       try {
-        // 🔥 FIX: Instead of sending the full messy window URL, we explicitly match the target format
         const cleanTargetUrl = `https://taskivo.online/article-${slug}`;
 
         const initRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
@@ -52,7 +51,6 @@ export function TaskivoSecureNode({ slug }) {
         const initData = await initRes.json();
 
         if (!initData.session_id) {
-          // If fallback fails, try with www prefix just in case it's stored that way
           const fallbackUrl = `https://www.taskivo.online/article-${slug}`;
           const retryRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
             method: 'POST',
@@ -241,11 +239,71 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       const { data } = await supabase.from('posts').select('*').eq('slug', slug).single();
       if (data) {
         setPost(data);
-        document.title = `${data.title} | Taskivo`;
       }
     }
     fetchPost();
   }, [slug]);
+
+  // 🔥 UPGRADED METADATA & ARTICLE JSON-LD INJECTION 🔥
+  useEffect(() => {
+    if (!post) return;
+
+    // 1. Basic Meta Tags
+    document.title = `${post.title} | Taskivo`;
+    
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.name = 'description';
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.content = post.meta_desc || 'Read the latest intelligence briefing from Taskivo.';
+
+    // 2. BlogPosting Structured Data
+    const articleSchema = {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": `https://taskivo.online/article-${post.slug}`
+      },
+      "headline": post.title,
+      "description": post.meta_desc,
+      "datePublished": post.created_at,
+      "dateModified": post.created_at,
+      "author": {
+        "@type": "Organization",
+        "name": "Taskivo Intelligence",
+        "url": "https://taskivo.online"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Taskivo",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://taskivo.online/logo.png"
+        }
+      }
+    };
+
+    // Remove existing script if any
+    const existingScript = document.getElementById('taskivo-article-schema');
+    if (existingScript) existingScript.remove();
+
+    const script = document.createElement('script');
+    script.id = 'taskivo-article-schema';
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(articleSchema);
+    document.head.appendChild(script);
+
+    // Cleanup when leaving the article
+    return () => {
+      const scriptToRemove = document.getElementById('taskivo-article-schema');
+      if (scriptToRemove) scriptToRemove.remove();
+      // Restore default description
+      if (metaDesc) metaDesc.content = 'The world\'s most secure omnichannel engagement infrastructure.';
+    };
+  }, [post]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
