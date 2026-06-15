@@ -118,10 +118,11 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
 }
 
 export default function App() {
-  var rawHash = window.location.hash.replace(/^#\/?/, "");
-  var cleanHash = rawHash.split("?")[0] || "landing";
+  // 🔥 UPGRADED ROUTING: Path Routing instead of Hash Routing 🔥
+  var rawPath = window.location.pathname.replace(/^\/+/, "");
+  var cleanPath = rawPath.split("?")[0] || "landing";
   
-  var [view, setView] = useState(cleanHash);
+  var [view, setView] = useState(cleanPath);
   var [authMode, setAuthMode] = useState("login");
   var [user, setUser] = useState(null);
   var [loading, setLoading] = useState(true);
@@ -167,13 +168,6 @@ export default function App() {
       if (standardParams.has("ref")) {
         refId = standardParams.get("ref");
       } 
-      else if (window.location.hash.includes("?")) {
-        var hashString = window.location.hash.split("?")[1];
-        var hashParams = new URLSearchParams(hashString);
-        if (hashParams.has("ref")) {
-          refId = hashParams.get("ref");
-        }
-      }
 
       if (refId) {
         localStorage.setItem("taskivo_ref", refId);
@@ -182,20 +176,22 @@ export default function App() {
     }
   }, []);
 
+  // 🔥 UPGRADED ROUTING: Listen for back/forward browser buttons
   useEffect(function() {
-    function handleHashChange() {
-      var hash = window.location.hash.replace(/^#\/?/, "") || "landing";
-      if (hash.includes("?")) {
-          hash = hash.split("?")[0];
+    function handlePopState() {
+      var path = window.location.pathname.replace(/^\/+/, "") || "landing";
+      if (path.includes("?")) {
+          path = path.split("?")[0];
       }
-      setView(hash);
+      setView(path);
     }
-    window.addEventListener("hashchange", handleHashChange);
-    return function() { window.removeEventListener("hashchange", handleHashChange); };
+    window.addEventListener("popstate", handlePopState);
+    return function() { window.removeEventListener("popstate", handlePopState); };
   }, []);
 
+  // 🔥 UPGRADED ROUTING: Push clean URLs to the browser history
   function navigate(v) {
-    window.location.hash = v;
+    window.history.pushState({}, "", "/" + (v === 'landing' ? '' : v));
     setView(v);
     window.scrollTo(0, 0);
   }
@@ -224,8 +220,9 @@ export default function App() {
     setLoading(true);
     var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
     
-    var currentHash = window.location.hash.replace(/^#\/?/, "") || "landing";
-    if (currentHash.includes("?")) currentHash = currentHash.split("?")[0];
+    // Check path for correct routing after auth
+    var currentPath = window.location.pathname.replace(/^\/+/, "") || "landing";
+    if (currentPath.includes("?")) currentPath = currentPath.split("?")[0];
 
     if (result.data) {
       if (result.data.role === 'suspended') {
@@ -238,10 +235,10 @@ export default function App() {
       }
 
       setUser(result.data);
-      if (currentHash === "landing" || currentHash === "auth") {
+      if (currentPath === "landing" || currentPath === "auth") {
         routeByRole(result.data.role);
       } else {
-        setView(currentHash);
+        setView(currentPath);
       }
     } else {
       var intendedRole = localStorage.getItem('taskivo_role') || "earner";
