@@ -10,7 +10,63 @@ export default function Landing({ navigate, setAuthMode }) {
   const [openFaq, setOpenFaq] = useState(null);
   const [pricingMode, setPricingMode] = useState('social'); // 'social', 'seo', 'qa', 'ugc'
 
-  useEffect(() => { document.title = 'Taskivo — Digital Engagement Infrastructure'; }, []);
+  // 🔥 UPGRADED METADATA & JSON-LD SCHEMA INJECTION 🔥
+  useEffect(() => {
+    // 1. Basic SEO Metadata
+    document.title = 'Taskivo — Digital Engagement Infrastructure';
+    
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.name = 'description';
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.content = 'The world\'s most secure omnichannel engagement infrastructure. Connecting businesses with verified human attention.';
+
+    // 2. Enterprise Structured Data (JSON-LD)
+    const schemaData = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "name": "Taskivo",
+          "url": "https://taskivo.online",
+          "logo": "https://taskivo.online/logo.png",
+          "sameAs": [
+            "https://twitter.com/taskivo"
+          ]
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "Taskivo B2B Network",
+          "operatingSystem": "Web Browser",
+          "applicationCategory": "BusinessApplication",
+          "description": "A secure omnichannel engagement infrastructure bridging global businesses with a distributed contributor network.",
+          "offers": {
+            "@type": "Offer",
+            "price": "15.00",
+            "priceCurrency": "USD"
+          }
+        }
+      ]
+    };
+
+    // Prevent duplicate scripts if navigating back and forth
+    const existingScript = document.getElementById('taskivo-schema');
+    if (existingScript) existingScript.remove();
+
+    const script = document.createElement('script');
+    script.id = 'taskivo-schema';
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(schemaData);
+    document.head.appendChild(script);
+    
+    // Cleanup function when leaving the landing page
+    return () => {
+      const scriptToRemove = document.getElementById('taskivo-schema');
+      if (scriptToRemove) scriptToRemove.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (document.getElementById('taskivo-styles')) return;
