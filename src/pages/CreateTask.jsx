@@ -48,7 +48,7 @@ export default function CreateTask({ session, navigate, showToast }) {
       enterprise: { label: 'Enterprise Tier', views: 1000, priceUSD: 68 }
     },
     seo: {
-      starter: { label: 'Starter SEO', views: 100, priceUSD: 1 }, // 🔥 Updated from 8 to 1
+      starter: { label: 'Starter SEO', views: 100, priceUSD: 8 }, // 🔥 Reverted back to 8
       traction: { label: 'Traction SEO', views: 300, priceUSD: 24 },
       scale: { label: 'Scale SEO', views: 800, priceUSD: 55 },
       enterprise: { label: 'Enterprise SEO', views: 2000, priceUSD: 120 }
