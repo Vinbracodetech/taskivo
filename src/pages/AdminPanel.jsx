@@ -645,15 +645,28 @@ export function AdminTasks({ showToast }) {
     }
   }
 
-  async function hardDeleteTask(id) {
-    if (!window.confirm('Delete this campaign completely?')) return;
+ async function hardDeleteTask(id) {
+    if (!window.confirm('CRITICAL: Delete this campaign completely? This will wipe all linked completion data.')) return;
+    
     try {
+      // 1. Wipe linked earner completions first (Clears the Foreign Key block)
+      await supabase.from('completions').delete().eq('task_id', id);
+      
+      // 2. Wipe linked transactions if applicable (Clears the Foreign Key block)
+      await supabase.from('transactions').delete().eq('reference_id', id);
+
+      // 3. Now the database will allow the actual task to be dropped safely
       const { error } = await supabase.from('tasks').delete().eq('id', id);
+      
       if (error) throw error;
+      
       setTasks(tasks.filter(t => t.id !== id));
       if (showToast) showToast('Campaign permanently deleted.', 'success');
+      
     } catch (err) {
-      if (showToast) showToast('Deletion failed.', 'error');
+      // Log the exact database error so we know exactly what is blocking it
+      console.error("Supabase Deletion Error:", err.message || err);
+      if (showToast) showToast(`Deletion failed: ${err.message || 'Check console'}`, 'error');
     }
   }
 
