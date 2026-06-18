@@ -301,10 +301,10 @@ export default function Tasks({ session, navigate }) {
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>SEO Tasks</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.seoBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
+              {quotas.seoBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 5</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.seoBlogs / 10) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.seoBlogs / 5) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
             </div>
           </div>
 
@@ -313,10 +313,10 @@ export default function Tasks({ session, navigate }) {
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Internal Intel</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.internalBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 20</span>
+              {quotas.internalBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.internalBlogs / 20) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.internalBlogs / 10) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
             </div>
           </div>
 
@@ -360,8 +360,8 @@ export default function Tasks({ session, navigate }) {
               
               let quotaHit = false;
               if (isVideo && quotas.videos >= 3) quotaHit = true;
-              if (isSeoBlog && quotas.seoBlogs >= 10) quotaHit = true;
-              if (isInternalBlog && quotas.internalBlogs >= 20) quotaHit = true;
+              if (isSeoBlog && quotas.seoBlogs >= 5) quotaHit = true;
+              if (isInternalBlog && quotas.internalBlogs >= 10) quotaHit = true;
               if (isPremium && quotas.premium >= 5) quotaHit = true;
               
               const isLocked = quotaHit || cooldowns[task.id];
