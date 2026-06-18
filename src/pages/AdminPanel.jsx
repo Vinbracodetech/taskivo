@@ -650,24 +650,26 @@ async function hardDeleteTask(id) {
     if (!confirmDelete) return;
     
     try {
-      // Step 1: Force an alert so we know the button actually works
-      alert("1/3: Attempting to clear earner completions...");
+      // 1. Wipe active/expired task sessions (THE NEW FIX)
+      const { error: err0 } = await supabase.from('task_sessions').delete().eq('task_id', id);
+      if (err0) throw new Error(`Task Sessions Table Blocked It: ${err0.message}`);
+
+      // 2. Clear earner completions
       const { error: err1 } = await supabase.from('completions').delete().eq('task_id', id);
       if (err1) throw new Error(`Completions Table Blocked It: ${err1.message}`);
       
-      alert("2/3: Attempting to clear financial transactions...");
+      // 3. Clear financial transactions
       const { error: err2 } = await supabase.from('transactions').delete().eq('reference_id', id);
       if (err2) throw new Error(`Transactions Table Blocked It: ${err2.message}`);
 
-      alert("3/3: Dropping the actual campaign...");
+      // 4. Drop the actual campaign
       const { error: err3 } = await supabase.from('tasks').delete().eq('id', id);
       if (err3) throw new Error(`Tasks Table Blocked It: ${err3.message}`);
       
       setTasks(tasks.filter(t => t.id !== id));
-      alert('✅ SUCCESS: Campaign permanently deleted.');
+      if (showToast) showToast('Campaign permanently deleted.', 'success'); // Switched back to normal toast!
       
     } catch (err) {
-      // This will force the exact database error to pop up on your screen
       alert(`❌ DELETION FAILED:\n\n${err.message}`);
     }
   }
