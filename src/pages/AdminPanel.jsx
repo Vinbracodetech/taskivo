@@ -645,31 +645,32 @@ export function AdminTasks({ showToast }) {
     }
   }
 
- async function hardDeleteTask(id) {
-    if (!window.confirm('CRITICAL: Delete this campaign completely? This will wipe all linked completion data.')) return;
+async function hardDeleteTask(id) {
+    const confirmDelete = window.confirm('CRITICAL: Delete this campaign completely?');
+    if (!confirmDelete) return;
     
     try {
-      // 1. Wipe linked earner completions first (Clears the Foreign Key block)
-      await supabase.from('completions').delete().eq('task_id', id);
+      // Step 1: Force an alert so we know the button actually works
+      alert("1/3: Attempting to clear earner completions...");
+      const { error: err1 } = await supabase.from('completions').delete().eq('task_id', id);
+      if (err1) throw new Error(`Completions Table Blocked It: ${err1.message}`);
       
-      // 2. Wipe linked transactions if applicable (Clears the Foreign Key block)
-      await supabase.from('transactions').delete().eq('reference_id', id);
+      alert("2/3: Attempting to clear financial transactions...");
+      const { error: err2 } = await supabase.from('transactions').delete().eq('reference_id', id);
+      if (err2) throw new Error(`Transactions Table Blocked It: ${err2.message}`);
 
-      // 3. Now the database will allow the actual task to be dropped safely
-      const { error } = await supabase.from('tasks').delete().eq('id', id);
-      
-      if (error) throw error;
+      alert("3/3: Dropping the actual campaign...");
+      const { error: err3 } = await supabase.from('tasks').delete().eq('id', id);
+      if (err3) throw new Error(`Tasks Table Blocked It: ${err3.message}`);
       
       setTasks(tasks.filter(t => t.id !== id));
-      if (showToast) showToast('Campaign permanently deleted.', 'success');
+      alert('✅ SUCCESS: Campaign permanently deleted.');
       
     } catch (err) {
-      // Log the exact database error so we know exactly what is blocking it
-      console.error("Supabase Deletion Error:", err.message || err);
-      if (showToast) showToast(`Deletion failed: ${err.message || 'Check console'}`, 'error');
+      // This will force the exact database error to pop up on your screen
+      alert(`❌ DELETION FAILED:\n\n${err.message}`);
     }
   }
-
   // 🔥 CAMPAIGN EDITOR LOGIC 🔥
   function openEditModal(task) {
     setEditForm({ 
