@@ -20,7 +20,7 @@ import CreatorTasks from "./pages/CreatorTasks.jsx";
 import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
 import CreatorApprovals from "./pages/CreatorApprovals.jsx";
 
-// 🔥 Added Disclaimer to the import list
+// Static & Admin Pages
 import { About, Terms, Privacy, Disclaimer } from "./pages/StaticPages.jsx";
 import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
 import {
@@ -118,17 +118,9 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
 }
 
 export default function App() {
-  // 🔥 UPGRADED ROUTING: Intercept old hashes and upgrade them to clean paths
-  let rawPath = window.location.pathname.replace(/^\/+/, "");
-  
-  // If the pathname is empty but a hash exists, grab the route from the hash!
-  if (!rawPath && window.location.hash.length > 1) {
-    rawPath = window.location.hash.replace(/^#\/?/, "");
-    // Instantly clean the URL bar so the user never sees the hash again
-    window.history.replaceState({}, "", "/" + rawPath);
-  }
-
-  let cleanPath = rawPath.split("?")[0] || "landing";
+  // 🔥 ROUTING LOGIC (Clean paths, but allows Supabase to read # hashes for login)
+  var rawPath = window.location.pathname.replace(/^\/+/, "");
+  var cleanPath = rawPath.split("?")[0] || "landing";
   
   var [view, setView] = useState(cleanPath);
   var [authMode, setAuthMode] = useState("login");
@@ -184,7 +176,7 @@ export default function App() {
     }
   }, []);
 
-  // 🔥 UPGRADED ROUTING: Listen for back/forward browser buttons
+  // Listen for back/forward browser buttons
   useEffect(function() {
     function handlePopState() {
       var path = window.location.pathname.replace(/^\/+/, "") || "landing";
@@ -197,7 +189,7 @@ export default function App() {
     return function() { window.removeEventListener("popstate", handlePopState); };
   }, []);
 
-  // 🔥 UPGRADED ROUTING: Push clean URLs to the browser history
+  // Push clean URLs to the browser history
   function navigate(v) {
     window.history.pushState({}, "", "/" + (v === 'landing' ? '' : v));
     setView(v);
@@ -319,7 +311,7 @@ export default function App() {
             {view === "landing" && <Landing navigate={navigate} setAuthMode={setAuthMode} />}
             {view === "auth" && <Auth authMode={authMode} setAuthMode={setAuthMode} navigate={navigate} loadProfile={loadProfile} />}
             
-            {/* 🔥 Static Pages 🔥 */}
+            {/* Static Pages */}
             {view === "about" && <About />}
             {view === "terms" && <Terms />}
             {view === "privacy" && <Privacy />}
@@ -351,7 +343,7 @@ export default function App() {
         {user && <FloatingNav user={user} navigate={navigate} logout={logout} toggleTheme={toggleTheme} theme={theme} />}
       </div>
       
-      {/* 🔥 GLOBAL REWARD CELEBRATION OVERLAY 🔥 */}
+      {/* GLOBAL REWARD CELEBRATION OVERLAY */}
       {rewardPopup && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 999999,
