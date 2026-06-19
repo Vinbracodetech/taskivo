@@ -118,9 +118,17 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
 }
 
 export default function App() {
-  // 🔥 UPGRADED ROUTING: Path Routing instead of Hash Routing 🔥
-  var rawPath = window.location.pathname.replace(/^\/+/, "");
-  var cleanPath = rawPath.split("?")[0] || "landing";
+  // 🔥 UPGRADED ROUTING: Intercept old hashes and upgrade them to clean paths
+  let rawPath = window.location.pathname.replace(/^\/+/, "");
+  
+  // If the pathname is empty but a hash exists, grab the route from the hash!
+  if (!rawPath && window.location.hash.length > 1) {
+    rawPath = window.location.hash.replace(/^#\/?/, "");
+    // Instantly clean the URL bar so the user never sees the hash again
+    window.history.replaceState({}, "", "/" + rawPath);
+  }
+
+  let cleanPath = rawPath.split("?")[0] || "landing";
   
   var [view, setView] = useState(cleanPath);
   var [authMode, setAuthMode] = useState("login");
@@ -311,7 +319,7 @@ export default function App() {
             {view === "landing" && <Landing navigate={navigate} setAuthMode={setAuthMode} />}
             {view === "auth" && <Auth authMode={authMode} setAuthMode={setAuthMode} navigate={navigate} loadProfile={loadProfile} />}
             
-            {/* 🔥 Added the Disclaimer View 🔥 */}
+            {/* 🔥 Static Pages 🔥 */}
             {view === "about" && <About />}
             {view === "terms" && <Terms />}
             {view === "privacy" && <Privacy />}
