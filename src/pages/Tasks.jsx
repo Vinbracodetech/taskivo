@@ -9,7 +9,6 @@ export default function Tasks({ session, navigate }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [displayCount, setDisplayCount] = useState(15);
   
-  // 🔥 UPDATED: Quotas now split seoBlogs and internalBlogs
   const [quotas, setQuotas] = useState({ videos: 0, seoBlogs: 0, internalBlogs: 0, premium: 0 });
   const [lockout, setLockout] = useState(false);
   const [cooldowns, setCooldowns] = useState({});
@@ -58,9 +57,8 @@ export default function Tasks({ session, navigate }) {
       }
 
       const now = new Date();
+      // 🔥 Strict rolling 24-hour window
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const todayMidnight = new Date(now);
-      todayMidnight.setHours(0, 0, 0, 0);
 
       const [compRes, blogReadsRes, activeTasksRes, activePostsRes] = await Promise.all([
         supabase.from('completions').select('task_id, platform, created_at').eq('user_id', user.id).gte('created_at', twentyFourHoursAgo.toISOString()),
@@ -69,26 +67,30 @@ export default function Tasks({ session, navigate }) {
         supabase.from('posts').select('*').eq('status', 'published')
       ]);
 
-      // 🔥 UPDATED: Tracking SEO and Internal separately
       let vCount = 0, seoCount = 0, intCount = 0, pCount = 0;
       const cooldownMap = {};
 
+      // 🔥 UPDATED: Removed Midnight constraint. Now strictly counts rolling 24h.
       (compRes.data || []).forEach(h => {
         const completedAt = new Date(h.created_at);
-        if (completedAt >= todayMidnight) {
-          if (h.platform === 'blog') seoCount++; 
-          else if (h.platform === 'youtube') vCount++;
-          else pCount++; 
-        }
         
+        // Count against Quotas
+        if (h.platform === 'blog') seoCount++; 
+        else if (h.platform === 'youtube') vCount++;
+        else pCount++; 
+        
+        // Individual Task Cooldown Logic
         const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
         if (hoursLeft > 0) cooldownMap[h.task_id] = hoursLeft;
       });
 
       (blogReadsRes.data || []).forEach(b => {
         const completedAt = new Date(b.created_at);
-        if (completedAt >= todayMidnight) intCount++; // Internal blogs count separately
         
+        // Count against Quotas
+        intCount++; 
+        
+        // Individual Task Cooldown Logic
         const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
         if (hoursLeft > 0) cooldownMap['internal-' + b.post_slug] = hoursLeft;
       });
@@ -284,7 +286,6 @@ export default function Tasks({ session, navigate }) {
           <button onClick={() => navigate('user-dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s', backdropFilter: 'blur(5px)' }}>My Hub →</button>
         </div>
 
-        {/* 🔥 THE NEW SPLIT QUOTA PANEL 🔥 */}
         <div style={S.quotaPanel}>
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Video Metrics</span>
@@ -350,7 +351,6 @@ export default function Tasks({ session, navigate }) {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
             {displayedTasks.map(task => {
-              // 🔥 UPDATED: Independent validation for Quota limits
               const isVideo = task.platform === 'youtube';
               const isSeoBlog = task.platform === 'blog' && !task.is_internal_blog && !task.is_house_campaign;
               const isInternalBlog = task.is_internal_blog;
