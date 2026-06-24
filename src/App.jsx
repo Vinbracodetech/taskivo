@@ -118,7 +118,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
 }
 
 export default function App() {
-  // 🔥 ROUTING LOGIC (Clean paths, but allows Supabase to read # hashes for login)
+  // 🔥 ROUTING LOGIC
   var rawPath = window.location.pathname.replace(/^\/+/, "");
   var cleanPath = rawPath.split("?")[0] || "landing";
   
@@ -130,6 +130,42 @@ export default function App() {
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
 
   var [rewardPopup, setRewardPopup] = useState(null);
+
+  // 🔥 CUSTOM PWA INSTALL STATE
+  var [deferredPrompt, setDeferredPrompt] = useState(null);
+  var [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // 🔥 PWA INSTALL LOGIC
+  useEffect(function() {
+    function handleBeforeInstallPrompt(e) {
+      e.preventDefault(); // Prevent default browser prompt
+      setDeferredPrompt(e); // Save event to trigger later
+      setShowInstallBanner(true); // Show custom Taskivo banner
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    window.addEventListener('appinstalled', function() {
+      setDeferredPrompt(null);
+      setShowInstallBanner(false);
+      console.log('Taskivo was successfully installed!');
+    });
+
+    return function() {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  async function handleInstallClick() {
+    if (!deferredPrompt) return;
+    
+    deferredPrompt.prompt();
+    var { outcome } = await deferredPrompt.userChoice;
+    console.log("Install prompt outcome:", outcome);
+    
+    setDeferredPrompt(null);
+    setShowInstallBanner(false);
+  }
 
   useEffect(function() {
     if (!user) return;
@@ -343,6 +379,65 @@ export default function App() {
         {user && <FloatingNav user={user} navigate={navigate} logout={logout} toggleTheme={toggleTheme} theme={theme} />}
       </div>
       
+      {/* 🔥 CUSTOM PWA INSTALL BANNER 🔥 */}
+      {showInstallBanner && (
+        <div style={{
+          position: 'fixed',
+          bottom: user ? 90 : 24, // Sits perfectly above the Floating Nav
+          left: '5%',
+          right: '5%',
+          maxWidth: 400,
+          margin: '0 auto',
+          background: 'var(--surface-card)',
+          border: '1px solid var(--lime)',
+          borderRadius: 16,
+          padding: 16,
+          boxShadow: '0px 10px 30px rgba(0, 0, 0, 0.4)',
+          zIndex: 99998,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          animation: 'taskivoFadeIn 0.3s ease-out'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 40, height: 40, background: 'var(--lime)', borderRadius: 8,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 800, color: '#000', fontSize: 20
+            }}>
+              T
+            </div>
+            <div>
+              <h4 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>Install Taskivo</h4>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--slate)' }}>Add to home screen for native access.</p>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+            <button 
+              onClick={handleInstallClick}
+              style={{
+                flex: 1, background: 'var(--lime)', color: '#000', border: 'none',
+                borderRadius: 8, padding: 10, fontWeight: 800, fontSize: 13,
+                cursor: 'pointer', fontFamily: "'Inter', sans-serif"
+              }}
+            >
+              Install App
+            </button>
+            <button 
+              onClick={() => setShowInstallBanner(false)}
+              style={{
+                background: 'transparent', color: 'var(--slate)', border: '1px solid var(--line)',
+                borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 700,
+                cursor: 'pointer', fontFamily: "'Inter', sans-serif"
+              }}
+            >
+              Later
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* GLOBAL REWARD CELEBRATION OVERLAY */}
       {rewardPopup && (
         <div style={{
