@@ -57,7 +57,7 @@ export default function Tasks({ session, navigate }) {
       }
 
       const now = new Date();
-      // 🔥 Strict rolling 24-hour window
+      // Strict rolling 24-hour window
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
       const [compRes, blogReadsRes, activeTasksRes, activePostsRes] = await Promise.all([
@@ -70,14 +70,13 @@ export default function Tasks({ session, navigate }) {
       let vCount = 0, seoCount = 0, intCount = 0, pCount = 0;
       const cooldownMap = {};
 
-      // 🔥 UPDATED: Removed Midnight constraint. Now strictly counts rolling 24h.
       (compRes.data || []).forEach(h => {
         const completedAt = new Date(h.created_at);
         
-        // Count against Quotas
-        if (h.platform === 'blog') seoCount++; 
+        // 🔥 NEW QUOTA SORTING 🔥
+        if (h.platform === 'blog' || h.platform === 'adsense') seoCount++; 
         else if (h.platform === 'youtube') vCount++;
-        else pCount++; 
+        else if (['ugc', 'qa_testing', 'growth'].includes(h.platform)) pCount++; 
         
         // Individual Task Cooldown Logic
         const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
@@ -86,11 +85,7 @@ export default function Tasks({ session, navigate }) {
 
       (blogReadsRes.data || []).forEach(b => {
         const completedAt = new Date(b.created_at);
-        
-        // Count against Quotas
         intCount++; 
-        
-        // Individual Task Cooldown Logic
         const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
         if (hoursLeft > 0) cooldownMap['internal-' + b.post_slug] = hoursLeft;
       });
@@ -146,12 +141,13 @@ export default function Tasks({ session, navigate }) {
     }
   }
 
+  // 🔥 NEW FILTERING LOGIC 🔥
   const filteredTasks = tasks.filter(task => {
     if (activeCategory === 'All') return true;
-    if (activeCategory === 'SEO Tasks') return task.platform === 'blog' && !task.is_internal_blog;
-    if (activeCategory === 'Internal Tasks') return task.is_internal_blog;
-    if (activeCategory === 'Video Tasks') return task.platform === 'youtube';
-    if (activeCategory === 'Premium Tasks') return task.platform === 'ugc' || task.platform === 'qa_testing';
+    if (activeCategory === 'SEO & AdSense') return (task.platform === 'blog' || task.platform === 'adsense') && !task.is_internal_blog;
+    if (activeCategory === 'Internal Intel') return task.is_internal_blog;
+    if (activeCategory === 'Social Views') return task.platform === 'youtube';
+    if (activeCategory === 'Premium & Growth') return ['ugc', 'qa_testing', 'growth'].includes(task.platform);
     return true;
   });
 
@@ -286,26 +282,27 @@ export default function Tasks({ session, navigate }) {
           <button onClick={() => navigate('user-dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s', backdropFilter: 'blur(5px)' }}>My Hub →</button>
         </div>
 
+        {/* 🔥 INCREASED LIMITS TO 10 TO ALLOW DAY-ONE CASHOUT 🔥 */}
         <div style={S.quotaPanel}>
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Video Metrics</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.videos} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 3</span>
+              {quotas.videos} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.videos / 3) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.videos / 10) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
             </div>
           </div>
           
           <div style={{ width: 1, background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} className="hide-on-mobile" />
           
           <div style={S.quotaItem}>
-            <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>SEO Tasks</span>
+            <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>SEO & AdSense</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.seoBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 5</span>
+              {quotas.seoBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.seoBlogs / 5) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.seoBlogs / 10) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
             </div>
           </div>
 
@@ -324,18 +321,18 @@ export default function Tasks({ session, navigate }) {
           <div style={{ width: 1, background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} className="hide-on-mobile" />
 
           <div style={S.quotaItem}>
-            <span style={{ fontSize: 11, color: '#D4AF37', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Premium QA/UGC</span>
+            <span style={{ fontSize: 11, color: '#D4AF37', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Premium & Growth</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.premium} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 5</span>
+              {quotas.premium} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.premium / 5) * 100}%`, height: '100%', background: '#D4AF37', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.premium / 10) * 100}%`, height: '100%', background: '#D4AF37', borderRadius: 4 }} />
             </div>
           </div>
         </div>
 
         <div style={S.tabContainer}>
-          {['All', 'Internal Tasks', 'SEO Tasks', 'Video Tasks', 'Premium Tasks'].map(cat => (
+          {['All', 'Internal Intel', 'SEO & AdSense', 'Social Views', 'Premium & Growth'].map(cat => (
             <button key={cat} onClick={() => setActiveCategory(cat)} style={S.tabBtn(activeCategory === cat)}>
               {cat}
             </button>
@@ -352,24 +349,27 @@ export default function Tasks({ session, navigate }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
             {displayedTasks.map(task => {
               const isVideo = task.platform === 'youtube';
-              const isSeoBlog = task.platform === 'blog' && !task.is_internal_blog && !task.is_house_campaign;
+              const isSeoBlog = (task.platform === 'blog' || task.platform === 'adsense') && !task.is_internal_blog && !task.is_house_campaign;
               const isInternalBlog = task.is_internal_blog;
-              const isPremium = task.platform === 'ugc' || task.platform === 'qa_testing';
+              const isPremium = ['ugc', 'qa_testing', 'growth'].includes(task.platform);
               
               const isInternalStyle = task.is_internal_blog || task.is_house_campaign;
               
               let quotaHit = false;
-              if (isVideo && quotas.videos >= 3) quotaHit = true;
-              if (isSeoBlog && quotas.seoBlogs >= 5) quotaHit = true;
+              if (isVideo && quotas.videos >= 10) quotaHit = true;
+              if (isSeoBlog && quotas.seoBlogs >= 10) quotaHit = true;
               if (isInternalBlog && quotas.internalBlogs >= 10) quotaHit = true;
-              if (isPremium && quotas.premium >= 5) quotaHit = true;
+              if (isPremium && quotas.premium >= 10) quotaHit = true;
               
               const isLocked = quotaHit || cooldowns[task.id];
               
+              // 🔥 NEW DYNAMIC ICONS 🔥
               let icon = '▶️';
-              if (isSeoBlog || isInternalStyle) icon = '📄';
+              if (task.platform === 'blog' || isInternalStyle) icon = '📄';
+              if (task.platform === 'adsense') icon = '💰';
               if (task.platform === 'ugc') icon = '📸';
               if (task.platform === 'qa_testing') icon = '🛠️';
+              if (task.platform === 'growth') icon = '👥';
 
               return (
                 <div key={task.id} style={{ ...S.taskCard(isPremium, isInternalStyle), opacity: isLocked ? 0.6 : 1 }}>
@@ -412,7 +412,8 @@ export default function Tasks({ session, navigate }) {
                             localStorage.setItem('taskivo_active_mission', task.slug);
                             navigate(`article-${task.slug}`);
                           } else {
-                            if (task.platform === 'blog' && task.url) {
+                            // Fix for AdSense also passing the URL parameter securely
+                            if ((task.platform === 'blog' || task.platform === 'adsense') && task.url) {
                               localStorage.setItem('taskivo_active_mission', task.url.split('/').pop());
                             }
                             navigate(`player/${task.id}`);
