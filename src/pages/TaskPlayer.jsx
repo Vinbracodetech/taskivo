@@ -43,7 +43,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
   // 🔥 ADDED 'growth' to the manual task checker
   const isManualTask = task?.platform === 'ugc' || task?.platform === 'qa_testing' || task?.platform === 'growth';
-  const isBlog = task?.platform === 'blog';
+  // 🔥 UPDATED to include AdSense Arbitrage tasks
+  const isBlog = task?.platform === 'blog' || task?.platform === 'adsense';
 
   useEffect(() => {
     if (!task || cooldown || verification || isManualTask || isBlog) return;
@@ -251,6 +252,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           </div>
         )}
 
+        {/* 🔥 UPGRADED MISSION BRIEFING UI 🔥 */}
         {isBlog && (
           <div style={{ padding: '32px 24px', background: 'var(--surface-card)' }}>
             
