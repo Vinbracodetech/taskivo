@@ -59,7 +59,6 @@ export default function Tasks({ session, navigate }) {
       const now = new Date();
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      // 🔥 Fetch ALL lifetime blog reads to power the Smart Queue
       const [compRes, allBlogReadsRes, activeTasksRes, activePostsRes] = await Promise.all([
         supabase.from('completions').select('task_id, platform, created_at').eq('user_id', user.id).gte('created_at', twentyFourHoursAgo.toISOString()),
         supabase.from('blog_reads').select('post_slug, created_at').eq('user_id', user.id),
@@ -81,7 +80,6 @@ export default function Tasks({ session, navigate }) {
         if (hoursLeft > 0) cooldownMap[h.task_id] = hoursLeft;
       });
 
-      // 🔥 Calculate 24h quota for Internal Blogs, and extract ALL read slugs
       const readSlugs = [];
       (allBlogReadsRes.data || []).forEach(b => {
         readSlugs.push(b.post_slug);
@@ -96,17 +94,17 @@ export default function Tasks({ session, navigate }) {
         ...t, is_internal_blog: false
       }));
 
-      // 🔥 SMART QUEUE ALGORITHM 🔥
+      // 🔥 SMART QUEUE ALGORITHM (With 3-Point Yield) 🔥
       const freshPosts = (activePostsRes.data || [])
-        .filter(p => !readSlugs.includes(p.slug)) // Remove already read articles
-        .sort((a, b) => (a.views || 0) - (b.views || 0)) // Prioritize lowest views
+        .filter(p => !readSlugs.includes(p.slug)) 
+        .sort((a, b) => (a.views || 0) - (b.views || 0)) 
         .map(p => ({
           id: 'internal-' + p.slug,
           is_internal_blog: true,
           slug: p.slug,
           title: p.title,
           platform: 'Taskivo Intel',
-          reward_points: 10, 
+          reward_points: 3, 
           created_at: p.created_at
         }));
 
@@ -284,7 +282,6 @@ export default function Tasks({ session, navigate }) {
           <button onClick={() => navigate('user-dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s', backdropFilter: 'blur(5px)' }}>My Hub →</button>
         </div>
 
-        {/* 🔥 NEW SCARCITY QUOTA METRICS (3, 3, 5, 3) 🔥 */}
         <div style={S.quotaPanel}>
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Video Metrics</span>
