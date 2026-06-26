@@ -57,12 +57,12 @@ export default function Tasks({ session, navigate }) {
       }
 
       const now = new Date();
-      // Strict rolling 24-hour window
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      const [compRes, blogReadsRes, activeTasksRes, activePostsRes] = await Promise.all([
+      // 🔥 Fetch ALL lifetime blog reads to power the Smart Queue
+      const [compRes, allBlogReadsRes, activeTasksRes, activePostsRes] = await Promise.all([
         supabase.from('completions').select('task_id, platform, created_at').eq('user_id', user.id).gte('created_at', twentyFourHoursAgo.toISOString()),
-        supabase.from('blog_reads').select('post_slug, created_at').eq('user_id', user.id).gte('created_at', twentyFourHoursAgo.toISOString()),
+        supabase.from('blog_reads').select('post_slug, created_at').eq('user_id', user.id),
         supabase.from('tasks').select('*').eq('status', 'active'),
         supabase.from('posts').select('*').eq('status', 'published')
       ]);
@@ -73,21 +73,20 @@ export default function Tasks({ session, navigate }) {
       (compRes.data || []).forEach(h => {
         const completedAt = new Date(h.created_at);
         
-        // 🔥 NEW QUOTA SORTING 🔥
         if (h.platform === 'blog' || h.platform === 'adsense') seoCount++; 
         else if (h.platform === 'youtube') vCount++;
         else if (['ugc', 'qa_testing', 'growth'].includes(h.platform)) pCount++; 
         
-        // Individual Task Cooldown Logic
         const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
         if (hoursLeft > 0) cooldownMap[h.task_id] = hoursLeft;
       });
 
-      (blogReadsRes.data || []).forEach(b => {
+      // 🔥 Calculate 24h quota for Internal Blogs, and extract ALL read slugs
+      const readSlugs = [];
+      (allBlogReadsRes.data || []).forEach(b => {
+        readSlugs.push(b.post_slug);
         const completedAt = new Date(b.created_at);
-        intCount++; 
-        const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
-        if (hoursLeft > 0) cooldownMap['internal-' + b.post_slug] = hoursLeft;
+        if (completedAt >= twentyFourHoursAgo) intCount++; 
       });
 
       setQuotas({ videos: vCount, seoBlogs: seoCount, internalBlogs: intCount, premium: pCount });
@@ -97,15 +96,19 @@ export default function Tasks({ session, navigate }) {
         ...t, is_internal_blog: false
       }));
 
-      const freshPosts = (activePostsRes.data || []).map(p => ({
-        id: 'internal-' + p.slug,
-        is_internal_blog: true,
-        slug: p.slug,
-        title: p.title,
-        platform: 'Taskivo Intel',
-        reward_points: 10,
-        created_at: p.created_at
-      }));
+      // 🔥 SMART QUEUE ALGORITHM 🔥
+      const freshPosts = (activePostsRes.data || [])
+        .filter(p => !readSlugs.includes(p.slug)) // Remove already read articles
+        .sort((a, b) => (a.views || 0) - (b.views || 0)) // Prioritize lowest views
+        .map(p => ({
+          id: 'internal-' + p.slug,
+          is_internal_blog: true,
+          slug: p.slug,
+          title: p.title,
+          platform: 'Taskivo Intel',
+          reward_points: 10, 
+          created_at: p.created_at
+        }));
 
       const mergedFeed = [...freshTasks, ...freshPosts].sort((a, b) => {
         return new Date(b.created_at) - new Date(a.created_at);
@@ -141,7 +144,6 @@ export default function Tasks({ session, navigate }) {
     }
   }
 
-  // 🔥 NEW FILTERING LOGIC 🔥
   const filteredTasks = tasks.filter(task => {
     if (activeCategory === 'All') return true;
     if (activeCategory === 'SEO & AdSense') return (task.platform === 'blog' || task.platform === 'adsense') && !task.is_internal_blog;
@@ -282,15 +284,15 @@ export default function Tasks({ session, navigate }) {
           <button onClick={() => navigate('user-dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s', backdropFilter: 'blur(5px)' }}>My Hub →</button>
         </div>
 
-        {/* 🔥 INCREASED LIMITS TO 10 TO ALLOW DAY-ONE CASHOUT 🔥 */}
+        {/* 🔥 NEW SCARCITY QUOTA METRICS (3, 3, 5, 3) 🔥 */}
         <div style={S.quotaPanel}>
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Video Metrics</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.videos} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
+              {quotas.videos} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 3</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.videos / 10) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.videos / 3) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
             </div>
           </div>
           
@@ -299,10 +301,10 @@ export default function Tasks({ session, navigate }) {
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>SEO & AdSense</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.seoBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
+              {quotas.seoBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 3</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.seoBlogs / 10) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.seoBlogs / 3) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
             </div>
           </div>
 
@@ -311,10 +313,10 @@ export default function Tasks({ session, navigate }) {
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Internal Intel</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.internalBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
+              {quotas.internalBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 5</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.internalBlogs / 10) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.internalBlogs / 5) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
             </div>
           </div>
 
@@ -323,10 +325,10 @@ export default function Tasks({ session, navigate }) {
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: '#D4AF37', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Premium & Growth</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.premium} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
+              {quotas.premium} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 3</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.premium / 10) * 100}%`, height: '100%', background: '#D4AF37', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.premium / 3) * 100}%`, height: '100%', background: '#D4AF37', borderRadius: 4 }} />
             </div>
           </div>
         </div>
@@ -356,14 +358,13 @@ export default function Tasks({ session, navigate }) {
               const isInternalStyle = task.is_internal_blog || task.is_house_campaign;
               
               let quotaHit = false;
-              if (isVideo && quotas.videos >= 10) quotaHit = true;
-              if (isSeoBlog && quotas.seoBlogs >= 10) quotaHit = true;
-              if (isInternalBlog && quotas.internalBlogs >= 10) quotaHit = true;
-              if (isPremium && quotas.premium >= 10) quotaHit = true;
+              if (isVideo && quotas.videos >= 3) quotaHit = true;
+              if (isSeoBlog && quotas.seoBlogs >= 3) quotaHit = true;
+              if (isInternalBlog && quotas.internalBlogs >= 5) quotaHit = true;
+              if (isPremium && quotas.premium >= 3) quotaHit = true;
               
               const isLocked = quotaHit || cooldowns[task.id];
               
-              // 🔥 NEW DYNAMIC ICONS 🔥
               let icon = '▶️';
               if (task.platform === 'blog' || isInternalStyle) icon = '📄';
               if (task.platform === 'adsense') icon = '💰';
@@ -412,7 +413,6 @@ export default function Tasks({ session, navigate }) {
                             localStorage.setItem('taskivo_active_mission', task.slug);
                             navigate(`article-${task.slug}`);
                           } else {
-                            // Fix for AdSense also passing the URL parameter securely
                             if ((task.platform === 'blog' || task.platform === 'adsense') && task.url) {
                               localStorage.setItem('taskivo_active_mission', task.url.split('/').pop());
                             }
