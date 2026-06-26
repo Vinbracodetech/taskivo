@@ -14,7 +14,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   // Security & Input States
   const [cooldown, setCooldown] = useState(null);
   const [handle, setHandle] = useState('');
-  const [proofUrl, setProofUrl] = useState('');
+  const [proofFile, setProofFile] = useState(null); // Changed to handle actual file uploads
   const [proofText, setProofText] = useState(''); 
   const [seoCodeInput, setSeoCodeInput] = useState(''); 
   const [gateUnlocked, setGateUnlocked] = useState(false);
@@ -41,7 +41,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     if (user?.id) init();
   }, [taskId, user]);
 
-  const isManualTask = task?.platform === 'ugc' || task?.platform === 'qa_testing';
+  // 🔥 ADDED 'growth' to the manual task checker
+  const isManualTask = task?.platform === 'ugc' || task?.platform === 'qa_testing' || task?.platform === 'growth';
   const isBlog = task?.platform === 'blog';
 
   useEffect(() => {
@@ -144,8 +145,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       }
 
     } else if (isManualTask) {
-      if (!proofUrl.trim() && !proofText.trim()) { 
-        alert("Please provide a valid evidence link or written notes for the Creator."); 
+      if (!proofFile && !proofText.trim()) { 
+        alert("Please provide a valid screenshot upload or written notes for the Creator."); 
         setSubmitting(false); 
         return; 
       }
@@ -157,6 +158,27 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       }
     }
     
+    // 🔥 IMAGE UPLOAD LOGIC 🔥
+    let uploadedProofUrl = '';
+    
+    if (isManualTask && proofFile) {
+      const fileExt = proofFile.name.split('.').pop();
+      const fileName = `${user.id}_${task.id}_${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('proofs')
+        .upload(fileName, proofFile);
+        
+      if (uploadError) {
+        alert("Proof upload failed: " + uploadError.message);
+        setSubmitting(false);
+        return;
+      }
+      
+      const { data: { publicUrl } } = supabase.storage.from('proofs').getPublicUrl(fileName);
+      uploadedProofUrl = publicUrl;
+    }
+
     const finalStatus = isManualTask ? 'pending' : 'approved';
 
     const insertData = { 
@@ -165,7 +187,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       task_id: task.id, 
       platform: task.platform, 
       social_handle: handle,
-      proof_url: proofUrl,
+      proof_url: uploadedProofUrl, // Database gets the generated URL
       proof_text: proofText,
       status: finalStatus
     };
@@ -176,7 +198,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       alert(`Final Insertion Error: ${error.message}`); 
     } else {
       if (isManualTask) {
-        alert("Submitted! The Creator will review your proof and release the points to your treasury shortly.");
+        alert("Submitted! The Creator will review your screenshot and release the points to your treasury shortly.");
       } else {
         alert("✅ Verified! Points successfully deposited.");
         if (user) user.points = (user.points || 0) + task.reward_points;
@@ -229,7 +251,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           </div>
         )}
 
-        {/* 🔥 UPGRADED MISSION BRIEFING UI 🔥 */}
         {isBlog && (
           <div style={{ padding: '32px 24px', background: 'var(--surface-card)' }}>
             
@@ -285,32 +306,33 @@ export default function TaskPlayer({ session, navigate, taskId }) {
            <div style={S.verifBox}>
               <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 12, fontFamily: "var(--font-display)" }}>Manual Submission Required</h3>
               <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24 }}>
-                Review the campaign guidelines below. Once complete, upload your proof (Google Drive, Dropbox, Imgur) and/or provide your summary text.
+                Follow the campaign instructions. Once complete, upload your screenshot proof.
               </p>
               
               <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', padding: 16, borderRadius: 8, marginBottom: 24, textAlign: 'left', wordBreak: 'break-all' }}>
-                <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Campaign Brief / URL</div>
+                <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Campaign URL</div>
                 <a href={task.url} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}>{task.url}</a>
               </div>
+
+              {/* 🔥 NEW NATIVE FILE UPLOAD INPUT 🔥 */}
+              <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Upload Screenshot Proof</div>
+              <input 
+                type="file"
+                accept="image/*,video/*"
+                onChange={e => setProofFile(e.target.files[0])} 
+                style={{ ...S.input, padding: '12px', background: 'var(--surface-card)', color: 'var(--ink)', cursor: 'pointer' }} 
+              />
 
               <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Submission Notes (Optional)</div>
               <textarea 
                 rows="3" 
-                placeholder="Describe what you did or list bugs found..." 
+                placeholder="Describe what you did or leave a note for the Creator..." 
                 value={proofText} 
                 onChange={e => setProofText(e.target.value)} 
                 style={{ ...S.input, resize: 'vertical' }} 
               />
-
-              <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Evidence URL (Screenshot/Video Link)</div>
-              <input 
-                placeholder="https://drive.google.com/..." 
-                value={proofUrl} 
-                onChange={e => setProofUrl(e.target.value)} 
-                style={S.input} 
-              />
               
-              <button onClick={claimTask} disabled={submitting || (!proofText && !proofUrl)} style={{ ...S.btnGreen, opacity: (submitting || (!proofText && !proofUrl)) ? 0.5 : 1 }}>
+              <button onClick={claimTask} disabled={submitting || (!proofText && !proofFile)} style={{ ...S.btnGreen, opacity: (submitting || (!proofText && !proofFile)) ? 0.5 : 1 }}>
                 {submitting ? 'UPLOADING...' : 'SUBMIT FOR REVIEW'}
               </button>
            </div>
