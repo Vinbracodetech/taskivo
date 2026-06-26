@@ -10,12 +10,28 @@ export default function Wallet({ user, navigate, showToast }) {
   // Store their locked identity from the database
   const [lockedDestination, setLockedDestination] = useState(null);
 
-  const minWithdrawal = 2000;
+  const minWithdrawal = 100;
   
-  // 🔥 DYNAMIC FIAT CONVERSION ENGINE (2000 PTS = $1.50) 🔥
-  const conversionRate = 1.50 / 2000; // 0.00075
-  const fiatBalance = (user ? user.points * conversionRate : 0).toFixed(2);
-  const thresholdFiat = (minWithdrawal * conversionRate).toFixed(2);
+  // 🔥 DYNAMIC MULTI-CURRENCY CONVERSION ENGINE 🔥
+  const conversionRateUSD = 1.50 / 2000; // Base global peg (0.00075)
+  
+  // Currency Dictionary
+  const localRates = {
+    NGN: { rate: 1500, symbol: '₦' },
+    ZAR: { rate: 18.5, symbol: 'R' },
+    GHS: { rate: 14.2, symbol: 'GH₵' },
+    KES: { rate: 130, symbol: 'KSh' },
+    USD: { rate: 1, symbol: '$' }
+  };
+
+  // Detect user's currency choice, fallback to NGN
+  const userCurrency = user?.local_currency || 'NGN';
+  const { rate: localRate, symbol: localSymbol } = localRates[userCurrency] || localRates.NGN;
+  
+  const fiatBalanceUSD = (user ? user.points * conversionRateUSD : 0).toFixed(2);
+  const fiatBalanceLocal = (user ? (user.points * conversionRateUSD) * localRate : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  
+  const thresholdLocal = ((minWithdrawal * conversionRateUSD) * localRate).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
   useEffect(() => {
     if (!user) return;
@@ -26,7 +42,6 @@ export default function Wallet({ user, navigate, showToast }) {
     try {
       setLoading(true);
       
-      // 1. Fetch Transaction History
       const { data: txData, error: txError } = await supabase
         .from('withdrawals')
         .select('*')
@@ -36,10 +51,9 @@ export default function Wallet({ user, navigate, showToast }) {
       if (txError) throw txError;
       setWithdrawals(txData || []);
       
-      // 2. Fetch their globally locked payout identity
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('payout_bank_name, payout_account_name, payout_account')
+        .select('payout_bank_name, payout_account_name, payout_account, local_currency')
         .eq('id', user.id)
         .single();
         
@@ -69,14 +83,13 @@ export default function Wallet({ user, navigate, showToast }) {
       return;
     }
     if (!lockedDestination) {
-      if (showToast) showToast('Payout identity missing. Please initiate a task to set up your payout node.', 'error');
+      if (showToast) showToast('Payout identity missing. Please update your profile.', 'error');
       return;
     }
 
     try {
       setSubmitting(true);
       
-      // Submit withdrawal using the LOCKED data
       const { error: insertError } = await supabase.from('withdrawals').insert({
         user_id: user.id, 
         amount: amountNum, 
@@ -88,17 +101,14 @@ export default function Wallet({ user, navigate, showToast }) {
       
       if (insertError) throw insertError;
 
-      // Deduct points
       const { error: updateError } = await supabase.from('profiles').update({ points: user.points - amountNum }).eq('id', user.id);
       if (updateError) throw updateError;
 
-      // 🔥 FIRE THE GLOBAL SYNC ENGINE 🔥
       window.dispatchEvent(new Event('taskivo_points_updated'));
 
       if (showToast) showToast('Transfer initiated. Funds will arrive within 24 hours.', 'success');
       setAmount('');
       
-      // Refresh the ledger table
       fetchLedger();
       
     } catch (err) {
@@ -122,7 +132,6 @@ export default function Wallet({ user, navigate, showToast }) {
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
   const isEligible = user.points >= minWithdrawal;
 
-  // 🔥 PROPRIETARY PREMIUM AESTHETIC STYLES 🔥
   const S = {
     pageWrapper: {
       minHeight: '100vh',
@@ -136,7 +145,6 @@ export default function Wallet({ user, navigate, showToast }) {
     },
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
     
-    // Glassmorphism Cards
     glassCard: { 
       background: 'var(--surface-card)', 
       border: '1px solid rgba(255,255,255,0.05)', 
@@ -168,7 +176,7 @@ export default function Wallet({ user, navigate, showToast }) {
         <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Portfolio & Withdrawals</h1>
-            <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400, margin: 0 }}>Manage your liquidity and request payouts.</p>
+            <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400, margin: 0 }}>Manage your liquidity and request payouts directly to your local account.</p>
           </div>
         </div>
 
@@ -180,12 +188,19 @@ export default function Wallet({ user, navigate, showToast }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                 <div style={S.valueGlow}>{user.points.toLocaleString()}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
-                <div style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, color: 'var(--slate)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)' }}>
-                  ≈ ${fiatBalance}
+              </div>
+              
+              <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--slate)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)' }}>
+                  ≈ {localSymbol}{fiatBalanceLocal}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.3)', padding: '6px 12px' }}>
+                  (${fiatBalanceUSD})
                 </div>
               </div>
+
               <div style={{ fontSize: 13, color: 'var(--slate)', fontWeight: 500 }}>
-                Minimum withdrawal threshold: {minWithdrawal.toLocaleString()} PTS (${thresholdFiat})
+                Minimum withdrawal threshold: {minWithdrawal.toLocaleString()} PTS ({localSymbol}{thresholdLocal})
               </div>
             </div>
 
@@ -272,8 +287,9 @@ export default function Wallet({ user, navigate, showToast }) {
                     const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                     const isLast = index === withdrawals.length - 1;
                     
-                    // 🔥 Calculate the cash value for THIS specific past transaction 🔥
-                    const fiatValue = (item.amount * conversionRate).toFixed(2);
+                    // 🔥 Calculate exact cash value based on their local currency selection 🔥
+                    const txFiatUSD = (item.amount * conversionRateUSD).toFixed(2);
+                    const txFiatLocal = ((item.amount * conversionRateUSD) * localRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     
                     return (
                       <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr 1.5fr 1fr', gap: 16, padding: '20px 24px', borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
@@ -289,9 +305,11 @@ export default function Wallet({ user, navigate, showToast }) {
                           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>
                             {item.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 600 }}>PTS</span>
                           </div>
-                          {/* 🔥 NEW: Exact USD Value rendered in the ledger row 🔥 */}
-                          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--lime)', marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
-                            ≈ ${fiatValue}
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--lime)', marginTop: 2, fontFamily: "'Inter', sans-serif" }}>
+                            ≈ {localSymbol}{txFiatLocal}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+                            (${txFiatUSD})
                           </div>
                         </div>
                         
