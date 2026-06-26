@@ -397,7 +397,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
   async function handleDeploy(e) {
     e.preventDefault();
     if (!form.title || !form.url) return alert("Title and Target URL are required.");
-    if (form.platform === 'blog' && !form.search_keyword) return alert("Target Keyword is required for SEO Campaigns.");
+    if ((form.platform === 'blog' || form.platform === 'adsense') && !form.search_keyword) return alert("Target Keyword is required for SEO Campaigns.");
     
     setLoading(true);
 
@@ -405,14 +405,19 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user?.id) throw new Error("Cannot verify Admin identity.");
 
+      // 🔥 Added logic to handle custom duration based on new premium tasks
+      let taskDuration = 30; // Default
+      if (form.platform === 'blog' || form.platform === 'adsense') taskDuration = 120;
+      if (form.platform === 'growth') taskDuration = 60; // 1-minute rule for subs
+
       const newHouseTask = {
         creator_id: user.id,
         title: form.title,
         platform: form.platform,
         url: form.url,
-        search_keyword: form.platform === 'blog' ? form.search_keyword : null,
+        search_keyword: (form.platform === 'blog' || form.platform === 'adsense') ? form.search_keyword : null,
         secret_code: null, 
-        watch_duration: form.platform === 'blog' ? 120 : 30, 
+        watch_duration: taskDuration, 
         target_views: 999999, 
         current_views: 0, 
         status: 'active',
@@ -459,7 +464,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
         <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, margin: '0 0 8px 0', color: '#ffffff' }}>Official Campaign Deployed</h3>
         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, margin: '0 0 24px 0' }}>Your house task is live on the earner index.</p>
 
-        {form.platform === 'blog' ? (
+        {(form.platform === 'blog' || form.platform === 'adsense') ? (
           <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.3)', border: '1px solid #D4AF37', borderRadius: 16, padding: 24, marginTop: 16 }}>
             <h3 style={{ margin: '0 0 16px 0', color: '#ffffff', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', fontSize: 14, letterSpacing: '1px' }}>Integration Required</h3>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: 20 }}>
@@ -576,8 +581,10 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Platform Ecosystem</label>
             <select name="platform" value={form.platform} onChange={handleInput} style={S.select}>
-              <option value="blog" style={{ color: '#000' }}>Google SEO (Blog)</option>
+              <option value="blog" style={{ color: '#000' }}>Standard SEO (Blog)</option>
+              <option value="adsense" style={{ color: '#000' }}>AdSense Arbitrage</option>
               <option value="youtube" style={{ color: '#000' }}>YouTube Ecosystem</option>
+              <option value="growth" style={{ color: '#000' }}>Audience Growth (Subs)</option>
               <option value="twitter" style={{ color: '#000' }}>Twitter / X</option>
               <option value="custom" style={{ color: '#000' }}>Direct Click Link</option>
             </select>
@@ -593,10 +600,9 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
           <input type="url" name="url" value={form.url} onChange={handleInput} placeholder="https://..." style={S.input} required disabled={targetType === 'internal'} />
         </div>
 
-        {form.platform === 'blog' && (
+        {(form.platform === 'blog' || form.platform === 'adsense') && (
           <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: 16, borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)' }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Google Search Keyword</label>
-            {/* 🔥 FIX: Disabled attribute removed so Admins can customize internal keywords 🔥 */}
             <input type="text" name="search_keyword" value={form.search_keyword} onChange={handleInput} placeholder="Taskivo updates" style={{ ...S.input, marginBottom: 0 }} required />
             <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: '12px 0 0 0' }}>The system will automatically generate a dynamic Burnable Token snippet for you upon deployment.</p>
           </div>
@@ -802,7 +808,7 @@ async function hardDeleteTask(id) {
               </div>
               
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                {t.platform === 'blog' && (
+                {(t.platform === 'blog' || t.platform === 'adsense') && (
                   <button onClick={() => setScriptModal({ isOpen: true, task: t })} style={{...S.btnAction, background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)'}}>
                     {"</>"} Script
                   </button>
@@ -842,7 +848,7 @@ async function hardDeleteTask(id) {
                 onChange={e => setEditForm({...editForm, reward_points: e.target.value})} 
               />
 
-              {editModal.task.platform === 'blog' && (
+              {(editModal.task.platform === 'blog' || editModal.task.platform === 'adsense') && (
                 <>
                   <label style={S.modalLabel}>Google Search Keyword</label>
                   <input 
