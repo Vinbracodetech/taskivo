@@ -273,7 +273,7 @@ export default function Dashboard({ user, navigate, showToast }) {
             </div>
 
             <div style={{ marginTop: 'auto' }}>
-              <button onClick={() => navigate('tasks')} style={{ ...S.btnPrimary, width: '100%', display: 'block', background: 'var(--ink)', color: '#fff' }}>Acquire More Tasks</button>
+              <button onClick={() => navigate('tasks')} style={{ ...S.btnPrimary, width: '100%', display: 'block' }}>Acquire More Tasks</button>
             </div>
           </div>
         </div>
