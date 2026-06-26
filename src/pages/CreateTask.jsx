@@ -14,10 +14,10 @@ export default function CreateTask({ session, navigate, showToast }) {
   
   const [form, setForm] = useState({
     title: '',
-    platform: 'youtube',
+    platform: 'youtube', // Default
     url: '',
     search_keyword: '',     
-    watch_duration: 120, // Locked to 120 seconds globally
+    watch_duration: 120, 
     package: 'traction',
     paymentGateway: 'paystack'
   });
@@ -40,31 +40,47 @@ export default function CreateTask({ session, navigate, showToast }) {
 
   const EXCHANGE_RATE = 1500;
 
+  // 🔥 NEW 60/40 PROFIT PACKAGES 🔥
   const packages = {
     social: {
-      starter: { label: 'Starter Tier', views: 50, priceUSD: 5 },
-      traction: { label: 'Traction Tier', views: 200, priceUSD: 15 },
-      scale: { label: 'Scale Tier', views: 500, priceUSD: 35 },
-      enterprise: { label: 'Enterprise Tier', views: 1000, priceUSD: 68 }
+      basic: { label: 'Basic Views', views: 60, priceUSD: 3 },
+      starter: { label: 'Starter Views', views: 250, priceUSD: 12 },
+      traction: { label: 'Traction Views', views: 750, priceUSD: 35 },
+      enterprise: { label: 'Enterprise Views', views: 2250, priceUSD: 99 }
+    },
+    growth: {
+      basic: { label: 'Basic Growth', views: 65, priceUSD: 5 },
+      starter: { label: 'Starter Growth', views: 200, priceUSD: 15 },
+      traction: { label: 'Traction Growth', views: 600, priceUSD: 45 },
+      enterprise: { label: 'Enterprise Growth', views: 1650, priceUSD: 120 }
     },
     seo: {
-      starter: { label: 'Starter SEO', views: 100, priceUSD: 8 }, // 🔥 Reverted back to 8
-      traction: { label: 'Traction SEO', views: 300, priceUSD: 24 },
-      scale: { label: 'Scale SEO', views: 800, priceUSD: 55 },
-      enterprise: { label: 'Enterprise SEO', views: 2000, priceUSD: 120 }
+      basic: { label: 'Basic Traffic', views: 80, priceUSD: 5 },
+      starter: { label: 'Starter Traffic', views: 250, priceUSD: 15 },
+      traction: { label: 'Traction Traffic', views: 800, priceUSD: 45 },
+      enterprise: { label: 'Enterprise Traffic', views: 2200, priceUSD: 120 }
+    },
+    adsense: {
+      basic: { label: 'Basic Arbitrage', views: 80, priceUSD: 6 },
+      starter: { label: 'Starter Arbitrage', views: 240, priceUSD: 18 },
+      traction: { label: 'Traction Arbitrage', views: 660, priceUSD: 50 },
+      scale: { label: 'Scale Arbitrage', views: 1800, priceUSD: 135 }
     },
     qa_testing: {
-      starter: { label: 'Beta QA', views: 10, priceUSD: 25 },
-      traction: { label: 'Scale QA', views: 50, priceUSD: 100 }
+      starter: { label: 'Starter QA', views: 30, priceUSD: 15 },
+      traction: { label: 'Scale QA', views: 100, priceUSD: 45 }
     },
     ugc: {
-      starter: { label: 'Starter UGC', views: 5, priceUSD: 45 },
-      traction: { label: 'Scale UGC', views: 20, priceUSD: 160 }
+      starter: { label: 'Starter UGC', views: 15, priceUSD: 45 },
+      traction: { label: 'Scale UGC', views: 45, priceUSD: 120 }
     }
   };
 
+  // Map platform to package category
   let currentPlatformType = 'social';
   if (form.platform === 'blog') currentPlatformType = 'seo';
+  if (form.platform === 'adsense') currentPlatformType = 'adsense';
+  if (form.platform === 'growth') currentPlatformType = 'growth';
   if (form.platform === 'qa_testing') currentPlatformType = 'qa_testing';
   if (form.platform === 'ugc') currentPlatformType = 'ugc';
 
@@ -73,11 +89,13 @@ export default function CreateTask({ session, navigate, showToast }) {
   
   const selectedPackageData = form.package === 'pilot' 
     ? { label: 'Pilot Grant', views: 20, priceUSD: 0 } 
-    : activePackages[form.package] || activePackages['starter'];
+    : activePackages[form.package] || activePackages['starter'] || activePackages['basic']; // Fallback fix
 
   useEffect(() => {
     if (form.package !== 'pilot' && !activePackages[form.package]) {
-        setForm(prev => ({ ...prev, package: 'starter' }));
+        // Auto-select the first available package if the current one doesn't exist in the new category
+        const defaultPkg = activePackages.traction ? 'traction' : 'starter';
+        setForm(prev => ({ ...prev, package: defaultPkg }));
     }
   }, [form.platform, activePackages, form.package]);
 
@@ -85,20 +103,24 @@ export default function CreateTask({ session, navigate, showToast }) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
+  // 🔥 EARNER PAYOUT LOGIC (Maintains 60/40 Split) 🔥
   async function deployTaskToNetwork(isUsingPilot, amountPaid = 0) {
-    let earnerPayout = 30;
-    if (form.platform === 'blog') earnerPayout = 50;
-    if (form.platform === 'qa_testing') earnerPayout = 800;
-    if (form.platform === 'ugc') earnerPayout = 2000;
+    let earnerPayout = 25; // Default for Social
+    
+    if (form.platform === 'blog') earnerPayout = 30; // Standard SEO
+    if (form.platform === 'adsense') earnerPayout = 40; // Premium SEO
+    if (form.platform === 'growth') earnerPayout = 40; // Subs/Follows
+    if (form.platform === 'qa_testing') earnerPayout = 250; // High Effort Manual
+    if (form.platform === 'ugc') earnerPayout = 1500; // Premium Video Submission
 
     const { data: newTask, error: insertErr } = await supabase.from('tasks').insert({
       creator_id: user.id, 
       title: form.title, 
       platform: form.platform, 
       url: form.url,
-      search_keyword: form.platform === 'blog' ? form.search_keyword : null,
-      secret_code: null, // 🔥 Network generates Burnable Token automatically
-      watch_duration: 120, // Force 120 seconds into the DB
+      search_keyword: (form.platform === 'blog' || form.platform === 'adsense') ? form.search_keyword : null,
+      secret_code: null,
+      watch_duration: 120, // Strict timer lock
       target_views: selectedPackageData.views, 
       current_views: 0, 
       status: 'active', 
@@ -138,7 +160,7 @@ export default function CreateTask({ session, navigate, showToast }) {
       return;
     }
     
-    if (form.platform === 'blog' && !form.search_keyword) {
+    if ((form.platform === 'blog' || form.platform === 'adsense') && !form.search_keyword) {
       setLocalError('SEO Campaigns require a Search Keyword.');
       return;
     }
@@ -214,8 +236,10 @@ export default function CreateTask({ session, navigate, showToast }) {
     gatewayCard: (isActive) => ({ padding: '16px', borderRadius: '12px', cursor: 'pointer', border: `1px solid ${isActive ? '#D4AF37' : 'rgba(255,255,255,0.1)'}`, background: isActive ? 'rgba(212, 175, 55, 0.05)' : 'rgba(0,0,0,0.3)', flex: 1, display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s' })
   };
 
-  const isManual = form.platform === 'ugc' || form.platform === 'qa_testing';
-  const unitLabel = isManual ? 'SUBMISSIONS' : 'VERIFICATIONS';
+  const isManual = form.platform === 'ugc' || form.platform === 'qa_testing' || form.platform === 'growth';
+  const isSEO = form.platform === 'blog' || form.platform === 'adsense';
+  
+  const unitLabel = isManual ? (form.platform === 'growth' ? 'SUBSCRIBERS' : 'SUBMISSIONS') : 'VERIFICATIONS';
 
   return (
     <div style={S.pageWrapper}>
@@ -244,10 +268,12 @@ export default function CreateTask({ session, navigate, showToast }) {
                   <span style={S.label}>Target Platform</span>
                   <select style={S.select} name="platform" value={form.platform} onChange={handleInput}>
                     <optgroup label="Automated Engagement">
-                      <option value="youtube">YouTube (Video Engagement)</option>
-                      <option value="blog">SEO Blog (Read Time Verification)</option>
+                      <option value="youtube">Social Engagement (Video Views)</option>
+                      <option value="blog">Standard SEO (Read Time Verification)</option>
+                      <option value="adsense">AdSense Arbitrage (Protected Traffic)</option>
                     </optgroup>
                     <optgroup label="Premium Manual Verification">
+                      <option value="growth">Audience Growth (Subs & Follows)</option>
                       <option value="ugc">Authentic UGC (Video Testimonials)</option>
                       <option value="qa_testing">App QA Testing (Bug Reports)</option>
                     </optgroup>
@@ -256,18 +282,18 @@ export default function CreateTask({ session, navigate, showToast }) {
               </div>
 
               <div>
-                <span style={S.label}>{isManual ? "Campaign Brief / Instructions URL" : "Asset URL (Where should users go?)"}</span>
+                <span style={S.label}>{isManual ? "Campaign Brief / Target URL" : "Asset URL (Where should users go?)"}</span>
                 <input style={S.input} type="url" name="url" placeholder="https://..." value={form.url} onChange={handleInput} required />
               </div>
 
-              {form.platform === 'blog' && (
+              {isSEO && (
                 <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: 24, borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)', marginBottom: 24 }}>
                   <div>
                     <span style={S.label}>Google Search Keyword</span>
                     <input style={{...S.input, marginBottom: 0}} type="text" name="search_keyword" placeholder="e.g. Best FinTech 2026" value={form.search_keyword} onChange={handleInput} required />
                   </div>
                   <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: '16px 0 0 0', lineHeight: 1.5 }}>
-                    Earners will search for this keyword, find your URL, and wait for the strict 120s dwell timer. Our network will automatically generate a Single-Use Burnable Token for them once completed. No manual code setup is required.
+                    Earners will search for this keyword, find your URL, and wait for the strict 120s dwell timer. Our network will automatically generate a Single-Use Burnable Token for them once completed.
                   </p>
                 </div>
               )}
@@ -343,7 +369,7 @@ export default function CreateTask({ session, navigate, showToast }) {
               <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: '#ffffff', margin: '0 0 12px 0', fontWeight: 800 }}>Campaign Deployed!</h1>
               <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)', margin: '0 0 32px 0' }}>Your capital is locked in escrow. The network is ready.</p>
 
-              {form.platform === 'blog' ? (
+              {isSEO ? (
                 <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.3)', border: '1px solid #D4AF37', borderRadius: 16, padding: 24, marginTop: 16 }}>
                   <h3 style={{ margin: '0 0 16px 0', color: '#ffffff', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', fontSize: 14, letterSpacing: '1px' }}>Integration Required</h3>
                   <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: 20 }}>
