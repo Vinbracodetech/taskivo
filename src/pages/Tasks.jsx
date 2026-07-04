@@ -109,7 +109,7 @@ export default function Tasks({ session, navigate }) {
         if (h.platform === 'blog' || h.platform === 'adsense') seoCount++; 
         else if (h.platform === 'youtube') vCount++;
         else if (['ugc', 'qa_testing', 'growth'].includes(h.platform)) pCount++; 
-        else if (h.platform === 'admob' || h.task_id === 'native-admob-video') nativeCount++;
+        else if (h.platform === 'admob' || h.task_id === '11111111-1111-1111-1111-111111111111') nativeCount++;
         
         // 1-Hour Cooldown Logic for AdMob, 24-Hour for everything else
         if (h.task_id === 'native-admob-video') {
