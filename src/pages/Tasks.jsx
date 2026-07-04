@@ -152,11 +152,11 @@ export default function Tasks({ session, navigate }) {
       const adTask = [];
       if (typeof window !== 'undefined' && window.ReactNativeWebView) {
         adTask.push({
-          id: 'native-admob-video',
+          id: '11111111-1111-1111-1111-111111111111', // Now matches the database UUID
           is_native_ad: true,
           platform: 'Premium Ad Network',
           title: 'Watch Sponsored Premium Video',
-          reward_points: 5, // Now officially 5 Points
+          reward_points: 5, 
           created_at: new Date().toISOString()
         });
       }
