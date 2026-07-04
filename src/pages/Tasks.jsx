@@ -9,7 +9,8 @@ export default function Tasks({ session, navigate }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [displayCount, setDisplayCount] = useState(15);
   
-  const [quotas, setQuotas] = useState({ videos: 0, seoBlogs: 0, internalBlogs: 0, premium: 0 });
+  // Added nativeAds quota to track the 5-per-day limit
+  const [quotas, setQuotas] = useState({ videos: 0, seoBlogs: 0, internalBlogs: 0, premium: 0, nativeAds: 0 });
   const [lockout, setLockout] = useState(false);
   const [cooldowns, setCooldowns] = useState({});
 
@@ -19,6 +20,39 @@ export default function Tasks({ session, navigate }) {
   const [payoutError, setPayoutError] = useState('');
 
   const [toastMessage, setToastMessage] = useState('');
+
+  // --- ADMOB NATIVE BRIDGE LOGIC ---
+  useEffect(() => {
+    window.onAdRewardSuccess = async (points) => {
+      setToastMessage('Processing Video Yield...');
+      try {
+        const { error } = await supabase.rpc('increment_ad_reward', { 
+          p_user_id: user.id, 
+          p_reward_points: points // Handled securely on backend, defaults to 5
+        });
+
+        if (error) {
+           if (error.message.includes('Network Cooldown')) {
+             throw new Error("Cooldown active. Please wait 1 hour.");
+           }
+           throw error;
+        }
+        
+        setToastMessage(`+5 Yield Secured! Ad completion verified.`);
+        setTimeout(() => setToastMessage(''), 4000);
+        
+        window.dispatchEvent(new Event('taskivo_points_updated')); 
+      } catch (err) {
+        console.error("Ad Reward Error:", err);
+        setToastMessage(err.message || 'Network Error: Could not secure yield.');
+        setTimeout(() => setToastMessage(''), 4000);
+      }
+    };
+
+    return () => {
+      delete window.onAdRewardSuccess;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -66,7 +100,7 @@ export default function Tasks({ session, navigate }) {
         supabase.from('posts').select('*').eq('status', 'published')
       ]);
 
-      let vCount = 0, seoCount = 0, intCount = 0, pCount = 0;
+      let vCount = 0, seoCount = 0, intCount = 0, pCount = 0, nativeCount = 0;
       const cooldownMap = {};
 
       (compRes.data || []).forEach(h => {
@@ -75,9 +109,16 @@ export default function Tasks({ session, navigate }) {
         if (h.platform === 'blog' || h.platform === 'adsense') seoCount++; 
         else if (h.platform === 'youtube') vCount++;
         else if (['ugc', 'qa_testing', 'growth'].includes(h.platform)) pCount++; 
+        else if (h.platform === 'admob' || h.task_id === 'native-admob-video') nativeCount++;
         
-        const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
-        if (hoursLeft > 0) cooldownMap[h.task_id] = hoursLeft;
+        // 1-Hour Cooldown Logic for AdMob, 24-Hour for everything else
+        if (h.task_id === 'native-admob-video') {
+            const minutesLeft = Math.ceil(60 - ((now - completedAt) / 60000));
+            if (minutesLeft > 0) cooldownMap[h.task_id] = `${minutesLeft}M`;
+        } else {
+            const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
+            if (hoursLeft > 0) cooldownMap[h.task_id] = `${hoursLeft}H`;
+        }
       });
 
       const readSlugs = [];
@@ -87,14 +128,13 @@ export default function Tasks({ session, navigate }) {
         if (completedAt >= twentyFourHoursAgo) intCount++; 
       });
 
-      setQuotas({ videos: vCount, seoBlogs: seoCount, internalBlogs: intCount, premium: pCount });
+      setQuotas({ videos: vCount, seoBlogs: seoCount, internalBlogs: intCount, premium: pCount, nativeAds: nativeCount });
       setCooldowns(cooldownMap);
 
       const freshTasks = (activeTasksRes.data || []).map(t => ({
         ...t, is_internal_blog: false
       }));
 
-      // 🔥 SMART QUEUE ALGORITHM (With 3-Point Yield) 🔥
       const freshPosts = (activePostsRes.data || [])
         .filter(p => !readSlugs.includes(p.slug)) 
         .sort((a, b) => (a.views || 0) - (b.views || 0)) 
@@ -108,7 +148,20 @@ export default function Tasks({ session, navigate }) {
           created_at: p.created_at
         }));
 
-      const mergedFeed = [...freshTasks, ...freshPosts].sort((a, b) => {
+      // --- INJECT APP EXCLUSIVE ADMOB TASK ---
+      const adTask = [];
+      if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+        adTask.push({
+          id: 'native-admob-video',
+          is_native_ad: true,
+          platform: 'Premium Ad Network',
+          title: 'Watch Sponsored Premium Video',
+          reward_points: 5, // Now officially 5 Points
+          created_at: new Date().toISOString()
+        });
+      }
+
+      const mergedFeed = [...adTask, ...freshTasks, ...freshPosts].sort((a, b) => {
         return new Date(b.created_at) - new Date(a.created_at);
       });
         
@@ -147,7 +200,7 @@ export default function Tasks({ session, navigate }) {
     if (activeCategory === 'SEO & AdSense') return (task.platform === 'blog' || task.platform === 'adsense') && !task.is_internal_blog;
     if (activeCategory === 'Internal Intel') return task.is_internal_blog;
     if (activeCategory === 'Social Views') return task.platform === 'youtube';
-    if (activeCategory === 'Premium & Growth') return ['ugc', 'qa_testing', 'growth'].includes(task.platform);
+    if (activeCategory === 'Premium & Growth') return task.is_native_ad || ['ugc', 'qa_testing', 'growth'].includes(task.platform);
     return true;
   });
 
@@ -320,12 +373,12 @@ export default function Tasks({ session, navigate }) {
           <div style={{ width: 1, background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} className="hide-on-mobile" />
 
           <div style={S.quotaItem}>
-            <span style={{ fontSize: 11, color: '#D4AF37', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Premium & Growth</span>
+            <span style={{ fontSize: 11, color: '#D4AF37', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Premium Network</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.premium} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 3</span>
+              {quotas.nativeAds} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 5</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.premium / 3) * 100}%`, height: '100%', background: '#D4AF37', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.nativeAds / 5) * 100}%`, height: '100%', background: '#D4AF37', borderRadius: 4 }} />
             </div>
           </div>
         </div>
@@ -350,7 +403,7 @@ export default function Tasks({ session, navigate }) {
               const isVideo = task.platform === 'youtube';
               const isSeoBlog = (task.platform === 'blog' || task.platform === 'adsense') && !task.is_internal_blog && !task.is_house_campaign;
               const isInternalBlog = task.is_internal_blog;
-              const isPremium = ['ugc', 'qa_testing', 'growth'].includes(task.platform);
+              const isPremium = task.is_native_ad || ['ugc', 'qa_testing', 'growth'].includes(task.platform);
               
               const isInternalStyle = task.is_internal_blog || task.is_house_campaign;
               
@@ -358,7 +411,7 @@ export default function Tasks({ session, navigate }) {
               if (isVideo && quotas.videos >= 3) quotaHit = true;
               if (isSeoBlog && quotas.seoBlogs >= 3) quotaHit = true;
               if (isInternalBlog && quotas.internalBlogs >= 5) quotaHit = true;
-              if (isPremium && quotas.premium >= 3) quotaHit = true;
+              if (task.is_native_ad && quotas.nativeAds >= 5) quotaHit = true; 
               
               const isLocked = quotaHit || cooldowns[task.id];
               
@@ -368,6 +421,7 @@ export default function Tasks({ session, navigate }) {
               if (task.platform === 'ugc') icon = '📸';
               if (task.platform === 'qa_testing') icon = '🛠️';
               if (task.platform === 'growth') icon = '👥';
+              if (task.is_native_ad) icon = '💎'; 
 
               return (
                 <div key={task.id} style={{ ...S.taskCard(isPremium, isInternalStyle), opacity: isLocked ? 0.6 : 1 }}>
@@ -389,7 +443,7 @@ export default function Tasks({ session, navigate }) {
                       <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.3 }}>{task.title}</div>
                       <div style={{ fontSize: 12, color: 'var(--slate)', display: 'flex', alignItems: 'center', gap: 6 }}>
                          <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: isPremium ? '#D4AF37' : 'var(--lime)' }} />
-                         {isPremium ? 'Manual Verification' : task.watch_duration ? `${task.watch_duration}s Enforced Dwell` : 'Automated Verification'}
+                         {task.is_native_ad ? 'Native App Exclusive' : (isPremium ? 'Manual Verification' : (task.watch_duration ? `${task.watch_duration}s Enforced Dwell` : 'Automated Verification'))}
                       </div>
                     </div>
                   </div>
@@ -401,12 +455,14 @@ export default function Tasks({ session, navigate }) {
                     </div>
                     
                     {cooldowns[task.id] ? (
-                      <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]}H WAIT</button>
+                      <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]} WAIT</button>
                     ) : quotaHit ? (
                       <button disabled style={S.btnLocked}>LIMIT REACHED</button>
                     ) : (
                       <button onClick={() => {
-                          if (task.is_internal_blog) {
+                          if (task.is_native_ad) {
+                            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_REWARDED_AD' }));
+                          } else if (task.is_internal_blog) {
                             localStorage.setItem('taskivo_active_mission', task.slug);
                             navigate(`article-${task.slug}`);
                           } else {
