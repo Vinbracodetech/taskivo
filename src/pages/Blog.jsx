@@ -366,7 +366,8 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       const { data: profile, error: profErr } = await supabase.from('profiles').select('points').eq('id', localUser.id).single();
       if (profErr) throw new Error("Profile Fetch Error: " + profErr.message);
       
-      const { error: updateErr } = await supabase.from('profiles').update({ points: (profile.points || 0) + 10 }).eq('id', localUser.id);
+      // 🔥 UPDATED: Rebalanced economy to 3 PTS 🔥
+      const { error: updateErr } = await supabase.from('profiles').update({ points: (profile.points || 0) + 3 }).eq('id', localUser.id);
       if (updateErr) throw new Error("Profile Update Error: " + updateErr.message);
       
       window.dispatchEvent(new Event('taskivo_points_updated'));
@@ -382,7 +383,8 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
 
   function handleBackClick() {
     if (isActiveMission && !claimed && timeLeft > 0) {
-      const confirmLeave = window.confirm("WARNING: You have not completed the required dwell time. Leaving now will forfeit your 10 PTS reward.\n\nAre you sure you want to exit?");
+      // 🔥 UPDATED: Warning prompt reflects new 3 PTS limit 🔥
+      const confirmLeave = window.confirm("WARNING: You have not completed the required dwell time. Leaving now will forfeit your 3 PTS reward.\n\nAre you sure you want to exit?");
       if (!confirmLeave) return;
     }
     navigate(localUser ? 'tasks' : 'blog');
@@ -437,7 +439,8 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
             <>
               <div>
                 <div style={{ fontSize: 10, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Mission Complete</div>
-                <div style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>+10 PTS Secured</div>
+                {/* 🔥 UPDATED: Notification overlay reflects new 3 PTS limit 🔥 */}
+                <div style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>+3 PTS Secured</div>
               </div>
               <button onClick={() => navigate('tasks')} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>Return</button>
             </>
