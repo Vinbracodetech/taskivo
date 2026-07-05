@@ -103,14 +103,14 @@ export default function CreateTask({ session, navigate, showToast }) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  // 🔥 EARNER PAYOUT LOGIC (Maintains 60/40 Split) 🔥
+  // 🔥 UPDATED EARNER PAYOUT LOGIC (Perfectly Balanced for 100 PTS Threshold) 🔥
   async function deployTaskToNetwork(isUsingPilot, amountPaid = 0) {
-    let earnerPayout = 25; // Default for Social
+    let earnerPayout = 20; // Default for Social
     
-    if (form.platform === 'blog') earnerPayout = 30; // Standard SEO
-    if (form.platform === 'adsense') earnerPayout = 40; // Premium SEO
-    if (form.platform === 'growth') earnerPayout = 40; // Subs/Follows
-    if (form.platform === 'qa_testing') earnerPayout = 250; // High Effort Manual
+    if (form.platform === 'blog') earnerPayout = 25; // Standard SEO
+    if (form.platform === 'adsense') earnerPayout = 30; // Premium SEO
+    if (form.platform === 'growth') earnerPayout = 35; // Subs/Follows
+    if (form.platform === 'qa_testing') earnerPayout = 100; // High Effort Manual
     if (form.platform === 'ugc') earnerPayout = 1500; // Premium Video Submission
 
     const { data: newTask, error: insertErr } = await supabase.from('tasks').insert({
