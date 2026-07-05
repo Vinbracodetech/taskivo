@@ -23,8 +23,17 @@ export default function Tasks({ session, navigate }) {
   // --- ADMOB NATIVE BRIDGE LOGIC ---
   useEffect(() => {
     window.onAdRewardSuccess = async (points) => {
+      // 1. INSTANT FRONTEND LOCK: Instantly disables the button so they cannot spam click
+      localStorage.setItem('admob_last_watched', Date.now().toString());
+      setCooldowns(prev => ({
+        ...prev, 
+        '11111111-1111-1111-1111-111111111111': '60M'
+      }));
+
       setToastMessage('Processing Video Yield...');
+      
       try {
+        // 2. Secure Backend Sync
         const { error } = await supabase.rpc('increment_ad_reward', { 
           p_user_id: user.id, 
           p_reward_points: points 
@@ -110,7 +119,7 @@ export default function Tasks({ session, navigate }) {
         else if (['ugc', 'qa_testing', 'growth'].includes(h.platform)) pCount++; 
         else if (h.task_id === '11111111-1111-1111-1111-111111111111') nativeCount++;
         
-        // 1-Hour Cooldown strictly tied to the UUID
+        // Database Cooldown Logic
         if (h.task_id === '11111111-1111-1111-1111-111111111111') {
             const minutesLeft = Math.ceil(60 - ((now - completedAt) / 60000));
             if (minutesLeft > 0) cooldownMap[h.task_id] = `${minutesLeft}M`;
@@ -119,6 +128,18 @@ export default function Tasks({ session, navigate }) {
             if (hoursLeft > 0) cooldownMap[h.task_id] = `${hoursLeft}H`;
         }
       });
+
+      // --- BULLETPROOF FRONTEND OVERRIDE ---
+      // This guarantees the UI stays locked even if the database response lags
+      const localAdWatchTime = localStorage.getItem('admob_last_watched');
+      if (localAdWatchTime) {
+          const minsPassed = Math.floor((Date.now() - parseInt(localAdWatchTime)) / 60000);
+          if (minsPassed < 60) {
+              cooldownMap['11111111-1111-1111-1111-111111111111'] = `${60 - minsPassed}M`;
+          } else {
+              localStorage.removeItem('admob_last_watched'); // Clears the lock after 60 mins
+          }
+      }
 
       const readSlugs = [];
       (allBlogReadsRes.data || []).forEach(b => {
@@ -130,8 +151,6 @@ export default function Tasks({ session, navigate }) {
       setQuotas({ videos: vCount, seoBlogs: seoCount, internalBlogs: intCount, premium: pCount, nativeAds: nativeCount });
       setCooldowns(cooldownMap);
 
-      // --- THE GHOST TASK FILTER ---
-      // This explicitly blocks the database entity from showing up as a normal task
       const freshTasks = (activeTasksRes.data || [])
         .filter(t => t.id !== '11111111-1111-1111-1111-111111111111' && t.platform !== 'admob')
         .map(t => ({
@@ -151,11 +170,10 @@ export default function Tasks({ session, navigate }) {
           created_at: p.created_at
         }));
 
-      // --- INJECT APP EXCLUSIVE ADMOB TASK ---
       const adTask = [];
       if (typeof window !== 'undefined' && window.ReactNativeWebView) {
         adTask.push({
-          id: '11111111-1111-1111-1111-111111111111', // Exact UUID Match for Cooldowns!
+          id: '11111111-1111-1111-1111-111111111111', 
           is_native_ad: true,
           platform: 'Premium Ad Network',
           title: 'Watch Sponsored Premium Video',
@@ -337,7 +355,6 @@ export default function Tasks({ session, navigate }) {
           </div>
           <button 
             onClick={() => {
-              // INTERSTITIAL TRIGGER: Best place is when leaving the feed to check the dashboard!
               if (typeof window !== 'undefined' && window.ReactNativeWebView) {
                 window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL_AD' }));
               }
@@ -468,6 +485,7 @@ export default function Tasks({ session, navigate }) {
                       <div style={{ fontSize: 20, fontWeight: 800, color: isLocked ? 'var(--slate)' : isInternalStyle ? 'var(--lime)' : 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>+{task.reward_points} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500 }}>PTS</span></div>
                     </div>
                     
+                    {/* UI LOCK LOGIC APPLIED HERE */}
                     {cooldowns[task.id] ? (
                       <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]} WAIT</button>
                     ) : quotaHit ? (
