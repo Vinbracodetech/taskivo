@@ -9,7 +9,6 @@ export default function Tasks({ session, navigate }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [displayCount, setDisplayCount] = useState(15);
   
-  // Added nativeAds quota to track the 5-per-day limit
   const [quotas, setQuotas] = useState({ videos: 0, seoBlogs: 0, internalBlogs: 0, premium: 0, nativeAds: 0 });
   const [lockout, setLockout] = useState(false);
   const [cooldowns, setCooldowns] = useState({});
@@ -28,7 +27,7 @@ export default function Tasks({ session, navigate }) {
       try {
         const { error } = await supabase.rpc('increment_ad_reward', { 
           p_user_id: user.id, 
-          p_reward_points: points // Handled securely on backend, defaults to 5
+          p_reward_points: points 
         });
 
         if (error) {
@@ -109,10 +108,10 @@ export default function Tasks({ session, navigate }) {
         if (h.platform === 'blog' || h.platform === 'adsense') seoCount++; 
         else if (h.platform === 'youtube') vCount++;
         else if (['ugc', 'qa_testing', 'growth'].includes(h.platform)) pCount++; 
-        else if (h.platform === 'admob' || h.task_id === '11111111-1111-1111-1111-111111111111') nativeCount++;
+        else if (h.task_id === '11111111-1111-1111-1111-111111111111') nativeCount++;
         
-        // 1-Hour Cooldown Logic for AdMob, 24-Hour for everything else
-        if (h.task_id === 'native-admob-video') {
+        // 1-Hour Cooldown strictly tied to the UUID
+        if (h.task_id === '11111111-1111-1111-1111-111111111111') {
             const minutesLeft = Math.ceil(60 - ((now - completedAt) / 60000));
             if (minutesLeft > 0) cooldownMap[h.task_id] = `${minutesLeft}M`;
         } else {
@@ -131,9 +130,13 @@ export default function Tasks({ session, navigate }) {
       setQuotas({ videos: vCount, seoBlogs: seoCount, internalBlogs: intCount, premium: pCount, nativeAds: nativeCount });
       setCooldowns(cooldownMap);
 
-      const freshTasks = (activeTasksRes.data || []).map(t => ({
-        ...t, is_internal_blog: false
-      }));
+      // --- THE GHOST TASK FILTER ---
+      // This explicitly blocks the database entity from showing up as a normal task
+      const freshTasks = (activeTasksRes.data || [])
+        .filter(t => t.id !== '11111111-1111-1111-1111-111111111111' && t.platform !== 'admob')
+        .map(t => ({
+          ...t, is_internal_blog: false
+        }));
 
       const freshPosts = (activePostsRes.data || [])
         .filter(p => !readSlugs.includes(p.slug)) 
@@ -152,7 +155,7 @@ export default function Tasks({ session, navigate }) {
       const adTask = [];
       if (typeof window !== 'undefined' && window.ReactNativeWebView) {
         adTask.push({
-          id: '11111111-1111-1111-1111-111111111111', // Now matches the database UUID
+          id: '11111111-1111-1111-1111-111111111111', // Exact UUID Match for Cooldowns!
           is_native_ad: true,
           platform: 'Premium Ad Network',
           title: 'Watch Sponsored Premium Video',
@@ -332,7 +335,18 @@ export default function Tasks({ session, navigate }) {
             <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 36, color: 'var(--ink)', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-1px' }}>Engagement <span style={{ color: 'var(--lime)' }}>Network</span></h1>
             <p style={{ color: 'var(--slate)', margin: 0, fontSize: 15 }}>Execute verifiable tasks to acquire daily yield.</p>
           </div>
-          <button onClick={() => navigate('user-dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s', backdropFilter: 'blur(5px)' }}>My Hub →</button>
+          <button 
+            onClick={() => {
+              // INTERSTITIAL TRIGGER: Best place is when leaving the feed to check the dashboard!
+              if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL_AD' }));
+              }
+              navigate('user-dashboard');
+            }} 
+            style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s', backdropFilter: 'blur(5px)' }}
+          >
+            My Hub →
+          </button>
         </div>
 
         <div style={S.quotaPanel}>
