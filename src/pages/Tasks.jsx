@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { Link } from 'react-router-dom';
 
 export default function Tasks({ session, navigate }) {
   const user = session?.user;
@@ -490,13 +491,19 @@ export default function Tasks({ session, navigate }) {
                       <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]} WAIT</button>
                     ) : quotaHit ? (
                       <button disabled style={S.btnLocked}>LIMIT REACHED</button>
+                    ) : task.is_internal_blog ? (
+                      /* 🔥 SEO FIX: Semantic Link for Googlebot Crawling 🔥 */
+                      <Link 
+                        to={`/article-${task.slug}`} 
+                        onClick={() => localStorage.setItem('taskivo_active_mission', task.slug)}
+                        style={{ ...S.btnActive(isPremium, isInternalStyle), textDecoration: 'none', display: 'inline-block', textAlign: 'center', boxSizing: 'border-box' }}
+                      >
+                        Initiate
+                      </Link>
                     ) : (
                       <button onClick={() => {
                           if (task.is_native_ad) {
                             window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_REWARDED_AD' }));
-                          } else if (task.is_internal_blog) {
-                            localStorage.setItem('taskivo_active_mission', task.slug);
-                            navigate(`article-${task.slug}`);
                           } else {
                             if ((task.platform === 'blog' || task.platform === 'adsense') && task.url) {
                               localStorage.setItem('taskivo_active_mission', task.url.split('/').pop());
