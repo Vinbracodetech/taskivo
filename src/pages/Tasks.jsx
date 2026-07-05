@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Link } from 'react-router-dom';
 
 export default function Tasks({ session, navigate }) {
   const user = session?.user;
@@ -131,14 +130,13 @@ export default function Tasks({ session, navigate }) {
       });
 
       // --- BULLETPROOF FRONTEND OVERRIDE ---
-      // This guarantees the UI stays locked even if the database response lags
       const localAdWatchTime = localStorage.getItem('admob_last_watched');
       if (localAdWatchTime) {
           const minsPassed = Math.floor((Date.now() - parseInt(localAdWatchTime)) / 60000);
           if (minsPassed < 60) {
               cooldownMap['11111111-1111-1111-1111-111111111111'] = `${60 - minsPassed}M`;
           } else {
-              localStorage.removeItem('admob_last_watched'); // Clears the lock after 60 mins
+              localStorage.removeItem('admob_last_watched'); 
           }
       }
 
@@ -486,24 +484,17 @@ export default function Tasks({ session, navigate }) {
                       <div style={{ fontSize: 20, fontWeight: 800, color: isLocked ? 'var(--slate)' : isInternalStyle ? 'var(--lime)' : 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>+{task.reward_points} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500 }}>PTS</span></div>
                     </div>
                     
-                    {/* UI LOCK LOGIC APPLIED HERE */}
                     {cooldowns[task.id] ? (
                       <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]} WAIT</button>
                     ) : quotaHit ? (
                       <button disabled style={S.btnLocked}>LIMIT REACHED</button>
-                    ) : task.is_internal_blog ? (
-                      /* 🔥 SEO FIX: Semantic Link for Googlebot Crawling 🔥 */
-                      <Link 
-                        to={`/article-${task.slug}`} 
-                        onClick={() => localStorage.setItem('taskivo_active_mission', task.slug)}
-                        style={{ ...S.btnActive(isPremium, isInternalStyle), textDecoration: 'none', display: 'inline-block', textAlign: 'center', boxSizing: 'border-box' }}
-                      >
-                        Initiate
-                      </Link>
                     ) : (
                       <button onClick={() => {
                           if (task.is_native_ad) {
                             window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_REWARDED_AD' }));
+                          } else if (task.is_internal_blog) {
+                            localStorage.setItem('taskivo_active_mission', task.slug);
+                            navigate(`article-${task.slug}`);
                           } else {
                             if ((task.platform === 'blog' || task.platform === 'adsense') && task.url) {
                               localStorage.setItem('taskivo_active_mission', task.url.split('/').pop());
