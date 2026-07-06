@@ -20,12 +20,22 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [error, setError] = useState("");
   var [mounted, setMounted] = useState(false);
 
+  // --- URL SNIFFER ADDED HERE ---
   useEffect(function () {
+    if (typeof window !== "undefined") {
+      var params = new URLSearchParams(window.location.search);
+      var refCode = params.get('ref');
+      if (refCode) {
+        localStorage.setItem("taskivo_ref", refCode);
+        setMode("register"); // Auto-switch to register mode if they came from an invite link
+      }
+    }
+
     var t = setTimeout(function () { setMounted(true); }, 50);
     return function () { clearTimeout(t); };
   }, []);
 
-  // ── THE GREETER: PROCESS GRANTS AND LET THEM IN ──
+  // ── THE GREETER: PROCESS GRANTS, REFERRALS AND LET THEM IN ──
   useEffect(function () {
     var { data: authListener } = supabase.auth.onAuthStateChange(async function(event, session) {
       if (event === 'SIGNED_IN' && session) {
@@ -41,7 +51,6 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           var finalRole = dbUser.role || storedRole || "earner";
 
           if (!dbUser.role && storedRole) updates.role = storedRole;
-          if (storedRef && !dbUser.referred_by) updates.referred_by = storedRef;
 
           // CREATOR-ONLY 10-SPOT GRANT CHECK
           if (hasGrant && !dbUser.pilot_claimed && finalRole === "creator") {
@@ -54,12 +63,21 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
             }
           }
 
+          // Apply general updates
           if (Object.keys(updates).length > 0) {
             await supabase.from("profiles").update(updates).eq("id", session.user.id);
           }
+
+          // TRIGGER THE SECURE REFERRAL ENGINE
+          if (storedRef && !dbUser.referred_by) {
+            await supabase.rpc('apply_referral_bonus', {
+                new_user_id: session.user.id,
+                referrer_id: storedRef
+            });
+          }
         }
 
-        // Clean up
+        // Clean up memory to prevent infinite loops
         localStorage.removeItem("taskivo_ref");
         localStorage.removeItem("taskivo_grant");
         localStorage.removeItem("taskivo_role");
