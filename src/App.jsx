@@ -196,18 +196,30 @@ export default function App() {
     return function() { window.removeEventListener("taskivo_points_updated", syncPoints); };
   }, [user]);
 
+  // --- 🔥 ROOT-LEVEL REFERRAL AIR-TRAFFIC CONTROLLER 🔥 ---
   useEffect(function() {
     if (typeof window !== "undefined") {
       var refId = null;
 
+      // 1. Try checking standard query parameters
       var standardParams = new URLSearchParams(window.location.search);
       if (standardParams.has("ref")) {
         refId = standardParams.get("ref");
       } 
+      // 2. Fallback: Check inside the hash route (for #auth?ref=...)
+      else if (window.location.hash.includes("ref=")) {
+        var hashQuery = window.location.hash.split('?')[1];
+        if (hashQuery) {
+          var hashParams = new URLSearchParams(hashQuery);
+          refId = hashParams.get("ref");
+        }
+      }
 
+      // If a referral code exists, force the app to snap to the registration page immediately
       if (refId) {
         localStorage.setItem("taskivo_ref", refId);
         setAuthMode("register"); 
+        navigate("auth"); 
       }
     }
   }, []);
