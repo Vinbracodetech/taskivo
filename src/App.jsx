@@ -201,12 +201,12 @@ export default function App() {
     if (typeof window !== "undefined") {
       var refId = null;
 
-      // 1. Try checking standard query parameters
+      // 1. Try checking standard query parameters (e.g. /?ref=123)
       var standardParams = new URLSearchParams(window.location.search);
       if (standardParams.has("ref")) {
         refId = standardParams.get("ref");
       } 
-      // 2. Fallback: Check inside the hash route (for #auth?ref=...)
+      // 2. Fallback: Check inside the hash route (e.g. /#auth?ref=123)
       else if (window.location.hash.includes("ref=")) {
         var hashQuery = window.location.hash.split('?')[1];
         if (hashQuery) {
@@ -215,7 +215,7 @@ export default function App() {
         }
       }
 
-      // If a referral code exists, force the app to snap to the registration page immediately
+      // If a referral code exists, lock it in memory and force registration mode
       if (refId) {
         localStorage.setItem("taskivo_ref", refId);
         setAuthMode("register"); 
@@ -264,6 +264,7 @@ export default function App() {
     return function () { listener.data.subscription.unsubscribe(); };
   }, []);
 
+  // --- 🔥 UPDATED LOAD PROFILE WITH SECURE REFERRAL ENGINE 🔥 ---
   async function loadProfile(authUser) {
     setLoading(true);
     var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
@@ -289,8 +290,12 @@ export default function App() {
         setView(currentPath);
       }
     } else {
+      // User does not exist yet (First time logging in after registration)
       var intendedRole = localStorage.getItem('taskivo_role') || "earner";
       var grantRequested = localStorage.getItem('taskivo_grant') === 'true';
+      
+      // Grab the referral code that was saved at the front door
+      var refId = localStorage.getItem('taskivo_ref'); 
       
       var newProfile = {
         id: authUser.id,
@@ -301,10 +306,25 @@ export default function App() {
         pilot_claimed: grantRequested
       };
       
+      // Create the new user in the database
       await supabase.from("profiles").insert(newProfile);
       
+      // Trigger the secure SQL referral function if they had an invite link
+      if (refId) {
+        try {
+          await supabase.rpc('apply_referral_bonus', {
+            new_user_id: authUser.id,
+            referrer_id: refId
+          });
+        } catch (err) {
+          console.error("Referral Bonus Error:", err);
+        }
+      }
+      
+      // Clean up local storage
       localStorage.removeItem('taskivo_role');
       localStorage.removeItem('taskivo_grant');
+      localStorage.removeItem('taskivo_ref');
       
       setUser(newProfile);
       routeByRole(intendedRole); 
