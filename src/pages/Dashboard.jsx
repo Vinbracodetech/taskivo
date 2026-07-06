@@ -131,12 +131,12 @@ export default function Dashboard({ user, navigate, showToast }) {
   }
 
   function copyReferralLink() {
-    navigator.clipboard.writeText(`https://taskivo.online/#auth?ref=${user.id}`);
+    // Standardized URL to survive mobile and social media browsers
+    navigator.clipboard.writeText(`https://taskivo.online/?ref=${user.id}`);
     setReferralCopied(true);
     if (showToast) showToast('Invite link copied!', 'success');
     setTimeout(() => setReferralCopied(false), 3000);
   }
-
   function getInitials(name) {
     if (!name) return 'U';
     return name.substring(0, 2).toUpperCase();
