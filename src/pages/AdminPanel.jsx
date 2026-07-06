@@ -278,11 +278,15 @@ export function AdminUsers({ showToast, currentUser }) {
     if (!confirmWipe) return;
 
     try {
-      const { error } = await supabase.from('profiles').delete().eq('id', id);
+      // 🔥 SWAPPED TO THE NEW MASTER DELETION FUNCTION 🔥
+      const { error } = await supabase.rpc('wipe_user_account', { target_user_id: id });
+      
       if (error) throw error;
+      
       setUsers(users.filter(u => u.id !== id));
       if (showToast) showToast('Identity record purged.', 'success');
     } catch (err) {
+      console.error(err);
       if (showToast) showToast('Failed to purge record.', 'error');
     }
   }
