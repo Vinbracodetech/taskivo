@@ -39,15 +39,20 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
     if (logout) logout();
   }
 
+  // 🔥 UPDATED TO USE THE SECURE DATABASE MASTER KEY 🔥
   async function requestAccountDeletion() {
     closeMenu();
     const confirmed = window.confirm("Are you sure you want to permanently wipe your data? This will instantly delete your profile and log you out. This cannot be undone.");
     if (confirmed) {
       try {
-        await supabase.from('profiles').delete().eq('id', user.id);
+        const { error } = await supabase.rpc('wipe_user_account', { target_user_id: user.id });
+        
+        if (error) throw error;
+        
         alert("Your account data has been wiped.");
         if (logout) logout();
       } catch (err) {
+        console.error(err);
         alert("There was an error deleting your data.");
       }
     }
@@ -147,7 +152,6 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {/* 🔥 ADDED TASKIVO HOMEPAGE ROUTE AT THE TOP 🔥 */}
           <MenuItem icon={IconGlobe} label="Taskivo Homepage" onClick={() => handleNavigate('landing')} />
           <MenuItem icon={IconHome} label="Dashboard" onClick={() => handleNavigate(homeRoute)} />
           
