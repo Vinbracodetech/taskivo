@@ -20,14 +20,26 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [error, setError] = useState("");
   var [mounted, setMounted] = useState(false);
 
-  // --- URL SNIFFER ADDED HERE ---
+  // --- FIXED HYBRID URL SNIFFER ---
   useEffect(function () {
     if (typeof window !== "undefined") {
+      var refCode = null;
+      
+      // 1. Try checking standard query parameters
       var params = new URLSearchParams(window.location.search);
-      var refCode = params.get('ref');
+      refCode = params.get('ref');
+      
+      // 2. Fallback: Check inside the hash route (for #auth?ref=...)
+      if (!refCode && window.location.hash.includes('?')) {
+        var hashQuery = window.location.hash.split('?')[1];
+        var hashParams = new URLSearchParams(hashQuery);
+        refCode = hashParams.get('ref');
+      }
+
+      // If a code is found, lock it in and force registration mode
       if (refCode) {
         localStorage.setItem("taskivo_ref", refCode);
-        setMode("register"); // Auto-switch to register mode if they came from an invite link
+        setMode("register"); 
       }
     }
 
