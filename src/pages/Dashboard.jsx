@@ -283,9 +283,10 @@ export default function Dashboard({ user, navigate, showToast }) {
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--gold)', color: 'var(--gold)', background: 'rgba(255,215,0,0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
               ✦ VIP Network Bonus
             </div>
-            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Expand Your Network. Earn 50 Points.</h2>
+            {/* UPDATED REFERRAL TEXT HERE */}
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Expand Your Network. Earn 20 Points.</h2>
             <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: 0 }}>
-              Distribute your unique cryptographic invite link. Upon a successful registration and first verified task completion from your referral, your account is instantly credited.
+              Distribute your unique cryptographic invite link. When a new earner registers using your link, they instantly receive a 10 PTS starter bonus, and your account is instantly credited with 20 PTS.
             </p>
           </div>
           
