@@ -271,40 +271,30 @@ export function AdminUsers({ showToast, currentUser }) {
 
   async function wipeUser(id) {
     if (id === currentUser?.id) {
-      alert('Security protocol prevents self-deletion.');
+      if (showToast) showToast('Security protocol prevents self-deletion.', 'error');
       return;
     }
-    
-    // 1. Check if the button click is even registering
     const confirmWipe = window.confirm('CRITICAL WARNING: This will permanently wipe all history and delete this user from the Auth Vault. Proceed?');
     if (!confirmWipe) return;
 
     try {
-      // 2. Force a native alert so you know the network request started
-      alert('Initiating Vault Purge... Click OK and wait a few seconds.');
+      if (showToast) showToast('Initiating Vault Purge...', 'info');
 
       const { data, error } = await supabase.functions.invoke('purge-user', {
         body: { targetUserId: id }
       });
 
-      // Catch network-level crashes
-      if (error) throw new Error("Edge Function Network Error: " + error.message);
-      
-      // Catch specific database errors returned by our Edge Function
-      if (data && data.error) throw new Error("Database Error: " + data.error);
+      if (error) throw new Error("Network Error: " + error.message);
+      if (data && data.error) throw new Error(data.error);
       
       setUsers(users.filter(u => u.id !== id));
-      
-      // 3. Force a native alert on success
-      alert('Target successfully purged from the network.');
-      if (showToast) showToast('User wiped.', 'success');
+      if (showToast) showToast('Target successfully purged from the network.', 'success');
       
     } catch (err) {
-      // 4. Force a native alert if IT FAILS
-      alert(`❌ PURGE FAILED:\n\n${err.message}`);
+      console.error("Purge Error:", err);
+      if (showToast) showToast(`Purge Failed: ${err.message}`, 'error');
     }
   }
-
   return (
     <div style={S.pageWrapper}>
       <div style={S.page}>
