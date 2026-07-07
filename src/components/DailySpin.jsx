@@ -18,7 +18,6 @@ export default function DailySpin({ session, showToast }) {
 
   async function fetchSpinStatus() {
     try {
-      // We reuse last_claim_date so you don't have to alter your database!
       const { data } = await supabase
         .from('profiles')
         .select('last_claim_date')
@@ -26,13 +25,31 @@ export default function DailySpin({ session, showToast }) {
         .single();
 
       if (data) {
-        const hours = (new Date() - new Date(data.last_claim_date || 0)) / 3600000;
-        if (hours >= 24) {
+        // 🔥 FIX: The NaN / 0-Hour Glitch Annihilator
+        // If the date is null, missing, or invalid, they are instantly eligible.
+        if (!data.last_claim_date) {
+          setCanSpin(true);
+          setDisplayNumber("READY");
+          return;
+        }
+
+        const claimDate = new Date(data.last_claim_date);
+        
+        // Failsafe in case the database saved a weird string
+        if (isNaN(claimDate.getTime())) {
+          setCanSpin(true);
+          setDisplayNumber("READY");
+          return;
+        }
+
+        const hoursSinceLastClaim = (new Date() - claimDate) / 3600000;
+
+        if (hoursSinceLastClaim >= 24) {
           setCanSpin(true);
           setDisplayNumber("READY");
         } else {
           setCanSpin(false);
-          setHoursLeft(Math.ceil(24 - hours));
+          setHoursLeft(Math.ceil(24 - hoursSinceLastClaim));
           setDisplayNumber("LOCKED");
         }
       }
@@ -41,13 +58,15 @@ export default function DailySpin({ session, showToast }) {
     }
   }
 
-  // 🔥 THE GAMBLING MATH (70% Profit Margin Protected) 🔥
+  // 🔥 THE NEW ECONOMY MATH 🔥
+  // Tightly controlled variable rewards to sustain the liquidity pool
   function calculateReward() {
-    const rand = Math.random() * 100; // Generate number 0 to 100
-    if (rand < 80) return 1;          // 80% chance: 1 Point
-    if (rand < 95) return 5;          // 15% chance: 5 Points
-    if (rand < 99) return 20;         // 4% chance: 20 Points
-    return 100;                       // 1% chance: 100 Points (The Jackpot)
+    const rand = Math.random() * 100; 
+    if (rand < 60) return 1;          // 60% chance: 1 Point
+    if (rand < 85) return 2;          // 25% chance: 2 Points
+    if (rand < 96) return 5;          // 11% chance: 5 Points
+    if (rand < 99) return 10;         // 3% chance: 10 Points (Rare)
+    return 50;                        // 1% chance: 50 Points (Jackpot)
   }
 
   async function handleSpin() {
@@ -56,16 +75,13 @@ export default function DailySpin({ session, showToast }) {
     setIsSpinning(true);
     setWinStatus("");
     
-    // 1. Pre-calculate the actual winner instantly
     const actualReward = calculateReward();
 
-    // 2. The Suspense Animation (Rapidly cycle numbers for 2.5 seconds)
     let cycles = 0;
-    const maxCycles = 25; // 25 cycles * 100ms = 2.5 seconds
+    const maxCycles = 25; 
     
     const spinInterval = setInterval(() => {
-      // Show random numbers to build hype
-      const randomDisplay = [1, 5, 20, 100][Math.floor(Math.random() * 4)];
+      const randomDisplay = [1, 2, 5, 10, 50][Math.floor(Math.random() * 5)];
       setDisplayNumber(randomDisplay);
       cycles++;
 
@@ -79,12 +95,12 @@ export default function DailySpin({ session, showToast }) {
   async function finishSpin(rewardAmt) {
     setDisplayNumber(rewardAmt);
     
-    if (rewardAmt === 100) {
+    if (rewardAmt === 50) {
       setWinStatus("JACKPOT! 🎉");
-    } else if (rewardAmt >= 20) {
+    } else if (rewardAmt >= 10) {
       setWinStatus("BIG WIN! 🔥");
     } else {
-      setWinStatus("Points Secured ✓");
+      setWinStatus("Yield Secured ✓");
     }
 
     try {
@@ -102,19 +118,17 @@ export default function DailySpin({ session, showToast }) {
         })
         .eq('id', user.id);
 
-      // Optimistic UI Update so the dashboard header updates instantly
       if (user) {
         user.points = (user.points || 0) + rewardAmt;
       }
 
-      if (showToast) showToast(`You won ${rewardAmt} PTS!`, 'success');
+      if (showToast) showToast(`Acquired ${rewardAmt} PTS!`, 'success');
       
-      // Lock the spinner until tomorrow
       setCanSpin(false);
       setHoursLeft(24);
       
     } catch (e) {
-      if (showToast) showToast("Network error saving points.", "error");
+      if (showToast) showToast("Network error synchronizing points.", "error");
     } finally {
       setIsSpinning(false);
     }
@@ -122,7 +136,6 @@ export default function DailySpin({ session, showToast }) {
 
   if (loading) return null;
 
-  // ── PREMIUM TECH-INSPIRED UI ──
   const S = {
     card: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 24, textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: '0 16px 32px rgba(0,0,0,0.2)' },
     title: { color: 'var(--ink)', fontSize: 16, fontWeight: 800, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" },
