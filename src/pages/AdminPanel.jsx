@@ -274,20 +274,25 @@ export function AdminUsers({ showToast, currentUser }) {
       if (showToast) showToast('Security protocol prevents self-deletion.', 'error');
       return;
     }
-    const confirmWipe = window.confirm('CRITICAL: This will permanently purge this profile from the database. Proceed?');
+    const confirmWipe = window.confirm('CRITICAL WARNING: This will permanently delete this user from the Auth Vault. Proceed?');
     if (!confirmWipe) return;
 
     try {
-      // 🔥 SWAPPED TO THE NEW MASTER DELETION FUNCTION 🔥
-      const { error } = await supabase.rpc('wipe_user_account', { target_user_id: id });
-      
-      if (error) throw error;
+      if (showToast) showToast('Initiating Vault Purge...', 'info');
+
+      // 🔥 Call the secure Edge Function
+      const { data, error } = await supabase.functions.invoke('purge-user', {
+        body: { targetUserId: id }
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
       
       setUsers(users.filter(u => u.id !== id));
-      if (showToast) showToast('Identity record purged.', 'success');
+      if (showToast) showToast('Target successfully purged from the network.', 'success');
     } catch (err) {
-      console.error(err);
-      if (showToast) showToast('Failed to purge record.', 'error');
+      console.error("Purge Error:", err);
+      if (showToast) showToast(`Purge Failed: ${err.message}`, 'error');
     }
   }
 
