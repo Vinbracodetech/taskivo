@@ -397,11 +397,12 @@ export default function App() {
             {view === "landing" && <Landing navigate={navigate} setAuthMode={setAuthMode} />}
             {view === "auth" && <Auth authMode={authMode} setAuthMode={setAuthMode} navigate={navigate} loadProfile={loadProfile} />}
             
-            {/* Static Pages */}
+           {/* Static Pages */}
             {view === "about" && <About />}
             {view === "terms" && <Terms />}
             {view === "privacy" && <Privacy />}
             {view === "disclaimer" && <Disclaimer />}
+            {view === "delete-account" && <DeleteAccount />}
             
             {view === "blog" && <BlogIndex navigate={navigate} />}
             {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} user={user} setAuthMode={setAuthMode} />}
