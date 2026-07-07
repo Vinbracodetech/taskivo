@@ -15,7 +15,7 @@ export default function Dashboard({ user, navigate, showToast }) {
     payout_bank_name: user.payout_bank_name || '',
     payout_account: user.payout_account || '',
     payout_account_name: user.payout_account_name || '',
-    local_currency: user.local_currency || 'NGN' // 🔥 NEW: Currency State
+    local_currency: user.local_currency || 'NGN'
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -96,32 +96,33 @@ export default function Dashboard({ user, navigate, showToast }) {
     try {
       if (!editForm.full_name) throw new Error("Full name is required");
       
-      const { error } = await supabase
+      // 🔥 FIX: Added .select().single() to force error catching on blocked RLS policies
+      const { data, error } = await supabase
         .from('profiles')
         .update({ 
           full_name: editForm.full_name,
           payout_bank_name: editForm.payout_bank_name,
           payout_account: editForm.payout_account,
           payout_account_name: editForm.payout_account_name,
-          local_currency: editForm.local_currency // 🔥 NEW: Save Currency
+          local_currency: editForm.local_currency 
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select()
+        .single();
       
       if (error) {
         if (error.code === '23505' && error.message.includes('payout_account')) {
            throw new Error("This account number is already registered.");
         }
-        throw error;
+        throw new Error(`Database Error: ${error.message}`);
       }
       
-      user.full_name = editForm.full_name;
-      user.payout_bank_name = editForm.payout_bank_name;
-      user.payout_account = editForm.payout_account;
-      user.payout_account_name = editForm.payout_account_name;
-      user.local_currency = editForm.local_currency;
-      
-      if (showToast) showToast('Profile updated successfully', 'success');
+      if (showToast) showToast('Profile updated successfully! Syncing network...', 'success');
       setShowEditModal(false);
+
+      // 🔥 FIX: Force a hard sync with App.jsx to reflect the new database state
+      setTimeout(() => window.location.reload(), 1500);
+
     } catch (err) {
       if (showToast) showToast(err.message, 'error');
       else alert(err.message);
@@ -131,12 +132,12 @@ export default function Dashboard({ user, navigate, showToast }) {
   }
 
   function copyReferralLink() {
-    // Standardized URL to survive mobile and social media browsers
     navigator.clipboard.writeText(`https://taskivo.online/?ref=${user.id}`);
     setReferralCopied(true);
     if (showToast) showToast('Invite link copied!', 'success');
     setTimeout(() => setReferralCopied(false), 3000);
   }
+
   function getInitials(name) {
     if (!name) return 'U';
     return name.substring(0, 2).toUpperCase();
