@@ -218,3 +218,33 @@ export function About() {
     </div>
   );
 }
+export function DeleteAccount() {
+  return (
+    <div style={{ padding: '60px 5%', maxWidth: 800, margin: '0 auto', fontFamily: "'Inter', sans-serif", color: 'var(--ink)' }}>
+      <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 16 }}>Account & Data Deletion</h1>
+      <p style={{ fontSize: 16, color: 'var(--slate)', lineHeight: 1.6, marginBottom: 24 }}>
+        At Taskivo, we respect your privacy. If you wish to permanently delete your account and all associated personal data, you have two options:
+      </p>
+
+      <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: 24, marginBottom: 24 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12, color: 'var(--lime)' }}>Option 1: Instant In-App Deletion</h2>
+        <p style={{ fontSize: 14, color: 'var(--slate)', lineHeight: 1.5 }}>
+          Open the Taskivo app, tap the Profile icon in the bottom navigation menu, and select <strong>"Delete Account"</strong>. This will instantly and permanently wipe your profile, task history, and authentication identity from our database.
+        </p>
+      </div>
+
+      <div style={{ background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 16, padding: 24 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12, color: 'var(--lime)' }}>Option 2: Web / Email Request</h2>
+        <p style={{ fontSize: 14, color: 'var(--slate)', lineHeight: 1.5, marginBottom: 16 }}>
+          If you no longer have the app installed, you can request a manual data purge. Please send an email from the address associated with your Taskivo account to:
+        </p>
+        <a href="mailto:vinbracodetech@gmail.com" style={{ fontSize: 16, fontWeight: 700, color: '#fff', background: '#D4AF37', padding: '10px 20px', borderRadius: 8, textDecoration: 'none', display: 'inline-block' }}>
+          vinbracodetech@gmail.com
+        </a>
+        <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: 16 }}>
+          *Please use the subject line "Data Deletion Request". We will process your request and securely wipe your data within 7 business days.
+        </p>
+      </div>
+    </div>
+  );
+}
