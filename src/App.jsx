@@ -264,7 +264,7 @@ export default function App() {
     return function () { listener.data.subscription.unsubscribe(); };
   }, []);
 
-  // --- 🔥 UPDATED LOAD PROFILE WITH SECURE REFERRAL ENGINE 🔥 ---
+  // --- 🔥 UPDATED LOAD PROFILE WITH SECURE UPSERT & REFERRAL ENGINE 🔥 ---
   async function loadProfile(authUser) {
     setLoading(true);
     var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
@@ -290,11 +290,9 @@ export default function App() {
         setView(currentPath);
       }
     } else {
-      // User does not exist yet (First time logging in after registration)
+      // User does not exist yet (First time logging in after registration OR ghost account recovery)
       var intendedRole = localStorage.getItem('taskivo_role') || "earner";
       var grantRequested = localStorage.getItem('taskivo_grant') === 'true';
-      
-      // Grab the referral code that was saved at the front door
       var refId = localStorage.getItem('taskivo_ref'); 
       
       var newProfile = {
@@ -303,11 +301,19 @@ export default function App() {
         full_name: authUser.user_metadata ? authUser.user_metadata.full_name || "" : "",
         role: intendedRole, 
         points: 0,
-        pilot_claimed: grantRequested
+        pilot_claimed: grantRequested,
+        local_currency: 'NGN' // Ensuring default currency to prevent crash
       };
       
-      // Create the new user in the database
-      await supabase.from("profiles").insert(newProfile);
+      // 🔥 FIX: Replaced .insert() with .upsert() to resurrect deleted ghost accounts safely
+      const { error: upsertErr } = await supabase.from("profiles").upsert(newProfile);
+      
+      if (upsertErr) {
+        console.error("Upsert failed:", upsertErr);
+        showToast("Critical Error: Could not initialize profile.", "error");
+        setLoading(false);
+        return;
+      }
       
       // Trigger the secure SQL referral function if they had an invite link
       if (refId) {
