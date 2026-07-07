@@ -274,33 +274,31 @@ export function AdminUsers({ showToast, currentUser }) {
       if (showToast) showToast('Security protocol prevents self-deletion.', 'error');
       return;
     }
-    const confirmWipe = window.confirm('CRITICAL WARNING: This will permanently delete this user from the Auth Vault. Proceed?');
+    const confirmWipe = window.confirm('CRITICAL WARNING: This will permanently wipe all history and delete this user from the Auth Vault. Proceed?');
     if (!confirmWipe) return;
 
     try {
       if (showToast) showToast('Initiating Vault Purge...', 'info');
 
-      // 🔥 Call the secure Edge Function
       const { data, error } = await supabase.functions.invoke('purge-user', {
         body: { targetUserId: id }
       });
 
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
+      // Catch network-level crashes
+      if (error) throw new Error("Network Error: Could not reach the execution node.");
+      
+      // Catch specific database errors returned by our Edge Function
+      if (data && data.error) throw new Error(data.error);
       
       setUsers(users.filter(u => u.id !== id));
       if (showToast) showToast('Target successfully purged from the network.', 'success');
+      
     } catch (err) {
       console.error("Purge Error:", err);
+      // This will now print the EXACT database issue on your screen
       if (showToast) showToast(`Purge Failed: ${err.message}`, 'error');
     }
   }
-
-  if (loading) return (
-    <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Loading identities...</div>
-    </div>
-  );
 
   return (
     <div style={S.pageWrapper}>
