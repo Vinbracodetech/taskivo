@@ -21,7 +21,7 @@ import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
 import CreatorApprovals from "./pages/CreatorApprovals.jsx";
 
 // Static & Admin Pages
-import { About, Terms, Privacy, Disclaimer } from "./pages/StaticPages.jsx";
+import { About, Terms, Privacy, Disclaimer, DeleteAccount } from "./pages/StaticPages.jsx";
 import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
 import {
   AdminOverview,
