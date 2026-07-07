@@ -96,34 +96,41 @@ export default function Dashboard({ user, navigate, showToast }) {
     try {
       if (!editForm.full_name) throw new Error("Full name is required");
       
-      // 🔥 FIX: Added .select().single() to force error catching on blocked RLS policies
+      // 🔥 FIX 1: Convert empty strings to null to prevent "Duplicate Account" crashes
+      const safeAccount = editForm.payout_account?.trim() === '' ? null : editForm.payout_account?.trim();
+      const safeBank = editForm.payout_bank_name?.trim() === '' ? null : editForm.payout_bank_name?.trim();
+      const safeAccountName = editForm.payout_account_name?.trim() === '' ? null : editForm.payout_account_name?.trim();
+
       const { data, error } = await supabase
         .from('profiles')
         .update({ 
           full_name: editForm.full_name,
-          payout_bank_name: editForm.payout_bank_name,
-          payout_account: editForm.payout_account,
-          payout_account_name: editForm.payout_account_name,
+          payout_bank_name: safeBank,
+          payout_account: safeAccount,
+          payout_account_name: safeAccountName,
           local_currency: editForm.local_currency 
         })
         .eq('id', user.id)
-        .select()
-        .single();
-      
+        .select(); // Removed .single() to prevent it from crashing the error handler
+
       if (error) {
-        if (error.code === '23505' && error.message.includes('payout_account')) {
-           throw new Error("This account number is already registered.");
-        }
+        if (error.code === '23505') throw new Error("This account number is already registered to another user.");
         throw new Error(`Database Error: ${error.message}`);
       }
       
-      if (showToast) showToast('Profile updated successfully! Syncing network...', 'success');
+      // 🔥 FIX 2: Explicitly catch RLS policy blocks
+      if (!data || data.length === 0) {
+        throw new Error("Supabase RLS blocked the save. You need a SELECT policy.");
+      }
+      
+      if (showToast) showToast('Profile updated successfully!', 'success');
       setShowEditModal(false);
 
-      // 🔥 FIX: Force a hard sync with App.jsx to reflect the new database state
+      // Force a hard sync with App.jsx to reflect the new database state
       setTimeout(() => window.location.reload(), 1500);
 
     } catch (err) {
+      console.error("Save Error:", err);
       if (showToast) showToast(err.message, 'error');
       else alert(err.message);
     } finally {
