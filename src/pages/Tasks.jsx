@@ -22,6 +22,8 @@ export default function Tasks({ session, navigate }) {
 
   // --- ADMOB NATIVE BRIDGE LOGIC ---
   useEffect(() => {
+    if (!user) return;
+
     window.onAdRewardSuccess = async (points) => {
       // 1. INSTANT FRONTEND LOCK: Instantly disables the button so they cannot spam click
       localStorage.setItem('admob_last_watched', Date.now().toString());
@@ -62,20 +64,26 @@ export default function Tasks({ session, navigate }) {
     };
   }, [user]);
 
+  // --- MAIN SYNC & LIFECYCLE LOGIC ---
   useEffect(() => {
     if (!user) return;
+    
+    // Check verification status, but DO NOT return early so listeners still attach!
     if (!user.payout_account || !user.payout_bank_name) {
       setNeedsPayoutVerification(true);
       setLoading(false);
-      return;
+    } else {
+      fetchMarketplace();
     }
     
-    fetchMarketplace();
-
+    // Listeners are now always attached securely
     const handleSilentSync = () => {
-      fetchMarketplace(true);
-      setToastMessage('+ Yield Secured! Network balances synchronized.');
-      setTimeout(() => setToastMessage(''), 4000); 
+      // Only fetch if they aren't stuck on the payout screen
+      if (user.payout_account && user.payout_bank_name) {
+        fetchMarketplace(true);
+        setToastMessage('+ Yield Secured! Network balances synchronized.');
+        setTimeout(() => setToastMessage(''), 4000); 
+      }
     };
 
     window.addEventListener('taskivo_points_updated', handleSilentSync);
@@ -85,7 +93,7 @@ export default function Tasks({ session, navigate }) {
       window.removeEventListener('taskivo_points_updated', handleSilentSync);
       window.removeEventListener('focus', handleSilentSync);
     };
-  }, [user]);
+  }, [user, needsPayoutVerification]);
 
   async function fetchMarketplace(isSilent = false) {
     try {
@@ -140,11 +148,15 @@ export default function Tasks({ session, navigate }) {
           }
       }
 
+      // --- RECYCLING LOOP FIX ---
       const readSlugs = [];
       (allBlogReadsRes.data || []).forEach(b => {
-        readSlugs.push(b.post_slug);
         const completedAt = new Date(b.created_at);
-        if (completedAt >= twentyFourHoursAgo) intCount++; 
+        // Only hide the post if it was read within the last 24 hours
+        if (completedAt >= twentyFourHoursAgo) {
+          intCount++; 
+          readSlugs.push(b.post_slug);
+        }
       });
 
       setQuotas({ videos: vCount, seoBlogs: seoCount, internalBlogs: intCount, premium: pCount, nativeAds: nativeCount });
@@ -203,9 +215,11 @@ export default function Tasks({ session, navigate }) {
         if (error.code === '23505') throw new Error("This payout channel is already registered to another user.");
         throw error;
       }
+      // Properly update state instead of just mutating
       user.payout_account = payoutForm.account_number;
       user.payout_bank_name = payoutForm.bank_name;
       user.payout_account_name = payoutForm.account_name;
+      
       setNeedsPayoutVerification(false);
       fetchMarketplace();
     } catch (err) {
@@ -484,10 +498,11 @@ export default function Tasks({ session, navigate }) {
                       <div style={{ fontSize: 20, fontWeight: 800, color: isLocked ? 'var(--slate)' : isInternalStyle ? 'var(--lime)' : 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>+{task.reward_points} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500 }}>PTS</span></div>
                     </div>
                     
-                    {cooldowns[task.id] ? (
-                      <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]} WAIT</button>
-                    ) : quotaHit ? (
+                    {/* BUTTON HIERARCHY FIX: Quota limit shows first, then the 60M cooldown */}
+                    {quotaHit ? (
                       <button disabled style={S.btnLocked}>LIMIT REACHED</button>
+                    ) : cooldowns[task.id] ? (
+                      <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]} WAIT</button>
                     ) : (
                       <button onClick={() => {
                           if (task.is_native_ad) {
