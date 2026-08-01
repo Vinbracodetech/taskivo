@@ -286,17 +286,22 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         </div>
 
-        <div style={{ ...S.premiumCard, marginBottom: 48, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1 }}>
+        <div style={{ ...S.premiumCard, marginBottom: 48, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1, opacity: 0.7 }}>
           <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--gold)', color: 'var(--gold)', background: 'rgba(255,215,0,0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
-              ✦ VIP Network Bonus
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--slate)', color: 'var(--slate)', background: 'rgba(255,255,255,0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
+              ✦ VIP Network Bonus (Pending)
             </div>
-            {/* UPDATED REFERRAL TEXT HERE */}
-            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Expand Your Network. Earn 20 Points.</h2>
+            
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Referral System Coming Soon</h2>
             <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: 0 }}>
-              Distribute your unique cryptographic invite link. When a new earner registers using your link, they instantly receive a 10 PTS starter bonus, and your account is instantly credited with 20 PTS.
+              We are currently optimizing our invite system. The referral network is temporarily paused pending fixes, but will be back online soon!
             </p>
           </div>
+          
+          <button disabled style={{ position: 'relative', zIndex: 2, background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 100, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', backdropFilter: 'blur(5px)' }}>
+            CURRENTLY UNAVAILABLE
+          </button>
+        </div>
           
           <button onClick={copyReferralLink} style={{ position: 'relative', zIndex: 2, background: referralCopied ? 'rgba(255,255,255,0.05)' : 'rgba(255,215,0,0.1)', color: referralCopied ? 'var(--ink)' : 'var(--gold)', border: `1px solid ${referralCopied ? 'rgba(255,255,255,0.1)' : 'var(--gold)'}`, borderRadius: 100, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'all 0.3s', backdropFilter: 'blur(5px)' }}>
             {referralCopied ? 'LINK COPIED ✓' : 'COPY SECURE LINK'}
