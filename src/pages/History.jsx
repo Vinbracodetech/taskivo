@@ -70,15 +70,15 @@ export default function History({ session }) {
             }));
           }
 
-          // 2. Inject Internal Blog Reads
+          // 2. Inject Internal Blog Reads (Internal Intel)
           if (blogRes.status === 'fulfilled' && blogRes.value.data) {
             mergedTimeline.push(...blogRes.value.data.map(d => ({
               id: d.id,
               created_at: d.created_at,
               _recordType: 'official_blog',
-              _title: `Taskivo Intel: ${d.post_slug.replace(/-/g, ' ')}`,
-              _pts: 10,
-              _icon: '📄'
+              _title: `Internal Intel: ${d.post_slug.replace(/-/g, ' ')}`,
+              _pts: 3, // FIXED: Now accurately reflects exactly 3 points
+              _icon: '🎯' // UPDATED: Custom icon to distinguish Intel from standard blogs
             })));
           }
 
