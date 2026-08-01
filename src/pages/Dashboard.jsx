@@ -111,7 +111,7 @@ export default function Dashboard({ user, navigate, showToast }) {
           local_currency: editForm.local_currency 
         })
         .eq('id', user.id)
-        .select(); // Removed .single() to prevent it from crashing the error handler
+        .select();
 
       if (error) {
         if (error.code === '23505') throw new Error("This account number is already registered to another user.");
@@ -286,6 +286,7 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         </div>
 
+        {/* REVISED REFERRAL SECTION */}
         <div style={{ ...S.premiumCard, marginBottom: 48, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1, opacity: 0.7 }}>
           <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--slate)', color: 'var(--slate)', background: 'rgba(255,255,255,0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
@@ -300,11 +301,6 @@ export default function Dashboard({ user, navigate, showToast }) {
           
           <button disabled style={{ position: 'relative', zIndex: 2, background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 100, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', backdropFilter: 'blur(5px)' }}>
             CURRENTLY UNAVAILABLE
-          </button>
-        </div>
-          
-          <button onClick={copyReferralLink} style={{ position: 'relative', zIndex: 2, background: referralCopied ? 'rgba(255,255,255,0.05)' : 'rgba(255,215,0,0.1)', color: referralCopied ? 'var(--ink)' : 'var(--gold)', border: `1px solid ${referralCopied ? 'rgba(255,255,255,0.1)' : 'var(--gold)'}`, borderRadius: 100, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'all 0.3s', backdropFilter: 'blur(5px)' }}>
-            {referralCopied ? 'LINK COPIED ✓' : 'COPY SECURE LINK'}
           </button>
         </div>
 
