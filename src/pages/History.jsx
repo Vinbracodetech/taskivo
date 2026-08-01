@@ -70,15 +70,15 @@ export default function History({ session }) {
             }));
           }
 
-          // 2. Inject Internal Blog Reads (Internal Intel)
+          // 2. Inject Internal Blog Reads (Internal Intel - FIXED 3 PTS)
           if (blogRes.status === 'fulfilled' && blogRes.value.data) {
             mergedTimeline.push(...blogRes.value.data.map(d => ({
               id: d.id,
               created_at: d.created_at,
               _recordType: 'official_blog',
               _title: `Internal Intel: ${d.post_slug.replace(/-/g, ' ')}`,
-              _pts: 3, // FIXED: Now accurately reflects exactly 3 points
-              _icon: '🎯' // UPDATED: Custom icon to distinguish Intel from standard blogs
+              _pts: 3, 
+              _icon: '🎯'
             })));
           }
 
@@ -263,6 +263,7 @@ export default function History({ session }) {
                         <div style={S.iconBox(bgColor)}>{item._icon}</div>
                         <div>
                           <div style={{ fontSize: 10, color: tagColor, fontWeight: 800, textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.5px' }}>{tagText}</div>
+                          {/* 🔥 FIXED DUPLICATE STYLE TAG HERE 🔥 */}
                           <div style={{ ...S.title, maxWidth: 220 }} className="text-truncate">{item._title}</div>
                           <div style={S.date}>{formatDate(item.created_at)}</div>
                         </div>
