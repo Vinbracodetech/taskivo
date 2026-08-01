@@ -165,6 +165,9 @@ export function AdminOverview({ navigate, showToast }) {
           <div onClick={() => navigate('admin-notifications')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}>
             <h3 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: 18, fontFamily: "'Inter', sans-serif" }}>Push Notifications</h3>
           </div>
+          <div onClick={() => navigate('admin-blog')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}>
+            <h3 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: 18, fontFamily: "'Inter', sans-serif" }}>Content Engine</h3>
+          </div>
         </div>
 
         {/* 🔥 ADMIN SUPPORT DESK 🔥 */}
@@ -365,7 +368,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
     url: '',
     search_keyword: '',
     reward_points: 50,
-    watch_duration: 30 // Added custom watch duration input
+    watch_duration: 30
   });
 
   useEffect(() => {
@@ -623,7 +626,6 @@ export function AdminTasks({ showToast }) {
   const [scriptModal, setScriptModal] = useState({ isOpen: false, task: null });
   const [copied, setCopied] = useState(false);
   
-  // 🔥 UPDATED FULL CAMPAIGN EDITOR STATES 🔥
   const [editModal, setEditModal] = useState({ isOpen: false, task: null });
   const [editForm, setEditForm] = useState({ 
     title: '', url: '', platform: '', reward_points: '', watch_duration: '', target_views: '', search_keyword: '' 
@@ -678,7 +680,6 @@ export function AdminTasks({ showToast }) {
     }
   }
 
-  // 🔥 FULL CAMPAIGN EDITOR LOGIC 🔥
   function openEditModal(task) {
     setEditForm({ 
       title: task.title || '',
@@ -822,7 +823,6 @@ export function AdminTasks({ showToast }) {
                   </button>
                 )}
                 
-                {/* 🔥 EDIT CAMPAIGN BUTTON 🔥 */}
                 <button onClick={() => openEditModal(t)} style={S.btnAction}>Edit</button>
                 
                 {t.status !== 'active' && <button onClick={() => updateStatus(t.id, 'active')} style={S.btnSuccess}>Activate</button>}
@@ -1003,8 +1003,8 @@ export function AdminWithdrawals({ showToast }) {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
-  const limit = 50; // Load 50 at a time to prevent crashing
-  const conversionRate = 1; // 1 Point = 1 Naira
+  const limit = 50; 
+  const conversionRate = 1; 
 
   useEffect(() => { fetchWithdrawals(0, false); }, []);
 
@@ -1153,7 +1153,6 @@ export function AdminWithdrawals({ showToast }) {
                 );
               })}
               
-              {/* 🔥 LOAD MORE BUTTON 🔥 */}
               {hasMore && (
                 <div style={{ padding: 24, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                   <button 
@@ -1183,16 +1182,12 @@ export function AdminNotifications({ showToast }) {
     
     setLoading(true);
     try {
-      // For now, we simulate logging the push request to a backend table.
-      // To physically make phones buzz, you'll need the expo-notifications library installed in App.jsx
       const { error } = await supabase.from('push_history').insert({
         title: form.title,
         message: form.message,
         sent_at: new Date().toISOString()
       });
       
-      // We log it even if the table doesn't exist yet, we will catch the error and show the toast anyway 
-      // since the expo setup comes later.
       if (showToast) showToast('Push Notification Broadcasted to all devices!', 'success');
       setForm({ title: '', message: '' });
     } catch (err) {
@@ -1245,6 +1240,179 @@ export function AdminNotifications({ showToast }) {
               The control panel is ready. To make the physical devices receive these alerts, we will need to install <code>expo-notifications</code> inside the earner app and connect it to a Supabase Edge Function to route the messages to Apple and Google servers.
             </p>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 6. ADMIN BLOG (CONTENT ENGINE) MODULE ──
+export function AdminBlog({ showToast }) {
+  const [form, setForm] = useState({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
+  const [loading, setLoading] = useState(false);
+  const [posts, setPosts] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+
+  useEffect(() => { fetchPosts(); }, []);
+
+  async function fetchPosts() {
+    try {
+      const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+      setPosts(data || []);
+    } catch (err) {
+      if (showToast) showToast('Failed to load article ledger.', 'error');
+    }
+  }
+
+  function handleTitleChange(e) {
+    const newTitle = e.target.value;
+    if (!editingId) {
+      const autoSlug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      setForm({ ...form, title: newTitle, slug: autoSlug });
+    } else {
+      setForm({ ...form, title: newTitle });
+    }
+  }
+
+  function wrapText(tag) {
+    setForm({ ...form, content: form.content + `\n<${tag}></${tag}>\n` });
+  }
+
+  async function savePost() {
+    if (!form.title || !form.content) {
+      if (showToast) showToast('Title and Content are required.', 'error');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      if (editingId) {
+        const { error } = await supabase.from('posts').update(form).eq('id', editingId);
+        if (error) throw error;
+        if (showToast) showToast('Article successfully updated.', 'success');
+      } else {
+        const { error } = await supabase.from('posts').insert([form]);
+        if (error) throw error;
+        if (showToast) showToast(`Article saved as ${form.status}.`, 'success');
+      }
+      resetForm();
+      fetchPosts(); 
+    } catch (err) {
+      if (showToast) showToast('Failed to save article. Check slug uniqueness.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function startEdit(post) {
+    setEditingId(post.id);
+    setForm({ title: post.title, slug: post.slug, meta_desc: post.meta_desc, content: post.content, category: post.category, status: post.status });
+    window.scrollTo(0, 0); 
+  }
+
+  function resetForm() {
+    setEditingId(null);
+    setForm({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
+  }
+
+  async function deletePost(id) {
+    if (!window.confirm('CRITICAL: Permanently delete this article?')) return;
+    try {
+      const { error } = await supabase.from('posts').delete().eq('id', id);
+      if (error) throw error;
+      if (showToast) showToast('Article permanently deleted.', 'success');
+      fetchPosts();
+    } catch (err) {
+      if (showToast) showToast('Failed to delete article.', 'error');
+    }
+  }
+
+  return (
+    <div style={S.pageWrapper}>
+      <div style={S.page}>
+        <h1 style={S.header}>Content Engine</h1>
+        <p style={S.subHeader}>{editingId ? 'Modifying existing article.' : 'Deploy SEO-optimized articles.'}</p>
+
+        <div style={S.glassCard}>
+          <input style={{ ...S.input, marginBottom: 16 }} placeholder="Article Meta Title" value={form.title} onChange={handleTitleChange} />
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
+            <input style={S.input} placeholder="url-slug" value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} disabled={editingId} />
+            <select style={S.select} value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+              <option value="earner" style={{ color: '#000' }}>Target: Earners</option>
+              <option value="creator" style={{ color: '#000' }}>Target: B2B Creators</option>
+            </select>
+          </div>
+
+          <input style={{ ...S.input, marginBottom: 16 }} placeholder="Meta Description (max 160 chars)" value={form.meta_desc} onChange={e => setForm({...form, meta_desc: e.target.value})} maxLength={160} />
+          
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12, overflowX: 'auto' }}>
+            <button onClick={() => wrapText('h2')} style={S.btnAction}>+ Header</button>
+            <button onClick={() => wrapText('p')} style={S.btnAction}>+ Paragraph</button>
+            <button onClick={() => wrapText('strong')} style={S.btnAction}>+ Bold</button>
+            <button onClick={() => wrapText('ul')} style={S.btnAction}>+ List</button>
+          </div>
+
+          <textarea 
+            style={{ ...S.input, minHeight: 300, fontFamily: 'monospace', resize: 'vertical' }} 
+            placeholder="Write your article here..." 
+            value={form.content} 
+            onChange={e => setForm({...form, content: e.target.value})} 
+          />
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <select style={{ ...S.select, width: 'auto' }} value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                <option value="draft" style={{ color: '#000' }}>Save as Draft</option>
+                <option value="published" style={{ color: '#000' }}>Publish Live</option>
+              </select>
+              {editingId && <button onClick={resetForm} style={S.btnAction}>Cancel Edit</button>}
+            </div>
+            
+            <button onClick={savePost} disabled={loading} style={{ background: '#D4AF37', border: 'none', color: '#000', padding: '12px 24px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', transition: 'opacity 0.2s' }}>
+              {loading ? 'SAVING...' : editingId ? 'UPDATE ARTICLE' : 'DEPLOY ARTICLE'}
+            </button>
+          </div>
+        </div>
+
+        <h2 style={{ ...S.header, fontSize: 20, marginTop: 48, marginBottom: 16 }}>Article Ledger</h2>
+        <div style={S.tableContainer}>
+          <div style={{ ...S.tableHeader, gridTemplateColumns: '2fr 1fr 1fr 1fr' }} className="hide-on-mobile">
+            <span>Title</span>
+            <span>Category</span>
+            <span>Status</span>
+            <span style={{ textAlign: 'right' }}>Actions</span>
+          </div>
+
+          {posts.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>No articles found.</div>
+          ) : (
+            posts.map(post => (
+              <div key={post.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+                <div>
+                  <div style={{ fontSize: 14, color: '#ffffff', fontWeight: 600, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>{post.title}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>/{post.slug}</div>
+                </div>
+                
+                <div>
+                  <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', background: post.category === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: post.category === 'creator' ? '#D4AF37' : '#a8ff3e' }}>
+                    {post.category}
+                  </span>
+                </div>
+                
+                <div>
+                  <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: post.status === 'published' ? 'rgba(168,255,62,0.1)' : 'rgba(255,255,255,0.05)', color: post.status === 'published' ? '#a8ff3e' : 'rgba(255,255,255,0.6)', border: `1px solid ${post.status === 'published' ? 'rgba(168,255,62,0.3)' : 'rgba(255,255,255,0.1)'}` }}>
+                    {post.status}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                  <button onClick={() => startEdit(post)} style={S.btnAction}>Edit</button>
+                  <button onClick={() => deletePost(post.id)} style={S.btnDanger}>Drop</button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
