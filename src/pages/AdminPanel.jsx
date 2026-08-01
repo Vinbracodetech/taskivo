@@ -1088,6 +1088,104 @@ export function AdminWithdrawals({ showToast }) {
   if (loading && !loadingMore) return (
     <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Loading financial ledger...</div>
+// ── 4. ADMIN WITHDRAWALS MODULE (PAGINATED & MULTI-CURRENCY) ──
+export function AdminWithdrawals({ showToast }) {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
+  const limit = 50; 
+  
+  // 🔥 THE NEW FINANCIAL LOGIC 🔥
+  const usdPerPoint = 1.5 / 2000; // 2000 points = $1.50 ($0.00075 per point)
+  const usdToNairaRate = 1500; // Easily update this when the NGN exchange rate fluctuates
+
+  useEffect(() => { fetchWithdrawals(0, false); }, []);
+
+  async function fetchWithdrawals(currentPage = 0, isLoadMore = false) {
+    try {
+      if (isLoadMore) setLoadingMore(true);
+      else setLoading(true);
+
+      const from = currentPage * limit;
+      const to = from + limit - 1;
+
+      const { data } = await supabase
+        .from('withdrawals')
+        .select(`*, profiles!inner(email)`)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (data) {
+        if (isLoadMore) {
+          setRequests(prev => [...prev, ...data]);
+        } else {
+          setRequests(data);
+        }
+        setHasMore(data.length === limit);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }
+
+  function loadMore() {
+    if (!hasMore || loadingMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchWithdrawals(nextPage, true);
+  }
+
+  async function processRequest(req, action) {
+    if (!window.confirm(`Are you sure you want to ${action} this payout for ${req.amount} PTS?`)) return;
+
+    try {
+      const newStatus = action === 'approve' ? 'approved' : 'rejected';
+      
+      if (action === 'reject') {
+        const { data: userProfile, error: fetchError } = await supabase.from('profiles').select('points').eq('id', req.user_id).single();
+        if (fetchError) throw new Error("Cannot read earner balance: " + fetchError.message);
+        if (!userProfile) throw new Error("Earner profile not found in database.");
+
+        const refundAmount = parseInt(req.amount, 10);
+        const currentBalance = parseInt(userProfile.points, 10) || 0;
+        
+        const { data: updatedProfile, error: refundError } = await supabase.from('profiles').update({ points: currentBalance + refundAmount }).eq('id', req.user_id).select();
+        if (refundError) throw new Error("Database blocked the refund: " + refundError.message);
+        if (!updatedProfile || updatedProfile.length === 0) throw new Error("RLS Blocked the refund!");
+      }
+
+      const { error: statusError } = await supabase.from('withdrawals').update({ status: newStatus }).eq('id', req.id);
+      if (statusError) throw new Error("Failed to update ledger status: " + statusError.message);
+
+      setRequests(requests.map(r => r.id === req.id ? { ...r, status: newStatus } : r));
+      if (showToast) showToast(action === 'reject' ? 'Payout denied & points refunded.' : 'Payout authorized.', 'success');
+      
+    } catch (err) {
+      alert("ACTION FAILED! Reason: " + err.message);
+      if (showToast) showToast(`Failed to process payout.`, 'error');
+    }
+  }
+
+  async function copyBankDetails(req) {
+    const usdAmount = req.amount * usdPerPoint;
+    const nairaAmount = (usdAmount * usdToNairaRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    
+    const clipboardText = `Name: ${req.account_name}\nBank: ${req.bank_name}\nAccount: ${req.account_number}\nAmount to Pay: ₦${nairaAmount} ($${usdAmount.toFixed(2)})`;
+    try {
+      await navigator.clipboard.writeText(clipboardText);
+      if (showToast) showToast('Bank details copied to clipboard!', 'info');
+    } catch (err) {
+      if (showToast) showToast('Failed to copy details.', 'error');
+    }
+  }
+
+  if (loading && !loadingMore) return (
+    <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Loading financial ledger...</div>
     </div>
   );
 
@@ -1110,7 +1208,9 @@ export function AdminWithdrawals({ showToast }) {
           ) : (
             <>
               {requests.map(req => {
-                const nairaValue = (req.amount * conversionRate).toLocaleString();
+                // Real-time calculation showing both currencies
+                const usdValue = req.amount * usdPerPoint;
+                const nairaValue = (usdValue * usdToNairaRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
 
                 return (
                   <div key={req.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
@@ -1129,7 +1229,7 @@ export function AdminWithdrawals({ showToast }) {
                         {req.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>PTS</span>
                       </div>
                       <div style={{ fontSize: 14, fontWeight: 800, color: '#a8ff3e', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
-                        ≈ ₦{nairaValue}
+                        ≈ ₦{nairaValue} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>(${usdValue.toFixed(2)})</span>
                       </div>
                       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{new Date(req.created_at).toLocaleDateString()}</div>
                     </div>
