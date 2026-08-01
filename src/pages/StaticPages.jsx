@@ -144,7 +144,7 @@ export function Disclaimer() {
       <h1 style={S.title}>Platform Disclaimer & Limitation of Liability</h1>
       <div style={{ height: 1, background: 'var(--line)', margin: '32px 0' }} />
       
-      <div style={S.accentBlock} style={{...S.accentBlock, borderLeft: '4px solid #ef4444', background: 'rgba(239, 68, 68, 0.05)'}}>
+      <div style={{...S.accentBlock, borderLeft: '4px solid #ef4444', background: 'rgba(239, 68, 68, 0.05)'}}>
         <p style={{...S.p, margin: 0, color: 'var(--ink)', fontWeight: 600}}>Taskivo provides an infrastructure for micro-earning and engagement routing. We do not guarantee fixed incomes, full-time employment, or specific campaign outcomes for businesses.</p>
       </div>
       
