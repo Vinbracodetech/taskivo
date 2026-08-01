@@ -1012,6 +1012,73 @@ export function AdminWithdrawals({ showToast }) {
     <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Loading financial ledger...</div>
     </div>
+// ── 4. ADMIN WITHDRAWALS MODULE ──
+export function AdminWithdrawals({ showToast }) {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // 1 Point = 1 Naira
+  const conversionRate = 1;
+
+  useEffect(() => { fetchWithdrawals(); }, []);
+
+  async function fetchWithdrawals() {
+    try {
+      setLoading(true);
+      const { data } = await supabase.from('withdrawals').select(`*, profiles!inner(email)`).order('created_at', { ascending: false });
+      setRequests(data || []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function processRequest(req, action) {
+    if (!window.confirm(`Are you sure you want to ${action} this payout for ${req.amount} PTS?`)) return;
+
+    try {
+      const newStatus = action === 'approve' ? 'approved' : 'rejected';
+      
+      if (action === 'reject') {
+        const { data: userProfile, error: fetchError } = await supabase.from('profiles').select('points').eq('id', req.user_id).single();
+        if (fetchError) throw new Error("Cannot read earner balance: " + fetchError.message);
+        if (!userProfile) throw new Error("Earner profile not found in database.");
+
+        const refundAmount = parseInt(req.amount, 10);
+        const currentBalance = parseInt(userProfile.points, 10) || 0;
+        
+        const { data: updatedProfile, error: refundError } = await supabase.from('profiles').update({ points: currentBalance + refundAmount }).eq('id', req.user_id).select();
+        if (refundError) throw new Error("Database blocked the refund: " + refundError.message);
+        if (!updatedProfile || updatedProfile.length === 0) throw new Error("RLS Blocked the refund!");
+      }
+
+      const { error: statusError } = await supabase.from('withdrawals').update({ status: newStatus }).eq('id', req.id);
+      if (statusError) throw new Error("Failed to update ledger status: " + statusError.message);
+
+      setRequests(requests.map(r => r.id === req.id ? { ...r, status: newStatus } : r));
+      if (showToast) showToast(action === 'reject' ? 'Payout denied & points refunded.' : 'Payout authorized.', 'success');
+      
+    } catch (err) {
+      alert("ACTION FAILED! Reason: " + err.message);
+      if (showToast) showToast(`Failed to process payout.`, 'error');
+    }
+  }
+
+  async function copyBankDetails(req) {
+    // Math logic for Naira formatting in clipboard
+    const nairaAmount = (req.amount * conversionRate).toLocaleString();
+    const clipboardText = `Name: ${req.account_name}\nBank: ${req.bank_name}\nAccount: ${req.account_number}\nAmount to Pay: ₦${nairaAmount}`;
+    try {
+      await navigator.clipboard.writeText(clipboardText);
+      if (showToast) showToast('Bank details copied to clipboard!', 'info');
+    } catch (err) {
+      if (showToast) showToast('Failed to copy details.', 'error');
+    }
+  }
+
+  if (loading) return (
+    <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Loading financial ledger...</div>
+    </div>
   );
 
   return (
@@ -1032,7 +1099,8 @@ export function AdminWithdrawals({ showToast }) {
             <div style={{ padding: 40, textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>No withdrawal requests found.</div>
           ) : (
             requests.map(req => {
-              const fiatValue = (req.amount * conversionRate).toFixed(2);
+              // Real-time calculation for display
+              const nairaValue = (req.amount * conversionRate).toLocaleString();
 
               return (
                 <div key={req.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
@@ -1050,8 +1118,9 @@ export function AdminWithdrawals({ showToast }) {
                     <div style={{ fontSize: 16, fontWeight: 800, color: '#D4AF37', fontFamily: "'Inter', sans-serif" }}>
                       {req.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>PTS</span>
                     </div>
+                    {/* FIAT DISPLAY UPDATED TO NAIRA */}
                     <div style={{ fontSize: 14, fontWeight: 800, color: '#a8ff3e', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
-                      ≈ ${fiatValue}
+                      ≈ ₦{nairaValue}
                     </div>
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{new Date(req.created_at).toLocaleDateString()}</div>
                   </div>
@@ -1080,7 +1149,6 @@ export function AdminWithdrawals({ showToast }) {
     </div>
   );
 }
-
 // ── 5. ADMIN BLOG (CONTENT ENGINE) MODULE ──
 export function AdminBlog({ showToast }) {
   const [form, setForm] = useState({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
