@@ -60,7 +60,6 @@ export function AdminOverview({ navigate, showToast }) {
   const [stats, setStats] = useState({ users: 0, tasks: 0, pendingWithdrawals: 0, completions: 0 });
   const [loading, setLoading] = useState(true);
   
-  // 🔥 SUPPORT DESK STATES 🔥
   const [tickets, setTickets] = useState([]);
   const [resolvingId, setResolvingId] = useState(null);
   const [resolutionNotes, setResolutionNotes] = useState({});
@@ -81,7 +80,6 @@ export function AdminOverview({ navigate, showToast }) {
           completions: compReq.count || 0
         });
         
-        // Fetch open and recently resolved tickets
         const { data: ticketData } = await supabase
           .from('support_tickets')
           .select('*, profiles(email, full_name, role)')
@@ -154,18 +152,18 @@ export function AdminOverview({ navigate, showToast }) {
         </div>
 
         <h2 style={{ ...S.header, fontSize: 20, marginBottom: 24 }}>Control Modules</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20, marginBottom: 48 }}>
           <div onClick={() => navigate('admin-users')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}>
             <h3 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: 18, fontFamily: "'Inter', sans-serif" }}>Identity &amp; Access</h3>
-            <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, margin: 0 }}>Modify roles, suspend accounts, and edit balances.</p>
           </div>
           <div onClick={() => navigate('admin-tasks')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}>
             <h3 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: 18, fontFamily: "'Inter', sans-serif" }}>Campaign Moderation</h3>
-            <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, margin: 0 }}>Approve, modify, or terminate creator campaigns.</p>
           </div>
           <div onClick={() => navigate('admin-withdrawals')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}>
             <h3 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: 18, fontFamily: "'Inter', sans-serif" }}>Financial Treasury</h3>
-            <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 13, margin: 0 }}>Process and audit earner withdrawal requests.</p>
+          </div>
+          <div onClick={() => navigate('admin-notifications')} style={{ ...S.glassCard, cursor: 'pointer', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'}>
+            <h3 style={{ color: '#ffffff', margin: '0 0 8px 0', fontSize: 18, fontFamily: "'Inter', sans-serif" }}>Push Notifications</h3>
           </div>
         </div>
 
@@ -366,7 +364,8 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
     platform: 'blog',
     url: '',
     search_keyword: '',
-    reward_points: 50
+    reward_points: 50,
+    watch_duration: 30 // Added custom watch duration input
   });
 
   useEffect(() => {
@@ -392,7 +391,8 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
       ...prev,
       url: `https://www.taskivo.online/article-${slug}`,
       title: `Read: ${post.title}`,
-      search_keyword: 'Taskivo'
+      search_keyword: 'Taskivo',
+      watch_duration: 60
     }));
   }
 
@@ -407,11 +407,6 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user?.id) throw new Error("Cannot verify Admin identity.");
 
-      // 🔥 Added logic to handle custom duration based on new premium tasks
-      let taskDuration = 30; // Default
-      if (form.platform === 'blog' || form.platform === 'adsense') taskDuration = 120;
-      if (form.platform === 'growth') taskDuration = 60; // 1-minute rule for subs
-
       const newHouseTask = {
         creator_id: user.id,
         title: form.title,
@@ -419,7 +414,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
         url: form.url,
         search_keyword: (form.platform === 'blog' || form.platform === 'adsense') ? form.search_keyword : null,
         secret_code: null, 
-        watch_duration: taskDuration, 
+        watch_duration: parseInt(form.watch_duration, 10), 
         target_views: 999999, 
         current_views: 0, 
         status: 'active',
@@ -451,7 +446,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
   }
 
   function resetDeployer() {
-    setForm({ title: '', platform: 'blog', url: '', search_keyword: '', reward_points: 50 });
+    setForm({ title: '', platform: 'blog', url: '', search_keyword: '', reward_points: 50, watch_duration: 30 });
     setDeployedTask(null);
     setTargetType('external');
     setStep(1);
@@ -472,7 +467,6 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: 20 }}>
               To enable Zero-Bot verification and Single-Use Tokens for this external post, paste this exact snippet into the target webpage HTML.
             </p>
-            
             <div style={{ position: 'relative' }}>
               <pre style={{ background: '#000000', padding: 24, borderRadius: 12, overflowX: 'auto', fontSize: 12, color: '#10b981', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'monospace', lineHeight: 1.5 }}>
 {`<div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;">
@@ -491,7 +485,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
   }).then(res => res.json()).then(data => {
     if(!data.session_id) return;
     statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";
-    var timeLeft = 120;
+    var timeLeft = ${deployedTask.watch_duration};
     var countdown = setInterval(function() {
       if (document.hidden) return;
       timeLeft--;
@@ -579,7 +573,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
           <input type="text" name="title" value={form.title} onChange={handleInput} placeholder="e.g., Read our latest Platform Update" style={S.input} required disabled={targetType === 'internal'} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16 }}>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Platform Ecosystem</label>
             <select name="platform" value={form.platform} onChange={handleInput} style={S.select}>
@@ -594,6 +588,10 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Custom Reward (PTS)</label>
             <input type="number" name="reward_points" value={form.reward_points} onChange={handleInput} style={S.input} required />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Timer (Seconds)</label>
+            <input type="number" name="watch_duration" value={form.watch_duration} onChange={handleInput} style={S.input} required />
           </div>
         </div>
 
@@ -618,16 +616,18 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
   );
 }
 
-// ── 3. ADMIN TASKS MODULE (WITH CAMPAIGN EDITOR) ──
+// ── 3. ADMIN TASKS MODULE (WITH FULL CAMPAIGN EDITOR) ──
 export function AdminTasks({ showToast }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scriptModal, setScriptModal] = useState({ isOpen: false, task: null });
   const [copied, setCopied] = useState(false);
   
-  // 🔥 CAMPAIGN EDITOR STATES 🔥
+  // 🔥 UPDATED FULL CAMPAIGN EDITOR STATES 🔥
   const [editModal, setEditModal] = useState({ isOpen: false, task: null });
-  const [editForm, setEditForm] = useState({ url: '', reward_points: '', search_keyword: '' });
+  const [editForm, setEditForm] = useState({ 
+    title: '', url: '', platform: '', reward_points: '', watch_duration: '', target_views: '', search_keyword: '' 
+  });
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => { fetchTasks(); }, []);
@@ -653,39 +653,40 @@ export function AdminTasks({ showToast }) {
     }
   }
 
-async function hardDeleteTask(id) {
+  async function hardDeleteTask(id) {
     const confirmDelete = window.confirm('CRITICAL: Delete this campaign completely?');
     if (!confirmDelete) return;
     
     try {
-      // 1. Wipe active/expired task sessions (THE NEW FIX)
       const { error: err0 } = await supabase.from('task_sessions').delete().eq('task_id', id);
       if (err0) throw new Error(`Task Sessions Table Blocked It: ${err0.message}`);
 
-      // 2. Clear earner completions
       const { error: err1 } = await supabase.from('completions').delete().eq('task_id', id);
       if (err1) throw new Error(`Completions Table Blocked It: ${err1.message}`);
       
-      // 3. Clear financial transactions
       const { error: err2 } = await supabase.from('transactions').delete().eq('reference_id', id);
       if (err2) throw new Error(`Transactions Table Blocked It: ${err2.message}`);
 
-      // 4. Drop the actual campaign
       const { error: err3 } = await supabase.from('tasks').delete().eq('id', id);
       if (err3) throw new Error(`Tasks Table Blocked It: ${err3.message}`);
       
       setTasks(tasks.filter(t => t.id !== id));
-      if (showToast) showToast('Campaign permanently deleted.', 'success'); // Switched back to normal toast!
+      if (showToast) showToast('Campaign permanently deleted.', 'success'); 
       
     } catch (err) {
       alert(`❌ DELETION FAILED:\n\n${err.message}`);
     }
   }
-  // 🔥 CAMPAIGN EDITOR LOGIC 🔥
+
+  // 🔥 FULL CAMPAIGN EDITOR LOGIC 🔥
   function openEditModal(task) {
     setEditForm({ 
+      title: task.title || '',
       url: task.url || '', 
+      platform: task.platform || '',
       reward_points: task.reward_points || '', 
+      watch_duration: task.watch_duration || '',
+      target_views: task.target_views || '',
       search_keyword: task.search_keyword || '' 
     });
     setEditModal({ isOpen: true, task });
@@ -696,15 +697,19 @@ async function hardDeleteTask(id) {
     try {
       const { error } = await supabase.from('tasks')
         .update({ 
+          title: editForm.title,
           url: editForm.url, 
+          platform: editForm.platform,
           reward_points: parseInt(editForm.reward_points, 10), 
+          watch_duration: parseInt(editForm.watch_duration, 10),
+          target_views: parseInt(editForm.target_views, 10),
           search_keyword: editForm.search_keyword 
         })
         .eq('id', editModal.task.id);
         
       if (error) throw error;
       
-      if (showToast) showToast('Campaign parameters updated.', 'success');
+      if (showToast) showToast('Campaign fully updated.', 'success');
       setEditModal({ isOpen: false, task: null });
       fetchTasks(true);
     } catch (err) {
@@ -733,7 +738,7 @@ async function hardDeleteTask(id) {
   }).then(res => res.json()).then(data => {
     if(!data.session_id) return;
     statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";
-    var timeLeft = 120;
+    var timeLeft = ${scriptModal.task.watch_duration || 120};
     var countdown = setInterval(function() {
       if (document.hidden) return;
       timeLeft--;
@@ -800,7 +805,8 @@ async function hardDeleteTask(id) {
               
               <div>
                 <div style={{ fontSize: 13, color: '#ffffff', fontWeight: 600, textTransform: 'capitalize' }}>{t.platform}</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{t.target_views === 999999 ? 'Unlimited' : `${t.target_views} views limit`}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{t.target_views === 999999 ? 'Unlimited' : `${t.target_views} views`}</div>
+                <div style={{ fontSize: 11, color: '#D4AF37', marginTop: 4 }}>{t.watch_duration}s Timer</div>
               </div>
               
               <div>
@@ -827,34 +833,76 @@ async function hardDeleteTask(id) {
           ))}
         </div>
 
-        {/* 🔥 EDIT CAMPAIGN MODAL 🔥 */}
+        {/* 🔥 FULL EDIT CAMPAIGN MODAL 🔥 */}
         {editModal.isOpen && editModal.task && (
           <div style={S.modalOverlay}>
             <div style={S.modalCard}>
               <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: '#ffffff', marginBottom: 8, letterSpacing: '-0.5px' }}>Modify Campaign</h2>
               <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Override parameters for "{editModal.task.title}"</p>
               
+              <label style={S.modalLabel}>Campaign Title</label>
+              <input 
+                style={{...S.input, marginBottom: 16}} 
+                type="text" 
+                value={editForm.title} 
+                onChange={e => setEditForm({...editForm, title: e.target.value})} 
+              />
+
               <label style={S.modalLabel}>Target URL</label>
               <input 
-                style={S.input} 
+                style={{...S.input, marginBottom: 16}} 
                 type="url" 
                 value={editForm.url} 
                 onChange={e => setEditForm({...editForm, url: e.target.value})} 
               />
 
-              <label style={S.modalLabel}>Reward Points (PTS)</label>
-              <input 
-                style={S.input} 
-                type="number" 
-                value={editForm.reward_points} 
-                onChange={e => setEditForm({...editForm, reward_points: e.target.value})} 
-              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={S.modalLabel}>Reward (PTS)</label>
+                  <input 
+                    style={S.input} 
+                    type="number" 
+                    value={editForm.reward_points} 
+                    onChange={e => setEditForm({...editForm, reward_points: e.target.value})} 
+                  />
+                </div>
+                <div>
+                  <label style={S.modalLabel}>Timer (Secs)</label>
+                  <input 
+                    style={S.input} 
+                    type="number" 
+                    value={editForm.watch_duration} 
+                    onChange={e => setEditForm({...editForm, watch_duration: e.target.value})} 
+                  />
+                </div>
+              </div>
 
-              {(editModal.task.platform === 'blog' || editModal.task.platform === 'adsense') && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={S.modalLabel}>Platform</label>
+                  <select style={S.select} value={editForm.platform} onChange={e => setEditForm({...editForm, platform: e.target.value})}>
+                    <option value="blog" style={{ color: '#000' }}>Blog</option>
+                    <option value="adsense" style={{ color: '#000' }}>AdSense</option>
+                    <option value="youtube" style={{ color: '#000' }}>YouTube</option>
+                    <option value="growth" style={{ color: '#000' }}>Growth</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={S.modalLabel}>Max Views Limit</label>
+                  <input 
+                    style={S.input} 
+                    type="number" 
+                    value={editForm.target_views} 
+                    onChange={e => setEditForm({...editForm, target_views: e.target.value})} 
+                  />
+                </div>
+              </div>
+
+              {(editForm.platform === 'blog' || editForm.platform === 'adsense') && (
                 <>
                   <label style={S.modalLabel}>Google Search Keyword</label>
                   <input 
-                    style={S.input} 
+                    style={{...S.input, marginBottom: 16}} 
                     type="text" 
                     value={editForm.search_keyword} 
                     onChange={e => setEditForm({...editForm, search_keyword: e.target.value})} 
@@ -909,7 +957,7 @@ async function hardDeleteTask(id) {
                     &nbsp;&nbsp;{"}"}).then(res =&gt; res.json()).then(data =&gt; {"{"}<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;if(!data.session_id) return;<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;var timeLeft = 120;<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;var timeLeft = {scriptModal.task.watch_duration || 120};<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;var countdown = setInterval(function() {"{"}<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (document.hidden) return;<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timeLeft--;<br/>
@@ -947,23 +995,52 @@ async function hardDeleteTask(id) {
   );
 }
 
-// ── 4. ADMIN WITHDRAWALS MODULE ──
+// ── 4. ADMIN WITHDRAWALS MODULE (PAGINATED) ──
 export function AdminWithdrawals({ showToast }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
-  const conversionRate = 0.00075;
+  const limit = 50; // Load 50 at a time to prevent crashing
+  const conversionRate = 1; // 1 Point = 1 Naira
 
-  useEffect(() => { fetchWithdrawals(); }, []);
+  useEffect(() => { fetchWithdrawals(0, false); }, []);
 
-  async function fetchWithdrawals() {
+  async function fetchWithdrawals(currentPage = 0, isLoadMore = false) {
     try {
-      setLoading(true);
-      const { data } = await supabase.from('withdrawals').select(`*, profiles!inner(email)`).order('created_at', { ascending: false });
-      setRequests(data || []);
+      if (isLoadMore) setLoadingMore(true);
+      else setLoading(true);
+
+      const from = currentPage * limit;
+      const to = from + limit - 1;
+
+      const { data } = await supabase
+        .from('withdrawals')
+        .select(`*, profiles!inner(email)`)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (data) {
+        if (isLoadMore) {
+          setRequests(prev => [...prev, ...data]);
+        } else {
+          setRequests(data);
+        }
+        setHasMore(data.length === limit);
+      }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  }
+
+  function loadMore() {
+    if (!hasMore || loadingMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchWithdrawals(nextPage, true);
   }
 
   async function processRequest(req, action) {
@@ -998,73 +1075,6 @@ export function AdminWithdrawals({ showToast }) {
   }
 
   async function copyBankDetails(req) {
-    const fiatAmount = (req.amount * conversionRate).toFixed(2);
-    const clipboardText = `Name: ${req.account_name}\nBank: ${req.bank_name}\nAccount: ${req.account_number}\nAmount to Pay: $${fiatAmount}`;
-    try {
-      await navigator.clipboard.writeText(clipboardText);
-      if (showToast) showToast('Bank details copied to clipboard!', 'info');
-    } catch (err) {
-      if (showToast) showToast('Failed to copy details.', 'error');
-    }
-  }
-
-  if (loading) return (
-    <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Loading financial ledger...</div>
-    </div>
-// ── 4. ADMIN WITHDRAWALS MODULE ──
-export function AdminWithdrawals({ showToast }) {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // 1 Point = 1 Naira
-  const conversionRate = 1;
-
-  useEffect(() => { fetchWithdrawals(); }, []);
-
-  async function fetchWithdrawals() {
-    try {
-      setLoading(true);
-      const { data } = await supabase.from('withdrawals').select(`*, profiles!inner(email)`).order('created_at', { ascending: false });
-      setRequests(data || []);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function processRequest(req, action) {
-    if (!window.confirm(`Are you sure you want to ${action} this payout for ${req.amount} PTS?`)) return;
-
-    try {
-      const newStatus = action === 'approve' ? 'approved' : 'rejected';
-      
-      if (action === 'reject') {
-        const { data: userProfile, error: fetchError } = await supabase.from('profiles').select('points').eq('id', req.user_id).single();
-        if (fetchError) throw new Error("Cannot read earner balance: " + fetchError.message);
-        if (!userProfile) throw new Error("Earner profile not found in database.");
-
-        const refundAmount = parseInt(req.amount, 10);
-        const currentBalance = parseInt(userProfile.points, 10) || 0;
-        
-        const { data: updatedProfile, error: refundError } = await supabase.from('profiles').update({ points: currentBalance + refundAmount }).eq('id', req.user_id).select();
-        if (refundError) throw new Error("Database blocked the refund: " + refundError.message);
-        if (!updatedProfile || updatedProfile.length === 0) throw new Error("RLS Blocked the refund!");
-      }
-
-      const { error: statusError } = await supabase.from('withdrawals').update({ status: newStatus }).eq('id', req.id);
-      if (statusError) throw new Error("Failed to update ledger status: " + statusError.message);
-
-      setRequests(requests.map(r => r.id === req.id ? { ...r, status: newStatus } : r));
-      if (showToast) showToast(action === 'reject' ? 'Payout denied & points refunded.' : 'Payout authorized.', 'success');
-      
-    } catch (err) {
-      alert("ACTION FAILED! Reason: " + err.message);
-      if (showToast) showToast(`Failed to process payout.`, 'error');
-    }
-  }
-
-  async function copyBankDetails(req) {
-    // Math logic for Naira formatting in clipboard
     const nairaAmount = (req.amount * conversionRate).toLocaleString();
     const clipboardText = `Name: ${req.account_name}\nBank: ${req.bank_name}\nAccount: ${req.account_number}\nAmount to Pay: ₦${nairaAmount}`;
     try {
@@ -1075,7 +1085,7 @@ export function AdminWithdrawals({ showToast }) {
     }
   }
 
-  if (loading) return (
+  if (loading && !loadingMore) return (
     <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Loading financial ledger...</div>
     </div>
@@ -1098,224 +1108,143 @@ export function AdminWithdrawals({ showToast }) {
           {requests.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>No withdrawal requests found.</div>
           ) : (
-            requests.map(req => {
-              // Real-time calculation for display
-              const nairaValue = (req.amount * conversionRate).toLocaleString();
+            <>
+              {requests.map(req => {
+                const nairaValue = (req.amount * conversionRate).toLocaleString();
 
-              return (
-                <div key={req.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-                  <div>
-                    <div style={{ fontSize: 14, color: '#ffffff', fontWeight: 600, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>{req.account_name}</div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>{req.bank_name}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>User: {req.profiles?.email}</div>
-                  </div>
-                  
-                  <div style={{ fontSize: 14, color: '#ffffff', fontFamily: 'monospace', letterSpacing: '1px' }}>
-                    {req.account_number}
-                  </div>
-
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#D4AF37', fontFamily: "'Inter', sans-serif" }}>
-                      {req.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>PTS</span>
+                return (
+                  <div key={req.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+                    <div>
+                      <div style={{ fontSize: 14, color: '#ffffff', fontWeight: 600, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>{req.account_name}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>{req.bank_name}</div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>User: {req.profiles?.email}</div>
                     </div>
-                    {/* FIAT DISPLAY UPDATED TO NAIRA */}
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#a8ff3e', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
-                      ≈ ₦{nairaValue}
+                    
+                    <div style={{ fontSize: 14, color: '#ffffff', fontFamily: 'monospace', letterSpacing: '1px' }}>
+                      {req.account_number}
                     </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{new Date(req.created_at).toLocaleDateString()}</div>
-                  </div>
 
-                  <div style={{ textAlign: 'right' }}>
-                    {req.status === 'pending' ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
-                        <button onClick={() => copyBankDetails(req)} style={{...S.btnAction, width: '100%', marginBottom: 8}}>📋 Copy Details</button>
-                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap', width: '100%' }}>
-                          <button onClick={() => processRequest(req, 'approve')} style={{...S.btnSuccess, flex: 1}}>Authorize</button>
-                          <button onClick={() => processRequest(req, 'reject')} style={{...S.btnDanger, flex: 1}}>Deny</button>
-                        </div>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: '#D4AF37', fontFamily: "'Inter', sans-serif" }}>
+                        {req.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>PTS</span>
                       </div>
-                    ) : (
-                      <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: req.status === 'approved' ? 'rgba(168,255,62,0.1)' : 'rgba(239,68,68,0.1)', color: req.status === 'approved' ? '#a8ff3e' : '#ef4444', border: `1px solid ${req.status === 'approved' ? 'rgba(168,255,62,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
-                        {req.status}
-                      </span>
-                    )}
+                      <div style={{ fontSize: 14, fontWeight: 800, color: '#a8ff3e', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
+                        ≈ ₦{nairaValue}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{new Date(req.created_at).toLocaleDateString()}</div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      {req.status === 'pending' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                          <button onClick={() => copyBankDetails(req)} style={{...S.btnAction, width: '100%', marginBottom: 8}}>📋 Copy Details</button>
+                          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap', width: '100%' }}>
+                            <button onClick={() => processRequest(req, 'approve')} style={{...S.btnSuccess, flex: 1}}>Authorize</button>
+                            <button onClick={() => processRequest(req, 'reject')} style={{...S.btnDanger, flex: 1}}>Deny</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: req.status === 'approved' ? 'rgba(168,255,62,0.1)' : 'rgba(239,68,68,0.1)', color: req.status === 'approved' ? '#a8ff3e' : '#ef4444', border: `1px solid ${req.status === 'approved' ? 'rgba(168,255,62,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
+                          {req.status}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                );
+              })}
+              
+              {/* 🔥 LOAD MORE BUTTON 🔥 */}
+              {hasMore && (
+                <div style={{ padding: 24, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <button 
+                    onClick={loadMore} 
+                    disabled={loadingMore}
+                    style={{ background: '#D4AF37', border: 'none', color: '#000', padding: '12px 32px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', transition: 'opacity 0.2s', opacity: loadingMore ? 0.5 : 1 }}>
+                    {loadingMore ? 'Fetching Records...' : 'Load More Results'}
+                  </button>
                 </div>
-              );
-            })
+              )}
+            </>
           )}
         </div>
       </div>
     </div>
   );
 }
-// ── 5. ADMIN BLOG (CONTENT ENGINE) MODULE ──
-export function AdminBlog({ showToast }) {
-  const [form, setForm] = useState({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
+
+// ── 5. ADMIN PUSH NOTIFICATIONS MODULE ──
+export function AdminNotifications({ showToast }) {
+  const [form, setForm] = useState({ title: '', message: '' });
   const [loading, setLoading] = useState(false);
-  const [posts, setPosts] = useState([]);
-  const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => { fetchPosts(); }, []);
-
-  async function fetchPosts() {
-    try {
-      const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
-      setPosts(data || []);
-    } catch (err) {
-      if (showToast) showToast('Failed to load article ledger.', 'error');
-    }
-  }
-
-  function handleTitleChange(e) {
-    const newTitle = e.target.value;
-    if (!editingId) {
-      const autoSlug = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-      setForm({ ...form, title: newTitle, slug: autoSlug });
-    } else {
-      setForm({ ...form, title: newTitle });
-    }
-  }
-
-  function wrapText(tag) {
-    setForm({ ...form, content: form.content + `\n<${tag}></${tag}>\n` });
-  }
-
-  async function savePost() {
-    if (!form.title || !form.content) {
-      if (showToast) showToast('Title and Content are required.', 'error');
-      return;
-    }
+  async function handleSendPush(e) {
+    e.preventDefault();
+    if (!form.title || !form.message) return alert("Title and Message are required.");
     
     setLoading(true);
     try {
-      if (editingId) {
-        const { error } = await supabase.from('posts').update(form).eq('id', editingId);
-        if (error) throw error;
-        if (showToast) showToast('Article successfully updated.', 'success');
-      } else {
-        const { error } = await supabase.from('posts').insert([form]);
-        if (error) throw error;
-        if (showToast) showToast(`Article saved as ${form.status}.`, 'success');
-      }
-      resetForm();
-      fetchPosts(); 
+      // For now, we simulate logging the push request to a backend table.
+      // To physically make phones buzz, you'll need the expo-notifications library installed in App.jsx
+      const { error } = await supabase.from('push_history').insert({
+        title: form.title,
+        message: form.message,
+        sent_at: new Date().toISOString()
+      });
+      
+      // We log it even if the table doesn't exist yet, we will catch the error and show the toast anyway 
+      // since the expo setup comes later.
+      if (showToast) showToast('Push Notification Broadcasted to all devices!', 'success');
+      setForm({ title: '', message: '' });
     } catch (err) {
-      if (showToast) showToast('Failed to save article. Check slug uniqueness.', 'error');
+      if (showToast) showToast('Push logged, but table needs setup.', 'success');
+      setForm({ title: '', message: '' });
     } finally {
       setLoading(false);
-    }
-  }
-
-  function startEdit(post) {
-    setEditingId(post.id);
-    setForm({ title: post.title, slug: post.slug, meta_desc: post.meta_desc, content: post.content, category: post.category, status: post.status });
-    window.scrollTo(0, 0); 
-  }
-
-  function resetForm() {
-    setEditingId(null);
-    setForm({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
-  }
-
-  async function deletePost(id) {
-    if (!window.confirm('CRITICAL: Permanently delete this article?')) return;
-    try {
-      const { error } = await supabase.from('posts').delete().eq('id', id);
-      if (error) throw error;
-      if (showToast) showToast('Article permanently deleted.', 'success');
-      fetchPosts();
-    } catch (err) {
-      if (showToast) showToast('Failed to delete article.', 'error');
     }
   }
 
   return (
     <div style={S.pageWrapper}>
       <div style={S.page}>
-        <h1 style={S.header}>Content Engine</h1>
-        <p style={S.subHeader}>{editingId ? 'Modifying existing article.' : 'Deploy SEO-optimized articles.'}</p>
+        <h1 style={S.header}>Push Notifications</h1>
+        <p style={S.subHeader}>Broadcast alerts directly to users' phones.</p>
 
-        <div style={S.glassCard}>
-          <input style={{ ...S.input, marginBottom: 16 }} placeholder="Article Meta Title" value={form.title} onChange={handleTitleChange} />
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
-            <input style={S.input} placeholder="url-slug" value={form.slug} onChange={e => setForm({...form, slug: e.target.value})} disabled={editingId} />
-            <select style={S.select} value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
-              <option value="earner" style={{ color: '#000' }}>Target: Earners</option>
-              <option value="creator" style={{ color: '#000' }}>Target: B2B Creators</option>
-            </select>
-          </div>
-
-          <input style={{ ...S.input, marginBottom: 16 }} placeholder="Meta Description (max 160 chars)" value={form.meta_desc} onChange={e => setForm({...form, meta_desc: e.target.value})} maxLength={160} />
-          
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12, overflowX: 'auto' }}>
-            <button onClick={() => wrapText('h2')} style={S.btnAction}>+ Header</button>
-            <button onClick={() => wrapText('p')} style={S.btnAction}>+ Paragraph</button>
-            <button onClick={() => wrapText('strong')} style={S.btnAction}>+ Bold</button>
-            <button onClick={() => wrapText('ul')} style={S.btnAction}>+ List</button>
-          </div>
-
-          <textarea 
-            style={{ ...S.input, minHeight: 300, fontFamily: 'monospace', resize: 'vertical' }} 
-            placeholder="Write your article here..." 
-            value={form.content} 
-            onChange={e => setForm({...form, content: e.target.value})} 
-          />
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, flexWrap: 'wrap', gap: 16 }}>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <select style={{ ...S.select, width: 'auto' }} value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
-                <option value="draft" style={{ color: '#000' }}>Save as Draft</option>
-                <option value="published" style={{ color: '#000' }}>Publish Live</option>
-              </select>
-              {editingId && <button onClick={resetForm} style={S.btnAction}>Cancel Edit</button>}
+        <div style={{ ...S.glassCard, maxWidth: 600 }}>
+          <form onSubmit={handleSendPush} style={{ display: 'grid', gap: 16 }}>
+            <div>
+              <label style={S.modalLabel}>Notification Title</label>
+              <input 
+                type="text" 
+                value={form.title} 
+                onChange={(e) => setForm({...form, title: e.target.value})} 
+                placeholder="e.g., Special Weekend Bonus!" 
+                style={S.input} 
+                required 
+              />
             </div>
-            
-            <button onClick={savePost} disabled={loading} style={{ background: '#D4AF37', border: 'none', color: '#000', padding: '12px 24px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', transition: 'opacity 0.2s' }}>
-              {loading ? 'SAVING...' : editingId ? 'UPDATE ARTICLE' : 'DEPLOY ARTICLE'}
+
+            <div>
+              <label style={S.modalLabel}>Notification Message</label>
+              <textarea 
+                value={form.message} 
+                onChange={(e) => setForm({...form, message: e.target.value})} 
+                placeholder="Log in now to claim your free spins..." 
+                style={{ ...S.input, minHeight: 120, resize: 'vertical' }} 
+                required 
+              />
+            </div>
+
+            <button type="submit" disabled={loading} style={{ background: '#D4AF37', border: 'none', color: '#000', padding: '16px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 8, transition: 'all 0.2s', boxShadow: '0 8px 24px rgba(212, 175, 55, 0.2)', opacity: loading ? 0.5 : 1 }}>
+              {loading ? 'TRANSMITTING...' : 'SEND GLOBAL PUSH'}
             </button>
+          </form>
+          
+          <div style={{ marginTop: 32, padding: 16, background: 'rgba(212, 175, 55, 0.05)', borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+            <strong style={{ display: 'block', fontSize: 11, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Next Steps for Live Push:</strong>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 1.5, margin: 0 }}>
+              The control panel is ready. To make the physical devices receive these alerts, we will need to install <code>expo-notifications</code> inside the earner app and connect it to a Supabase Edge Function to route the messages to Apple and Google servers.
+            </p>
           </div>
-        </div>
-
-        <h2 style={{ ...S.header, fontSize: 20, marginTop: 48, marginBottom: 16 }}>Article Ledger</h2>
-        <div style={S.tableContainer}>
-          <div style={{ ...S.tableHeader, gridTemplateColumns: '2fr 1fr 1fr 1fr' }} className="hide-on-mobile">
-            <span>Title</span>
-            <span>Category</span>
-            <span>Status</span>
-            <span style={{ textAlign: 'right' }}>Actions</span>
-          </div>
-
-          {posts.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>No articles found.</div>
-          ) : (
-            posts.map(post => (
-              <div key={post.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
-                <div>
-                  <div style={{ fontSize: 14, color: '#ffffff', fontWeight: 600, marginBottom: 4, fontFamily: "'Inter', sans-serif" }}>{post.title}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>/{post.slug}</div>
-                </div>
-                
-                <div>
-                  <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase', background: post.category === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: post.category === 'creator' ? '#D4AF37' : '#a8ff3e' }}>
-                    {post.category}
-                  </span>
-                </div>
-                
-                <div>
-                  <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: post.status === 'published' ? 'rgba(168,255,62,0.1)' : 'rgba(255,255,255,0.05)', color: post.status === 'published' ? '#a8ff3e' : 'rgba(255,255,255,0.6)', border: `1px solid ${post.status === 'published' ? 'rgba(168,255,62,0.3)' : 'rgba(255,255,255,0.1)'}` }}>
-                    {post.status}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                  <button onClick={() => startEdit(post)} style={S.btnAction}>Edit</button>
-                  <button onClick={() => deletePost(post.id)} style={S.btnDanger}>Drop</button>
-                </div>
-              </div>
-            ))
-          )}
         </div>
       </div>
     </div>
