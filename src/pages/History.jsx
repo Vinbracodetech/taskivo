@@ -263,7 +263,7 @@ export default function History({ session }) {
                         <div style={S.iconBox(bgColor)}>{item._icon}</div>
                         <div>
                           <div style={{ fontSize: 10, color: tagColor, fontWeight: 800, textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.5px' }}>{tagText}</div>
-                          <div style={S.title} className="text-truncate" style={{ maxWidth: 220 }}>{item._title}</div>
+                          <div style={{ ...S.title, maxWidth: 220 }} className="text-truncate">{item._title}</div>
                           <div style={S.date}>{formatDate(item.created_at)}</div>
                         </div>
                       </div>
