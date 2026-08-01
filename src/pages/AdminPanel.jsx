@@ -471,13 +471,14 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
               To enable Zero-Bot verification and Single-Use Tokens for this external post, paste this exact snippet into the target webpage HTML.
             </p>
             <div style={{ position: 'relative' }}>
+              {/* FIXED VITE BUNDLER ERROR HERE: USING \x3Cscript> */}
               <pre style={{ background: '#000000', padding: 24, borderRadius: 12, overflowX: 'auto', fontSize: 12, color: '#10b981', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'monospace', lineHeight: 1.5 }}>
 {`<div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;">
   <span id="t-status" style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Establishing connection...</span>
   <div id="t-timer" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 10px;"></div>
 </div>
 
-<script>
+\x3Cscript>
 (function() {
   var taskId = '${deployedTask.id}';
   var statusEl = document.getElementById('t-status');
@@ -508,7 +509,7 @@ export function AdminHouseDeployer({ showToast, onDeploy }) {
     }, 1000);
   });
 })();
-</script>`}
+\x3C/script>`}
               </pre>
             </div>
           </div>
@@ -723,12 +724,13 @@ export function AdminTasks({ showToast }) {
   async function copyNodeScript() {
     if (!scriptModal.task) return;
     
+    // FIXED VITE BUNDLER ERROR HERE: USING \x3Cscript>
     const scriptToCopy = `<div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;">
   <span id="t-status" style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Establishing connection...</span>
   <div id="t-timer" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 10px;"></div>
 </div>
 
-<script>
+\x3Cscript>
 (function() {
   var taskId = '${scriptModal.task.id}';
   var statusEl = document.getElementById('t-status');
@@ -759,7 +761,7 @@ export function AdminTasks({ showToast }) {
     }, 1000);
   });
 })();
-</script>`;
+\x3C/script>`;
 
     try {
       await navigator.clipboard.writeText(scriptToCopy);
@@ -823,6 +825,7 @@ export function AdminTasks({ showToast }) {
                   </button>
                 )}
                 
+                {/* 🔥 EDIT CAMPAIGN BUTTON 🔥 */}
                 <button onClick={() => openEditModal(t)} style={S.btnAction}>Edit</button>
                 
                 {t.status !== 'active' && <button onClick={() => updateStatus(t.id, 'active')} style={S.btnSuccess}>Activate</button>}
@@ -995,99 +998,6 @@ export function AdminTasks({ showToast }) {
   );
 }
 
-// ── 4. ADMIN WITHDRAWALS MODULE (PAGINATED) ──
-export function AdminWithdrawals({ showToast }) {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-
-  const limit = 50; 
-  const conversionRate = 1; 
-
-  useEffect(() => { fetchWithdrawals(0, false); }, []);
-
-  async function fetchWithdrawals(currentPage = 0, isLoadMore = false) {
-    try {
-      if (isLoadMore) setLoadingMore(true);
-      else setLoading(true);
-
-      const from = currentPage * limit;
-      const to = from + limit - 1;
-
-      const { data } = await supabase
-        .from('withdrawals')
-        .select(`*, profiles!inner(email)`)
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
-      if (data) {
-        if (isLoadMore) {
-          setRequests(prev => [...prev, ...data]);
-        } else {
-          setRequests(data);
-        }
-        setHasMore(data.length === limit);
-      }
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }
-
-  function loadMore() {
-    if (!hasMore || loadingMore) return;
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchWithdrawals(nextPage, true);
-  }
-
-  async function processRequest(req, action) {
-    if (!window.confirm(`Are you sure you want to ${action} this payout for ${req.amount} PTS?`)) return;
-
-    try {
-      const newStatus = action === 'approve' ? 'approved' : 'rejected';
-      
-      if (action === 'reject') {
-        const { data: userProfile, error: fetchError } = await supabase.from('profiles').select('points').eq('id', req.user_id).single();
-        if (fetchError) throw new Error("Cannot read earner balance: " + fetchError.message);
-        if (!userProfile) throw new Error("Earner profile not found in database.");
-
-        const refundAmount = parseInt(req.amount, 10);
-        const currentBalance = parseInt(userProfile.points, 10) || 0;
-        
-        const { data: updatedProfile, error: refundError } = await supabase.from('profiles').update({ points: currentBalance + refundAmount }).eq('id', req.user_id).select();
-        if (refundError) throw new Error("Database blocked the refund: " + refundError.message);
-        if (!updatedProfile || updatedProfile.length === 0) throw new Error("RLS Blocked the refund!");
-      }
-
-      const { error: statusError } = await supabase.from('withdrawals').update({ status: newStatus }).eq('id', req.id);
-      if (statusError) throw new Error("Failed to update ledger status: " + statusError.message);
-
-      setRequests(requests.map(r => r.id === req.id ? { ...r, status: newStatus } : r));
-      if (showToast) showToast(action === 'reject' ? 'Payout denied & points refunded.' : 'Payout authorized.', 'success');
-      
-    } catch (err) {
-      alert("ACTION FAILED! Reason: " + err.message);
-      if (showToast) showToast(`Failed to process payout.`, 'error');
-    }
-  }
-
-  async function copyBankDetails(req) {
-    const nairaAmount = (req.amount * conversionRate).toLocaleString();
-    const clipboardText = `Name: ${req.account_name}\nBank: ${req.bank_name}\nAccount: ${req.account_number}\nAmount to Pay: ₦${nairaAmount}`;
-    try {
-      await navigator.clipboard.writeText(clipboardText);
-      if (showToast) showToast('Bank details copied to clipboard!', 'info');
-    } catch (err) {
-      if (showToast) showToast('Failed to copy details.', 'error');
-    }
-  }
-
-  if (loading && !loadingMore) return (
-    <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase' }}>Loading financial ledger...</div>
 // ── 4. ADMIN WITHDRAWALS MODULE (PAGINATED & MULTI-CURRENCY) ──
 export function AdminWithdrawals({ showToast }) {
   const [requests, setRequests] = useState([]);
