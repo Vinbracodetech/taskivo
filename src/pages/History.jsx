@@ -11,6 +11,7 @@ export default function History({ session }) {
 
   useEffect(() => {
     if (user?.id) fetchHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeTab]);
 
   async function fetchHistory() {
@@ -263,7 +264,6 @@ export default function History({ session }) {
                         <div style={S.iconBox(bgColor)}>{item._icon}</div>
                         <div>
                           <div style={{ fontSize: 10, color: tagColor, fontWeight: 800, textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.5px' }}>{tagText}</div>
-                          {/* 🔥 FIXED DUPLICATE STYLE TAG HERE 🔥 */}
                           <div style={{ ...S.title, maxWidth: 220 }} className="text-truncate">{item._title}</div>
                           <div style={S.date}>{formatDate(item.created_at)}</div>
                         </div>
