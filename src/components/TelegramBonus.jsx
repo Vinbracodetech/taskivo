@@ -6,10 +6,11 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
   const [claimed, setClaimed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [telegramId, setTelegramId] = useState('');
 
-  // Replace with your actual official Telegram channel or group link
-  const TELEGRAM_URL = 'https://t.me/+YOUR_TELEGRAM_LINK_HERE'; 
-  const BONUS_REWARD = 20; // 20 PTS bonus
+  // 🔥 Your Actual Official Link 🔥
+  const TELEGRAM_URL = 'https://t.me/taskivoonline'; 
+  const BONUS_REWARD = 20;
 
   useEffect(() => {
     if (!user?.id) return;
@@ -19,15 +20,13 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
   async function checkClaimStatus() {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('telegram_claims')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (data) {
-        setClaimed(true);
-      }
+      if (data) setClaimed(true);
     } catch (err) {
       console.error("Error checking telegram status:", err);
     } finally {
@@ -37,45 +36,43 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
 
   async function handleClaimReward() {
     if (claimed) return;
-    
-    // First, open the Telegram link in a new tab so they can join
-    window.open(TELEGRAM_URL, '_blank');
+    if (!telegramId || telegramId.trim() === '') {
+      if (showToast) showToast('Please enter your Numeric Telegram ID', 'error');
+      return;
+    }
 
     setSubmitting(true);
     try {
-      // 1. Record the claim in the secure table
+      // 1. Verify with your Supabase Edge Function
+      const { data: edgeData, error: edgeError } = await supabase.functions.invoke('verify-telegram', {
+        body: { telegram_id: telegramId.trim() }
+      });
+
+      if (edgeError || !edgeData?.verified) {
+        throw new Error('Verification failed. Are you sure you joined @taskivoonline?');
+      }
+
+      // 2. Record the claim securely
       const { error: claimErr } = await supabase
         .from('telegram_claims')
         .insert({ user_id: user.id });
 
       if (claimErr) {
-        if (claimErr.code === '23505') {
-          setClaimed(true);
-          throw new Error('You have already claimed this bonus!');
-        }
+        if (claimErr.code === '23505') throw new Error('You have already claimed this bonus!');
         throw claimErr;
       }
 
-      // 2. Fetch current points to ensure accurate incrementing
+      // 3. Fetch and update points
       const { data: profileData, error: profileErr } = await supabase
-        .from('profiles')
-        .select('points')
-        .eq('id', user.id)
-        .single();
+        .from('profiles').select('points').eq('id', user.id).single();
 
       if (profileErr) throw profileErr;
 
       const newPoints = (profileData.points || 0) + BONUS_REWARD;
 
-      // 3. Update user profile points
-      const { error: updateErr } = await supabase
-        .from('profiles')
-        .update({ points: newPoints })
-        .eq('id', user.id);
+      await supabase.from('profiles').update({ points: newPoints }).eq('id', user.id);
 
-      if (updateErr) throw updateErr;
-
-      // 4. Log the transaction in the ledger
+      // 4. Log ledger transaction
       await supabase.from('transactions').insert({
         user_id: user.id,
         type: 'telegram_bonus',
@@ -85,14 +82,11 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
       });
 
       setClaimed(true);
-      if (showToast) showToast(`Success! +${BONUS_REWARD} PTS added to your balance.`, 'success');
-      
-      if (onBonusClaimed) {
-        onBonusClaimed(newPoints);
-      }
+      if (showToast) showToast(`Success! +${BONUS_REWARD} PTS verified and added.`, 'success');
+      if (onBonusClaimed) onBonusClaimed(newPoints);
 
     } catch (err) {
-      if (showToast) showToast(err.message || 'Failed to claim bonus', 'error');
+      if (showToast) showToast(err.message || 'Failed to verify membership', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -103,6 +97,7 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
   return (
     <div style={{ background: 'var(--surface-card)', border: '1px solid rgba(0, 136, 204, 0.3)', borderRadius: 24, padding: 32, marginBottom: 48, position: 'relative', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24, position: 'relative', zIndex: 2 }}>
+        
         <div style={{ flex: '1 1 300px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid rgba(0, 136, 204, 0.4)', color: '#0088cc', background: 'rgba(0, 136, 204, 0.1)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
             ✈️ Official Community Reward (+{BONUS_REWARD} PTS)
@@ -111,17 +106,34 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
           <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>
             {claimed ? 'Telegram Bonus Claimed!' : 'Join Our Telegram Channel'}
           </h2>
-          <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: 0 }}>
+          
+          <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: '0 0 16px 0' }}>
             {claimed 
               ? 'Thank you for being part of our community network! Keep an eye on the channel for exclusive updates and payout drops.' 
-              : 'Join our official Telegram community to stay updated on high-payout tasks, platform updates, and announcements. Claim your one-time instant bonus now!'}
+              : 'Join @taskivoonline. We use strict API verification to prevent bots.'}
           </p>
+
+          {!claimed && (
+            <div style={{ background: 'rgba(0,0,0,0.2)', padding: 16, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', maxWidth: 400 }}>
+              <div style={{ fontSize: 12, color: 'var(--slate)', marginBottom: 12 }}>
+                1. Join <a href={TELEGRAM_URL} target="_blank" rel="noreferrer" style={{ color: '#0088cc', textDecoration: 'none', fontWeight: 'bold' }}>@taskivoonline</a><br/>
+                2. Send any message to <strong style={{ color: '#fff' }}>@userinfobot</strong> on Telegram to get your Numeric ID.
+              </div>
+              <input 
+                type="text" 
+                placeholder="Enter your Numeric ID (e.g. 123456789)" 
+                value={telegramId}
+                onChange={(e) => setTelegramId(e.target.value)}
+                style={{ width: '100%', padding: '12px 16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(0,136,204,0.3)', borderRadius: 8, color: '#fff', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: 14, boxSizing: 'border-box' }}
+              />
+            </div>
+          )}
         </div>
         
         <div>
           {claimed ? (
             <div style={{ background: 'rgba(168,255,62,0.1)', color: 'var(--lime)', border: '1px solid var(--lime)', borderRadius: 100, padding: '14px 28px', fontSize: 13, fontWeight: 800, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
-              ✓ Bonus Collected
+              ✓ Verified & Collected
             </div>
           ) : (
             <button 
@@ -129,7 +141,7 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
               disabled={submitting}
               style={{ background: '#0088cc', color: '#fff', border: 'none', borderRadius: 100, padding: '14px 28px', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', boxShadow: '0 8px 16px rgba(0, 136, 204, 0.2)', transition: 'all 0.2s', opacity: submitting ? 0.5 : 1 }}
             >
-              {submitting ? 'Verifying...' : 'Join & Claim 20 PTS'}
+              {submitting ? 'Verifying with Telegram...' : 'Verify & Claim'}
             </button>
           )}
         </div>
