@@ -349,20 +349,24 @@ export default function Landing({ navigate, setAuthMode }) {
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
             {/* App Mockup Visual */}
             <div style={{ width: 280, height: 560, background: '#1A1A24', border: `8px solid #2A2A35`, borderRadius: 36, position: 'relative', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
-              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 100, height: 24, background: '#2A2A35', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, zIndex: 10 }}></div>
-              <div style={{ padding: '48px 24px 24px', height: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: C.lime }}></div>
-                  <div style={{ width: 80, height: 20, borderRadius: 10, background: 'rgba(255,255,255,0.1)' }}></div>
-                </div>
-                <div style={{ width: '100%', height: 120, borderRadius: 16, background: 'rgba(168,255,62,0.1)', border: `1px solid ${C.limeBorder}`, marginTop: 16 }}></div>
-                <div style={{ width: '100%', height: 60, borderRadius: 12, background: 'rgba(255,255,255,0.05)' }}></div>
-                <div style={{ width: '100%', height: 60, borderRadius: 12, background: 'rgba(255,255,255,0.05)' }}></div>
-                <div style={{ width: '100%', height: 60, borderRadius: 12, background: 'rgba(255,255,255,0.05)' }}></div>
-              </div>
+              
+              {/* iPhone Notch */}
+              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 120, height: 24, background: '#2A2A35', borderBottomLeftRadius: 16, borderBottomRightRadius: 16, zIndex: 10 }}></div>
+              
+              {/* The Catchy Image (Swap this URL with your own app screenshot later!) */}
+              <img 
+                src="https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?auto=format&fit=crop&w=600&q=80" 
+                alt="Taskivo Mobile App UI" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
+              
+              {/* A subtle dark gradient overlay so it blends into your dark theme */}
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, #0D0D14 100%)', zIndex: 5 }}></div>
             </div>
+          </div>
           </div>
         </div>
       </section>
