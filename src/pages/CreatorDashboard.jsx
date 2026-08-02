@@ -14,6 +14,9 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
   const [scriptModal, setScriptModal] = useState({ isOpen: false, task: null });
   const [copied, setCopied] = useState(false);
 
+  // 🔥 INBOX STATES 🔥
+  const [messages, setMessages] = useState([]);
+
   // 🔥 NEW: SUPPORT DESK STATES 🔥
   const [tickets, setTickets] = useState([]);
   const [showTicketModal, setShowTicketModal] = useState(false);
@@ -24,6 +27,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
     if (!user) return;
     fetchCreatorData();
     fetchTickets();
+    fetchMessages();
   }, [user]);
 
   async function fetchCreatorData() {
@@ -77,7 +81,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
     }
   }
 
-  // 🔥 NEW: Fetch Tickets
+  // 🔥 FETCH TICKETS 🔥
   async function fetchTickets() {
     try {
       const { data, error } = await supabase
@@ -94,7 +98,24 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
     }
   }
 
-  // 🔥 NEW: Submit Ticket
+  // 🔥 FETCH INBOX MESSAGES 🔥
+  async function fetchMessages() {
+    try {
+      const { data, error } = await supabase
+        .from('user_messages')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (!error && data) {
+        setMessages(data);
+      }
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    }
+  }
+
+  // 🔥 SUBMIT TICKET 🔥
   async function handleSubmitTicket() {
     if (!ticketForm.message.trim()) {
       if (showToast) showToast('Please enter a detailed message.', 'error');
@@ -144,7 +165,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
     }
   }
 
-  // 🔥 COPY SCRIPT LOGIC 🔥
+  // 🔥 COPY SCRIPT LOGIC (VITE CRASH FIXED) 🔥
   async function copyNodeScript() {
     if (!scriptModal.task) return;
     
@@ -153,7 +174,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
   <div id="t-timer" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 10px;"></div>
 </div>
 
-<script>
+\x3Cscript>
 (function() {
   var taskId = '${scriptModal.task.id}';
   var statusEl = document.getElementById('t-status');
@@ -164,7 +185,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
   }).then(res => res.json()).then(data => {
     if(!data.session_id) return;
     statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";
-    var timeLeft = 120;
+    var timeLeft = ${scriptModal.task.watch_duration || 120};
     var countdown = setInterval(function() {
       if (document.hidden) return;
       timeLeft--;
@@ -184,7 +205,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
     }, 1000);
   });
 })();
-</script>`;
+\x3C/script>`;
 
     try {
       await navigator.clipboard.writeText(scriptToCopy);
@@ -235,7 +256,6 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
     btnApprove: { background: 'rgba(168, 255, 62, 0.9)', border: 'none', color: '#000', padding: '10px 16px', borderRadius: 6, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' },
     btnReject: { background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#ef4444', padding: '10px 16px', borderRadius: 6, fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' },
 
-    // 🔥 NEW: Support Ticket Styles
     ticketCard: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, marginBottom: 16 },
     statusOpen: { background: 'rgba(239, 160, 68, 0.1)', color: '#efa044', border: '1px solid rgba(239, 160, 68, 0.3)' },
     statusResolved: { background: 'rgba(212, 175, 55, 0.1)', color: '#D4AF37', border: '1px solid rgba(212, 175, 55, 0.3)' },
@@ -413,7 +433,38 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
           )}
         </div>
 
-        {/* 🔥 NEW: HELP & SUPPORT SECTION (CREATOR) 🔥 */}
+        {/* 🔥 NEW INBOX & ALERTS SECTION FOR CREATORS 🔥 */}
+        {messages.length > 0 && (
+          <div style={{ ...S.glassCard, position: 'relative', zIndex: 1, marginBottom: 56, border: '1px solid rgba(212, 175, 55, 0.3)', background: 'rgba(212, 175, 55, 0.03)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+              <div style={{ background: '#D4AF37', color: '#000', width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                🔔
+              </div>
+              <div>
+                <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, color: '#ffffff', margin: '0 0 4px 0', fontWeight: 800, letterSpacing: '-0.5px' }}>Inbox & Alerts</h2>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, margin: 0 }}>Official broadcasts and direct messages.</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {messages.map(msg => (
+                <div key={msg.id} style={{ background: 'rgba(0, 0, 0, 0.3)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#ffffff', fontFamily: "'Inter', sans-serif" }}>{msg.title}</div>
+                    <div style={{ fontSize: 11, color: '#D4AF37', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {new Date(msg.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    {msg.message}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 🔥 HELP & SUPPORT SECTION (CREATOR) 🔥 */}
         <div style={{ ...S.glassCard, position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
             <div>
@@ -532,7 +583,7 @@ export default function CreatorDashboard({ user, navigate, showToast }) {
                     &nbsp;&nbsp;{"}"}).then(res =&gt; res.json()).then(data =&gt; {"{"}<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;if(!data.session_id) return;<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;var timeLeft = 120;<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;var timeLeft = {scriptModal.task.watch_duration || 120};<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;var countdown = setInterval(function() {"{"}<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (document.hidden) return;<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;timeLeft--;<br/>
