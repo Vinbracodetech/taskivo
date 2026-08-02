@@ -330,7 +330,7 @@ export default function Landing({ navigate, setAuthMode }) {
             </p>
             
             {/* Play Store Placeholder Button */}
-            <a href="https://play.google.com/store" target="_blank" rel="noreferrer" className="play-store-btn">
+            <a href="https://play.google.com/store/apps/details?id=com.taskivo.app" target="_blank" rel="noreferrer" className="play-store-btn">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M4 3.5L19.5 12L4 20.5V3.5Z" fill="url(#playStoreGradient)"/>
                 <defs>
