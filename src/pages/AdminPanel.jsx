@@ -1181,9 +1181,9 @@ export function AdminWithdrawals({ showToast }) {
   );
 }
 
-// ── 5. ADMIN PUSH NOTIFICATIONS MODULE ──
+// ── 5. ADMIN PUSH NOTIFICATIONS & MESSAGING MODULE ──
 export function AdminNotifications({ showToast }) {
-  const [form, setForm] = useState({ title: '', message: '' });
+  const [form, setForm] = useState({ title: '', message: '', target_cohort: 'all', specific_email: '' });
   const [loading, setLoading] = useState(false);
 
   async function handleSendPush(e) {
@@ -1192,17 +1192,43 @@ export function AdminNotifications({ showToast }) {
     
     setLoading(true);
     try {
-      const { error } = await supabase.from('push_history').insert({
+      let targetUserId = null;
+
+      // If targeting an individual, we must find their user_id first
+      if (form.target_cohort === 'individual') {
+        if (!form.specific_email) throw new Error("You must provide the user's email address.");
+        
+        const { data: userProfile, error: userError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', form.specific_email.trim())
+          .single();
+          
+        if (userError || !userProfile) throw new Error("Could not find a user with that email address.");
+        targetUserId = userProfile.id;
+      }
+
+      // Insert the message into the universal inbox
+      const { error } = await supabase.from('user_messages').insert({
+        title: form.title,
+        message: form.message,
+        target_cohort: form.target_cohort,
+        user_id: targetUserId
+      });
+
+      if (error) throw error;
+      
+      // Also log it to the legacy push history for physical device buzzing later
+      await supabase.from('push_history').insert({
         title: form.title,
         message: form.message,
         sent_at: new Date().toISOString()
       });
       
-      if (showToast) showToast('Push Notification Broadcasted to all devices!', 'success');
-      setForm({ title: '', message: '' });
+      if (showToast) showToast('Message successfully dispatched to target audience!', 'success');
+      setForm({ title: '', message: '', target_cohort: 'all', specific_email: '' });
     } catch (err) {
-      if (showToast) showToast('Push logged, but table needs setup.', 'success');
-      setForm({ title: '', message: '' });
+      if (showToast) showToast(err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -1211,43 +1237,72 @@ export function AdminNotifications({ showToast }) {
   return (
     <div style={S.pageWrapper}>
       <div style={S.page}>
-        <h1 style={S.header}>Push Notifications</h1>
-        <p style={S.subHeader}>Broadcast alerts directly to users' phones.</p>
+        <h1 style={S.header}>Communications Hub</h1>
+        <p style={S.subHeader}>Dispatch in-app alerts and push notifications to cohorts or individuals.</p>
 
         <div style={{ ...S.glassCard, maxWidth: 600 }}>
           <form onSubmit={handleSendPush} style={{ display: 'grid', gap: 16 }}>
+            
             <div>
-              <label style={S.modalLabel}>Notification Title</label>
+              <label style={S.modalLabel}>Target Audience</label>
+              <select 
+                style={S.select} 
+                value={form.target_cohort} 
+                onChange={(e) => setForm({...form, target_cohort: e.target.value})}
+              >
+                <option value="all" style={{ color: '#000' }}>🌐 Global Broadcast (Everyone)</option>
+                <option value="earners" style={{ color: '#000' }}>🎯 Earners Only</option>
+                <option value="creators" style={{ color: '#000' }}>💼 Creators / Advertisers Only</option>
+                <option value="individual" style={{ color: '#000' }}>👤 Direct Message (Specific User)</option>
+              </select>
+            </div>
+
+            {form.target_cohort === 'individual' && (
+              <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: 16, borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+                <label style={S.modalLabel}>User Email Address</label>
+                <input 
+                  type="email" 
+                  value={form.specific_email} 
+                  onChange={(e) => setForm({...form, specific_email: e.target.value})} 
+                  placeholder="earner@example.com" 
+                  style={{ ...S.input, marginBottom: 0 }} 
+                  required={form.target_cohort === 'individual'} 
+                />
+              </div>
+            )}
+
+            <div>
+              <label style={S.modalLabel}>Message Title</label>
               <input 
                 type="text" 
                 value={form.title} 
                 onChange={(e) => setForm({...form, title: e.target.value})} 
-                placeholder="e.g., Special Weekend Bonus!" 
+                placeholder="e.g., Resolution to your support ticket" 
                 style={S.input} 
                 required 
               />
             </div>
 
             <div>
-              <label style={S.modalLabel}>Notification Message</label>
+              <label style={S.modalLabel}>Detailed Message</label>
               <textarea 
                 value={form.message} 
                 onChange={(e) => setForm({...form, message: e.target.value})} 
-                placeholder="Log in now to claim your free spins..." 
+                placeholder="Type your alert or message here..." 
                 style={{ ...S.input, minHeight: 120, resize: 'vertical' }} 
                 required 
               />
             </div>
 
             <button type="submit" disabled={loading} style={{ background: '#D4AF37', border: 'none', color: '#000', padding: '16px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 8, transition: 'all 0.2s', boxShadow: '0 8px 24px rgba(212, 175, 55, 0.2)', opacity: loading ? 0.5 : 1 }}>
-              {loading ? 'TRANSMITTING...' : 'SEND GLOBAL PUSH'}
+              {loading ? 'TRANSMITTING...' : 'DISPATCH MESSAGE'}
             </button>
           </form>
           
-          <div style={{ marginTop: 32, padding: 16, background: 'rgba(212, 175, 55, 0.05)', borderRadius: 12, border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <strong style={{ display: 'block', fontSize: 11, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Next Steps for Live Push:</strong>
+          <div style={{ marginTop: 32, padding: 16, background: 'rgba(168, 255, 62, 0.05)', borderRadius: 12, border: '1px solid rgba(168, 255, 62, 0.2)' }}>
+            <strong style={{ display: 'block', fontSize: 11, color: '#a8ff3e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>In-App Delivery Active</strong>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 1.5, margin: 0 }}>
-              The control panel is ready. To make the physical devices receive these alerts, we will need to install <code>expo-notifications</code> inside the earner app and connect it to a Supabase Edge Function to route the messages to Apple and Google servers.
+              Messages sent here are instantly routed to the targeted users' in-app dashboards. Physical device buzzing (Push Notifications) will be connected to this same system in a future update.
             </p>
           </div>
         </div>
@@ -1255,7 +1310,6 @@ export function AdminNotifications({ showToast }) {
     </div>
   );
 }
-
 // ── 6. ADMIN BLOG (CONTENT ENGINE) MODULE ──
 export function AdminBlog({ showToast }) {
   const [form, setForm] = useState({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
