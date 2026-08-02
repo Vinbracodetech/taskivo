@@ -37,8 +37,9 @@ export default function History({ session, navigate }) {
             supabase.from('completions').select(`id, created_at, platform, status, tasks ( title, reward_points )`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
             supabase.from('blog_reads').select(`id, created_at, post_slug`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
             supabase.from('daily_spins').select(`id, created_at, reward_points`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
-            // 🔥 NEW: Fetch Telegram Bonus claims from the transactions table
-            supabase.from('transactions').select(`id, created_at, amount, type`).eq('user_id', user.id).eq('type', 'telegram_bonus').order('created_at', { ascending: false }).limit(10)
+            
+            // 🔥 FIXED: Pulling directly from the telegram_claims table which is guaranteed to exist
+            supabase.from('telegram_claims').select(`id, created_at`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1)
           ]);
 
           let mergedTimeline = [];
@@ -104,7 +105,7 @@ export default function History({ session, navigate }) {
               created_at: d.created_at,
               _recordType: 'telegram_bonus',
               _title: 'Community Network Reward',
-              _pts: d.amount || 20, 
+              _pts: 20, // Hardcoded since it doesn't store amounts directly in the claims table
               _icon: '✈️'
             })));
           }
@@ -187,7 +188,6 @@ export default function History({ session, navigate }) {
               </h1>
               <p style={{ color: 'var(--slate)', fontSize: 15, margin: 0 }}>An immutable record of your network engagements.</p>
             </div>
-            {/* Added a quick back button for easy mobile navigation */}
             <button onClick={() => navigate('dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>
               ← Back
             </button>
