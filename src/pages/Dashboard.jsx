@@ -19,8 +19,13 @@ export default function Dashboard({ user, navigate, showToast }) {
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // Communications & Inbox
+  // 🔥 NEW: INBOX & ALERTS STATES 🔥
   const [messages, setMessages] = useState([]);
+  const [showInboxModal, setShowInboxModal] = useState(false);
+  const [dismissedAlerts, setDismissedAlerts] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`taskivo_dismissed_${user.id}`)) || []; } 
+    catch { return []; }
+  });
 
   // Support Ticket States
   const [tickets, setTickets] = useState([]);
@@ -59,31 +64,29 @@ export default function Dashboard({ user, navigate, showToast }) {
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      
-      if (!error && data) {
-        setTickets(data);
-      }
+      if (!error && data) setTickets(data);
     } catch (err) {
       console.error("Error fetching tickets:", err);
     }
   }
 
-  // 🔥 FETCH INBOX MESSAGES 🔥
   async function fetchMessages() {
     try {
-      // RLS automatically filters out messages not meant for this user
       const { data, error } = await supabase
         .from('user_messages')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(5); // Keep the dashboard clean by showing top 5 recent
-      
-      if (!error && data) {
-        setMessages(data);
-      }
+        .limit(10); 
+      if (!error && data) setMessages(data);
     } catch (err) {
       console.error("Error fetching messages:", err);
     }
+  }
+
+  function dismissMessage(messageId) {
+    const updatedDismissed = [...dismissedAlerts, messageId];
+    setDismissedAlerts(updatedDismissed);
+    localStorage.setItem(`taskivo_dismissed_${user.id}`, JSON.stringify(updatedDismissed));
   }
 
   async function handleSubmitTicket() {
@@ -125,43 +128,26 @@ export default function Dashboard({ user, navigate, showToast }) {
       const { data, error } = await supabase
         .from('profiles')
         .update({ 
-          full_name: editForm.full_name,
-          payout_bank_name: safeBank,
-          payout_account: safeAccount,
-          payout_account_name: safeAccountName,
-          local_currency: editForm.local_currency 
+          full_name: editForm.full_name, payout_bank_name: safeBank, payout_account: safeAccount, payout_account_name: safeAccountName, local_currency: editForm.local_currency 
         })
-        .eq('id', user.id)
-        .select();
+        .eq('id', user.id).select();
 
       if (error) {
         if (error.code === '23505') throw new Error("This account number is already registered to another user.");
         throw new Error(`Database Error: ${error.message}`);
       }
       
-      if (!data || data.length === 0) {
-        throw new Error("Supabase RLS blocked the save. You need a SELECT policy.");
-      }
+      if (!data || data.length === 0) throw new Error("Supabase RLS blocked the save.");
       
       if (showToast) showToast('Profile updated successfully!', 'success');
       setShowEditModal(false);
-
       setTimeout(() => window.location.reload(), 1500);
 
     } catch (err) {
-      console.error("Save Error:", err);
       if (showToast) showToast(err.message, 'error');
-      else alert(err.message);
     } finally {
       setSavingProfile(false);
     }
-  }
-
-  function copyReferralLink() {
-    navigator.clipboard.writeText(`https://taskivo.online/?ref=${user.id}`);
-    setReferralCopied(true);
-    if (showToast) showToast('Invite link copied!', 'success');
-    setTimeout(() => setReferralCopied(false), 3000);
   }
 
   function getInitials(name) {
@@ -172,60 +158,29 @@ export default function Dashboard({ user, navigate, showToast }) {
   const minWithdrawal = 100;
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
   const isVerified = Boolean(user.payout_account && user.payout_bank_name);
+  
+  // Filter out messages the user has already dismissed
+  const activeMessages = messages.filter(msg => !dismissedAlerts.includes(msg.id));
 
   const S = {
-    pageWrapper: {
-      minHeight: '100vh',
-      backgroundColor: 'var(--surface)',
-      backgroundImage: `
-        radial-gradient(circle at top center, rgba(168,255,62,0.20) 0%, transparent 70%),
-        url("data:image/svg+xml,%3Csvg width='80' height='138.6' viewBox='0 0 80 138.6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 138.6L0 115.5V69.3l40-23.1 40 23.1v46.2zM40 46.2L0 23.1V-23.1l40-23.1 40 23.1v46.2z' fill='none' stroke='%23A8FF3E' stroke-width='2' stroke-opacity='0.15'/%3E%3C/svg%3E")
-      `,
-      backgroundSize: '100%, 80px 138.6px',
-      backgroundAttachment: 'fixed',
-    },
+    pageWrapper: { minHeight: '100vh', backgroundColor: 'var(--surface)', backgroundImage: `radial-gradient(circle at top center, rgba(168,255,62,0.20) 0%, transparent 70%), url("data:image/svg+xml,%3Csvg width='80' height='138.6' viewBox='0 0 80 138.6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 138.6L0 115.5V69.3l40-23.1 40 23.1v46.2zM40 46.2L0 23.1V-23.1l40-23.1 40 23.1v46.2z' fill='none' stroke='%23A8FF3E' stroke-width='2' stroke-opacity='0.15'/%3E%3C/svg%3E")`, backgroundSize: '100%, 80px 138.6px', backgroundAttachment: 'fixed' },
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
-    
-    glassCard: { 
-      background: 'var(--surface-card)', 
-      border: '1px solid rgba(255,255,255,0.05)', 
-      borderRadius: 24, 
-      padding: 32, 
-      display: 'flex', 
-      flexDirection: 'column', 
-      boxShadow: '0 8px 32px rgba(0,0,0,0.2)', 
-      backdropFilter: 'blur(10px)',
-      WebkitBackdropFilter: 'blur(10px)'
-    },
-    premiumCard: { 
-      background: 'var(--surface-card)', 
-      border: '1px solid var(--gold)', 
-      borderRadius: 24, 
-      padding: 32, 
-      boxShadow: '0 8px 32px rgba(0,0,0,0.2)', 
-      backdropFilter: 'blur(10px)',
-      WebkitBackdropFilter: 'blur(10px)',
-      position: 'relative', 
-      overflow: 'hidden' 
-    },
-    
+    glassCard: { background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' },
+    premiumCard: { background: 'var(--surface-card)', border: '1px solid var(--gold)', borderRadius: 24, padding: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', position: 'relative', overflow: 'hidden' },
     label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 16, display: 'block', fontFamily: "'Inter', sans-serif" },
     valueGlow: { fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
     btnPrimary: { background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', boxShadow: '0 8px 16px rgba(168,255,62,0.2)', textAlign: 'center', transition: 'all 0.2s' },
     btnSecondary: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)', textAlign: 'center', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s' },
-    
     avatarHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: 20 },
     avatarBlock: { display: 'flex', alignItems: 'center', gap: 16 },
     avatar: { width: 64, height: 64, borderRadius: '50%', background: 'var(--lime)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", border: '2px solid rgba(255,255,255,0.05)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' },
     badge: { fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6, letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 4, display: 'inline-block', fontFamily: "'Inter', sans-serif" },
     verified: { background: 'rgba(168,255,62,0.1)', color: 'var(--lime)', border: '1px solid var(--lime)' },
     unverified: { background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' },
-    
     modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 },
     modalCard: { background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 16px 48px rgba(0,0,0,0.4)', maxHeight: '90vh', overflowY: 'auto', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)' },
     modalLabel: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--slate)', marginBottom: 8, display: 'block', fontFamily: "'Inter', sans-serif" },
     input: { width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, color: 'var(--ink)', fontSize: 15, marginBottom: 20, outline: 'none', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.2s' },
-
     ticketCard: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, marginBottom: 16 },
     statusOpen: { background: 'rgba(239, 160, 68, 0.1)', color: '#efa044', border: '1px solid rgba(239, 160, 68, 0.3)' },
     statusResolved: { background: 'rgba(168,255,62,0.1)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.3)' },
@@ -305,53 +260,41 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         </div>
 
-        <div style={{ ...S.premiumCard, marginBottom: 48, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1, opacity: 0.7 }}>
-          <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--slate)', color: 'var(--slate)', background: 'rgba(255,255,255,0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
-              ✦ VIP Network Bonus (Pending)
-            </div>
-            
-            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Referral System Coming Soon</h2>
-            <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: 0 }}>
-              We are currently optimizing our invite system. The referral network is temporarily paused pending fixes, but will be back online soon!
-            </p>
-          </div>
-          
-          <button disabled style={{ position: 'relative', zIndex: 2, background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 100, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', backdropFilter: 'blur(5px)' }}>
-            CURRENTLY UNAVAILABLE
-          </button>
-        </div>
-
-        {/* 🔥 NEW INBOX & ALERTS SECTION 🔥 */}
-        {messages.length > 0 && (
-          <div style={{ ...S.glassCard, position: 'relative', zIndex: 1, marginBottom: 48, border: '1px solid rgba(168,255,62,0.3)', background: 'rgba(168,255,62,0.03)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-              <div style={{ background: 'var(--lime)', color: '#000', width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                🔔
+        {/* 🔥 ALWAYS-VISIBLE INBOX WIDGET 🔥 */}
+        <div 
+          onClick={() => setShowInboxModal(true)}
+          style={{ ...S.glassCard, position: 'relative', zIndex: 1, marginBottom: 48, cursor: 'pointer', transition: 'all 0.2s', border: activeMessages.length > 0 ? '1px solid rgba(168,255,62,0.3)' : '1px solid rgba(255,255,255,0.05)', background: activeMessages.length > 0 ? 'rgba(168,255,62,0.02)' : 'var(--surface-card)' }}
+          onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ background: activeMessages.length > 0 ? 'var(--lime)' : 'rgba(255,255,255,0.05)', color: activeMessages.length > 0 ? '#000' : 'var(--slate)', width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, transition: 'all 0.3s' }}>
+                {activeMessages.length > 0 ? '🔔' : '📭'}
               </div>
               <div>
                 <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, color: 'var(--ink)', margin: '0 0 4px 0', fontWeight: 800, letterSpacing: '-0.5px' }}>Inbox & Alerts</h2>
                 <p style={{ color: 'var(--slate)', fontSize: 14, margin: 0 }}>Official broadcasts and direct messages.</p>
               </div>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {messages.map(msg => (
-                <div key={msg.id} style={{ background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>{msg.title}</div>
-                    <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      {new Date(msg.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                    {msg.message}
-                  </div>
-                </div>
-              ))}
+            <div style={{ background: activeMessages.length > 0 ? 'rgba(168,255,62,0.1)' : 'rgba(255,255,255,0.05)', color: activeMessages.length > 0 ? 'var(--lime)' : 'var(--slate)', padding: '6px 12px', borderRadius: 100, fontSize: 12, fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
+              {activeMessages.length} NEW
             </div>
           </div>
-        )}
+        </div>
+
+        <div style={{ ...S.premiumCard, marginBottom: 48, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1, opacity: 0.7 }}>
+          <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--slate)', color: 'var(--slate)', background: 'rgba(255,255,255,0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
+              ✦ VIP Network Bonus (Pending)
+            </div>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Referral System Coming Soon</h2>
+            <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: 0 }}>We are currently optimizing our invite system. The referral network is temporarily paused pending fixes, but will be back online soon!</p>
+          </div>
+          <button disabled style={{ position: 'relative', zIndex: 2, background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 100, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', backdropFilter: 'blur(5px)' }}>
+            CURRENTLY UNAVAILABLE
+          </button>
+        </div>
 
         <div style={{ ...S.glassCard, position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
@@ -371,22 +314,16 @@ export default function Dashboard({ user, navigate, showToast }) {
               {tickets.map(ticket => (
                 <div key={ticket.id} style={S.ticketCard}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                      {ticket.category}
-                    </div>
-                    <div style={{ ...S.badge, ...(ticket.status === 'resolved' ? S.statusResolved : S.statusOpen) }}>
-                      {ticket.status}
-                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '1px' }}>{ticket.category}</div>
+                    <div style={{ ...S.badge, ...(ticket.status === 'resolved' ? S.statusResolved : S.statusOpen) }}>{ticket.status}</div>
                   </div>
                   <p style={{ color: 'var(--slate)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>{ticket.message}</p>
-                  
                   {ticket.status === 'resolved' && ticket.resolution_note && (
                     <div style={S.resolutionBox}>
                       <strong style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>Admin Resolution:</strong>
                       {ticket.resolution_note}
                     </div>
                   )}
-                  
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 16 }}>
                     Submitted: {new Date(ticket.created_at).toLocaleDateString()}
                   </div>
@@ -396,6 +333,52 @@ export default function Dashboard({ user, navigate, showToast }) {
           )}
         </div>
 
+        {/* 🔥 THE INBOX NOTIFICATION CENTER MODAL 🔥 */}
+        {showInboxModal && (
+          <div style={S.modalOverlay}>
+            <div style={{...S.modalCard, maxWidth: 600, padding: 0, overflow: 'hidden'}}>
+              <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 800, color: 'var(--ink)', margin: 0 }}>Notification Center</h2>
+                <button onClick={() => setShowInboxModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 24, cursor: 'pointer' }}>×</button>
+              </div>
+              
+              <div style={{ padding: 32, maxHeight: '60vh', overflowY: 'auto' }}>
+                {activeMessages.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--slate)' }}>
+                    <div style={{ fontSize: 40, marginBottom: 16 }}>📭</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>You're all caught up!</div>
+                    <div style={{ fontSize: 14 }}>No new alerts at this time.</div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {activeMessages.map(msg => (
+                      <div key={msg.id} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, position: 'relative' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif", paddingRight: 40 }}>{msg.title}</div>
+                          <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            {new Date(msg.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: 16 }}>
+                          {msg.message}
+                        </div>
+                        <button 
+                          onClick={() => dismissMessage(msg.id)}
+                          style={{ background: 'transparent', border: '1px solid var(--line)', color: 'var(--slate)', padding: '6px 16px', borderRadius: 100, fontSize: 11, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', transition: 'all 0.2s' }}
+                          onMouseOver={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; e.currentTarget.style.background = 'rgba(239,68,68,0.05)'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--slate)'; e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          ✕ Dismiss
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* SUPPORT TICKET MODAL */}
         {showTicketModal && (
           <div style={S.modalOverlay}>
@@ -404,11 +387,7 @@ export default function Dashboard({ user, navigate, showToast }) {
               <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Our team will review your ticket and reply with a resolution note directly in your dashboard.</p>
               
               <label style={S.modalLabel}>Issue Category</label>
-              <select 
-                style={S.input} 
-                value={ticketForm.category} 
-                onChange={e => setTicketForm({...ticketForm, category: e.target.value})}
-              >
+              <select style={S.input} value={ticketForm.category} onChange={e => setTicketForm({...ticketForm, category: e.target.value})}>
                 <option value="Missing Points" style={{ color: '#000' }}>Missing Points</option>
                 <option value="Payout Issue" style={{ color: '#000' }}>Payout / Withdrawal Issue</option>
                 <option value="Bug Report" style={{ color: '#000' }}>Platform Bug Report</option>
@@ -416,12 +395,7 @@ export default function Dashboard({ user, navigate, showToast }) {
               </select>
 
               <label style={S.modalLabel}>Detailed Message</label>
-              <textarea 
-                style={{ ...S.input, minHeight: 120, resize: 'vertical' }} 
-                placeholder="Explain the issue thoroughly so we can assist you quickly..." 
-                value={ticketForm.message} 
-                onChange={e => setTicketForm({...ticketForm, message: e.target.value})} 
-              />
+              <textarea style={{ ...S.input, minHeight: 120, resize: 'vertical' }} placeholder="Explain the issue thoroughly so we can assist you quickly..." value={ticketForm.message} onChange={e => setTicketForm({...ticketForm, message: e.target.value})} />
 
               <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
                 <button onClick={() => setShowTicketModal(false)} style={{ ...S.btnSecondary, flex: 1 }}>Cancel</button>
@@ -433,7 +407,7 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         )}
 
-        {/* PROFILE EDIT MODAL WITH CURRENCY */}
+        {/* PROFILE EDIT MODAL */}
         {showEditModal && (
           <div style={S.modalOverlay}>
             <div style={S.modalCard}>
