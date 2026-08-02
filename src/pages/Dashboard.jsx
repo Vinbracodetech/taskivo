@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import DailySpin from '../components/DailySpin';
+import TelegramBonus from '../components/TelegramBonus';
 import { enforceDeviceFingerprint } from '../lib/security';
 
 export default function Dashboard({ user, navigate, showToast }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ completions: 0 });
   const [referralCopied, setReferralCopied] = useState(false);
+  
+  // 🔥 INSTANT UI UPDATE STATE 🔥
+  const [localPoints, setLocalPoints] = useState(user?.points || 0);
 
   // Profile States
   const [showEditModal, setShowEditModal] = useState(false);
@@ -19,7 +23,7 @@ export default function Dashboard({ user, navigate, showToast }) {
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // 🔥 NEW: INBOX & ALERTS STATES 🔥
+  // Inbox & Alerts States
   const [messages, setMessages] = useState([]);
   const [showInboxModal, setShowInboxModal] = useState(false);
   const [dismissedAlerts, setDismissedAlerts] = useState(() => {
@@ -35,6 +39,7 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   useEffect(() => {
     if (!user) return;
+    setLocalPoints(user.points); // Sync points if user object updates
     fetchDashboardData();
     fetchTickets();
     fetchMessages();
@@ -156,7 +161,7 @@ export default function Dashboard({ user, navigate, showToast }) {
   }
 
   const minWithdrawal = 100;
-  const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
+  const progressPercent = Math.min((localPoints / minWithdrawal) * 100, 100);
   const isVerified = Boolean(user.payout_account && user.payout_bank_name);
   
   // Filter out messages the user has already dismissed
@@ -226,7 +231,8 @@ export default function Dashboard({ user, navigate, showToast }) {
           <div style={S.glassCard}>
             <span style={S.label}>Available Balance</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
-              <div style={S.valueGlow}>{user.points.toLocaleString()}</div>
+              {/* Uses localPoints so it updates instantly without refresh */}
+              <div style={S.valueGlow}>{localPoints.toLocaleString()}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
             </div>
             
@@ -247,10 +253,10 @@ export default function Dashboard({ user, navigate, showToast }) {
             <div style={{ marginTop: 24, marginBottom: 32 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', fontWeight: 600, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>
                 <span>Liquidity Target (100 PTS)</span>
-                <span style={{ color: 'var(--ink)' }}>{user.points} / {minWithdrawal}</span>
+                <span style={{ color: 'var(--ink)' }}>{localPoints} / {minWithdrawal}</span>
               </div>
               <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.02)' }}>
-                <div style={{ width: `${progressPercent}%`, height: '100%', background: 'var(--lime)', borderRadius: 10 }}></div>
+                <div style={{ width: `${progressPercent}%`, height: '100%', background: 'var(--lime)', borderRadius: 10, transition: 'width 0.5s ease-out' }}></div>
               </div>
             </div>
 
@@ -260,7 +266,16 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         </div>
 
-        {/* 🔥 ALWAYS-VISIBLE INBOX WIDGET 🔥 */}
+        {/* 🔥 NEW TELEGRAM BONUS INTEGRATION 🔥 */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <TelegramBonus 
+            session={{ user }} 
+            showToast={showToast} 
+            onBonusClaimed={(newPts) => setLocalPoints(newPts)} 
+          />
+        </div>
+
+        {/* ALWAYS-VISIBLE INBOX WIDGET */}
         <div 
           onClick={() => setShowInboxModal(true)}
           style={{ ...S.glassCard, position: 'relative', zIndex: 1, marginBottom: 48, cursor: 'pointer', transition: 'all 0.2s', border: activeMessages.length > 0 ? '1px solid rgba(168,255,62,0.3)' : '1px solid rgba(255,255,255,0.05)', background: activeMessages.length > 0 ? 'rgba(168,255,62,0.02)' : 'var(--surface-card)' }}
@@ -333,7 +348,7 @@ export default function Dashboard({ user, navigate, showToast }) {
           )}
         </div>
 
-        {/* 🔥 THE INBOX NOTIFICATION CENTER MODAL 🔥 */}
+        {/* THE INBOX NOTIFICATION CENTER MODAL */}
         {showInboxModal && (
           <div style={S.modalOverlay}>
             <div style={{...S.modalCard, maxWidth: 600, padding: 0, overflow: 'hidden'}}>
