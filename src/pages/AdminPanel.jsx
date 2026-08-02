@@ -1294,7 +1294,7 @@ export function AdminNotifications({ showToast }) {
               />
             </div>
 
-            <button type="submit" disabled={loading} style={{ background: '#D4AF37', border: 'none', color: '#000', padding: '16px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 8, transition: 'all 0.2s', boxShadow: '0 8px 24px rgba(212, 175, 55, 0.2)', opacity: loading ? 0.5 : 1 }}>
+            <button type="button" onClick={handleSendPush} disabled={loading} style={{ background: '#D4AF37', border: 'none', color: '#000', padding: '16px', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 8, transition: 'all 0.2s', boxShadow: '0 8px 24px rgba(212, 175, 55, 0.2)', opacity: loading ? 0.5 : 1 }}>
               {loading ? 'TRANSMITTING...' : 'DISPATCH MESSAGE'}
             </button>
           </form>
