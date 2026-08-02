@@ -33,9 +33,9 @@ export default function Landing({ navigate, setAuthMode }) {
         {
           "@type": "SoftwareApplication",
           "name": "Taskivo B2B Network",
-          "operatingSystem": "Web Browser",
+          "operatingSystem": "Web Browser, Android",
           "applicationCategory": "BusinessApplication",
-          "offers": { "@type": "Offer", "price": "3.00", "priceCurrency": "USD" }
+          "offers": { "@type": "Offer", "price": "2.00", "priceCurrency": "USD" }
         }
       ]
     };
@@ -72,6 +72,14 @@ export default function Landing({ navigate, setAuthMode }) {
       .lp-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
       .lp-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
       .lp-footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
+      
+      .play-store-btn {
+        display: inline-flex; align-items: center; gap: 12px; background: #000; color: #fff; 
+        border: 1px solid rgba(255,255,255,0.2); padding: 10px 24px; border-radius: 8px; 
+        text-decoration: none; transition: all 0.2s ease; cursor: pointer;
+      }
+      .play-store-btn:hover { border-color: #A8FF3E; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(168,255,62,0.15); }
+      
       @media (max-width: 768px) {
         .lp-hero-title { font-size: 36px !important; letter-spacing: -1px !important; }
         .lp-hero-pad { padding: 80px 5% 0px !important; }
@@ -86,43 +94,51 @@ export default function Landing({ navigate, setAuthMode }) {
     document.head.appendChild(style);
   }, []);
 
-  // 🔥 NEW 60/40 PROFIT MARGIN PRICING TIERS 🔥
+  // 🔥 NEW 5-TIER ACCESSIBLE PRICING ARRAYS 🔥
   const socialPricing = [
-    { name: 'Basic Views', price: '$3', slots: 60, features: ['Guaranteed Video Views', 'Anti-Cheat Timers'] },
-    { name: 'Starter Views', price: '$12', slots: 250, features: ['Guaranteed Video Views', 'Anti-Cheat Timers', 'Global Distribution'] },
-    { name: 'Traction Views', price: '$35', slots: 750, features: ['Guaranteed Video Views', 'Anti-Cheat Timers', 'Priority Routing'], isPopular: true },
-    { name: 'Enterprise Views', price: '$99', slots: 2250, features: ['Dedicated Manager', 'Volume Discount Rate', 'Priority Routing'] },
+    { name: 'Pilot Views', price: '$2', slots: 40, features: ['Guaranteed Views', 'Anti-Cheat Timers'] },
+    { name: 'Basic Views', price: '$5', slots: 105, features: ['Guaranteed Views', 'Anti-Cheat Timers'] },
+    { name: 'Starter Views', price: '$12', slots: 260, features: ['Guaranteed Views', 'Anti-Cheat Timers', 'Global Distribution'] },
+    { name: 'Traction Views', price: '$25', slots: 550, features: ['Guaranteed Views', 'Anti-Cheat Timers', 'Priority Routing'], isPopular: true },
+    { name: 'Scale Views', price: '$50', slots: 1120, features: ['Volume Discount', 'Anti-Cheat Timers', 'Priority Routing'] },
   ];
 
   const growthPricing = [
-    { name: 'Basic Growth', price: '$5', slots: 65, features: ['Real Human Accounts', 'Mandatory 1-Min Watch Rule', 'Zero Bot Drops'] },
-    { name: 'Starter Growth', price: '$15', slots: 200, features: ['Real Human Accounts', 'Mandatory 1-Min Watch Rule', 'Zero Bot Drops'] },
-    { name: 'Traction Growth', price: '$45', slots: 600, features: ['Real Human Accounts', 'Mandatory 1-Min Watch Rule', 'Priority Placement'], isPopular: true },
-    { name: 'Enterprise Growth', price: '$120', slots: 1650, features: ['Dedicated Manager', 'Mandatory 1-Min Watch Rule', 'Maximum Velocity'] },
+    { name: 'Pilot Growth', price: '$3', slots: 40, features: ['Real Human Accounts', '1-Min Watch Rule'] },
+    { name: 'Basic Growth', price: '$7', slots: 95, features: ['Real Human Accounts', '1-Min Watch Rule'] },
+    { name: 'Starter Growth', price: '$15', slots: 210, features: ['Real Human Accounts', '1-Min Watch Rule', 'Zero Bot Drops'] },
+    { name: 'Traction Growth', price: '$30', slots: 430, features: ['Real Human Accounts', '1-Min Watch Rule', 'Priority Placement'], isPopular: true },
+    { name: 'Scale Growth', price: '$60', slots: 880, features: ['Real Human Accounts', '1-Min Watch Rule', 'Maximum Velocity'] },
   ];
 
   const seoPricing = [
-    { name: 'Basic Traffic', price: '$5', slots: 80, features: ['Standard Web Routing', 'Guaranteed Engagement'] },
-    { name: 'Starter Traffic', price: '$15', slots: 250, features: ['Standard Web Routing', 'Guaranteed Engagement', 'Human Navigators'] },
-    { name: 'Traction Traffic', price: '$45', slots: 800, features: ['Standard Web Routing', 'Guaranteed Engagement', 'Priority Routing'], isPopular: true },
-    { name: 'Enterprise Traffic', price: '$120', slots: 2200, features: ['Volume Discount', 'Guaranteed Engagement', 'Dedicated Manager'] },
+    { name: 'Pilot Traffic', price: '$2.50', slots: 40, features: ['Standard Web Routing', 'Guaranteed Engagement'] },
+    { name: 'Basic Traffic', price: '$6', slots: 100, features: ['Standard Web Routing', 'Guaranteed Engagement'] },
+    { name: 'Starter Traffic', price: '$14', slots: 240, features: ['Standard Web Routing', 'Guaranteed Engagement', 'Human Navigators'] },
+    { name: 'Traction Traffic', price: '$28', slots: 500, features: ['Standard Web Routing', 'Guaranteed Engagement', 'Priority Routing'], isPopular: true },
+    { name: 'Scale Traffic', price: '$55', slots: 1000, features: ['Volume Discount', 'Guaranteed Engagement', 'Maximum Velocity'] },
   ];
 
   const adsensePricing = [
-    { name: 'Basic Arbitrage', price: '$6', slots: 80, features: ['Strict 2+ Min Dwell Time', 'Ad-Interaction Ready', 'Account Health Protection'] },
-    { name: 'Starter Arbitrage', price: '$18', slots: 240, features: ['Strict 2+ Min Dwell Time', 'Ad-Interaction Ready', 'Account Health Protection'] },
-    { name: 'Traction Arbitrage', price: '$50', slots: 660, features: ['Strict 2+ Min Dwell Time', 'Ad-Interaction Ready', 'Premium Traffic Routing'], isPopular: true },
-    { name: 'Scale Arbitrage', price: '$135', slots: 1800, features: ['Strict 2+ Min Dwell Time', 'Volume Traffic Injection', 'Dedicated Manager'] },
+    { name: 'Pilot Arbitrage', price: '$3.50', slots: 45, features: ['Strict 2+ Min Dwell', 'Ad-Interaction Ready'] },
+    { name: 'Basic Arbitrage', price: '$8', slots: 105, features: ['Strict 2+ Min Dwell', 'Ad-Interaction Ready'] },
+    { name: 'Starter Arbitrage', price: '$18', slots: 240, features: ['Strict 2+ Min Dwell', 'Ad-Interaction Ready', 'Account Protection'] },
+    { name: 'Traction Arbitrage', price: '$38', slots: 510, features: ['Strict 2+ Min Dwell', 'Ad-Interaction Ready', 'Premium Routing'], isPopular: true },
+    { name: 'Scale Arbitrage', price: '$75', slots: 1020, features: ['Strict 2+ Min Dwell', 'Volume Injection', 'Maximum Velocity'] },
   ];
 
   const qaPricing = [
-    { name: 'Starter QA', price: '$15', slots: 30, features: ['Real Human Testers', 'Manual Bug Reports', 'Verified Screenshots'] },
-    { name: 'Scale QA', price: '$45', slots: 100, features: ['Real Human Testers', 'Manual Bug Reports', 'Priority Placement'], isPopular: true },
+    { name: 'Pilot QA', price: '$5', slots: 10, features: ['Real Human Testers', 'Manual Bug Reports'] },
+    { name: 'Starter QA', price: '$12', slots: 25, features: ['Real Human Testers', 'Verified Screenshots'] },
+    { name: 'Pro QA', price: '$28', slots: 60, features: ['Real Human Testers', 'Verified Screenshots', 'Priority Routing'], isPopular: true },
+    { name: 'Scale QA', price: '$60', slots: 135, features: ['Volume Discount', 'Manual Bug Reports', 'Maximum Velocity'] },
   ];
 
   const ugcPricing = [
-    { name: 'Starter UGC', price: '$45', slots: 15, features: ['Authentic Creator Videos', 'Full Usage Rights', 'Manual Verification Escrow'] },
-    { name: 'Scale UGC', price: '$120', slots: 45, features: ['Authentic Creator Videos', 'Full Usage Rights', 'Priority Placement'], isPopular: true },
+    { name: 'Pilot UGC', price: '$15', slots: 5, features: ['Authentic Creator Videos', 'Full Usage Rights'] },
+    { name: 'Starter UGC', price: '$28', slots: 10, features: ['Authentic Creator Videos', 'Manual Verification Escrow'] },
+    { name: 'Pro UGC', price: '$65', slots: 25, features: ['Authentic Creator Videos', 'Full Usage Rights', 'Priority Routing'], isPopular: true },
+    { name: 'Scale UGC', price: '$120', slots: 50, features: ['Volume Discount', 'Full Usage Rights', 'Maximum Velocity'] },
   ];
 
   const activePricing = pricingMode === 'social' ? socialPricing : 
@@ -283,23 +299,71 @@ export default function Landing({ navigate, setAuthMode }) {
 
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24, maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
           {activePricing.map(function(plan, i) {
             return (
-              <div key={i} style={{ background: plan.isPopular ? C.ink : C.white, color: plan.isPopular ? C.white : C.ink, border: `1px solid ${plan.isPopular ? C.ink : C.line}`, borderRadius: 16, padding: plan.isPopular ? '48px 32px' : '32px', boxShadow: plan.isPopular ? '0 20px 40px rgba(0,0,0,0.1)' : 'none', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                {plan.isPopular && <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: C.lime, color: C.ink, fontSize: 11, fontWeight: 700, padding: '6px 16px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1 }}>Best Value</div>}
-                <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{plan.name}</div>
-                <div className="heading" style={{ fontSize: 40, color: plan.isPopular ? C.lime : C.ink, marginBottom: 8 }}>{plan.price}</div>
-                <div style={{ fontSize: 14, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>{plan.slots.toLocaleString()} {unitLabel}</div>
+              <div key={i} style={{ background: plan.isPopular ? C.ink : C.white, color: plan.isPopular ? C.white : C.ink, border: `1px solid ${plan.isPopular ? C.ink : C.line}`, borderRadius: 16, padding: plan.isPopular ? '48px 24px' : '32px 24px', boxShadow: plan.isPopular ? '0 20px 40px rgba(0,0,0,0.1)' : 'none', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                {plan.isPopular && <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: C.lime, color: C.ink, fontSize: 11, fontWeight: 700, padding: '6px 16px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap' }}>Best Value</div>}
+                <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{plan.name}</div>
+                <div className="heading" style={{ fontSize: 36, color: plan.isPopular ? C.lime : C.ink, marginBottom: 8 }}>{plan.price}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>{plan.slots.toLocaleString()} {unitLabel}</div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 14, flexGrow: 1 }}>
                   {plan.features.map(function(feat, idx) {
-                    return <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: plan.isPopular ? 'rgba(255,255,255,0.7)' : C.slate, fontWeight: 500 }}><span style={{ color: plan.isPopular ? C.lime : C.ink, fontWeight: 'bold' }}>✓</span> {feat}</li>;
+                    return <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: plan.isPopular ? 'rgba(255,255,255,0.7)' : C.slate, fontWeight: 500 }}><span style={{ color: plan.isPopular ? C.lime : C.ink, fontWeight: 'bold' }}>✓</span> {feat}</li>;
                   })}
                 </ul>
                 <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>Deploy Campaign</button>
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* 🔥 NEW APP DOWNLOAD SECTION 🔥 */}
+      <section className="lp-section-pad" style={{ background: C.ink, color: C.white, borderTop: `1px solid ${C.darkLine}`, borderBottom: `1px solid ${C.darkLine}` }}>
+        <div className="lp-grid-2" style={{ maxWidth: 1000, margin: '0 auto', alignItems: 'center' }}>
+          <div>
+            <div style={{ display: 'inline-block', background: 'rgba(168,255,62,0.1)', color: C.lime, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', padding: '6px 12px', borderRadius: 6, marginBottom: 24 }}>Native Experience</div>
+            <h2 className="heading" style={{ fontSize: 36, marginBottom: 16, lineHeight: 1.1 }}>Take Taskivo Everywhere.</h2>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, lineHeight: 1.6, marginBottom: 32, maxWidth: 400 }}>
+              Whether you are managing enterprise ad spend or monetizing your daily screen time, the Taskivo Android app delivers a frictionless, lightning-fast native experience.
+            </p>
+            
+            {/* Play Store Placeholder Button */}
+            <a href="https://play.google.com/store" target="_blank" rel="noreferrer" className="play-store-btn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 3.5L19.5 12L4 20.5V3.5Z" fill="url(#playStoreGradient)"/>
+                <defs>
+                  <linearGradient id="playStoreGradient" x1="4" y1="3.5" x2="19.5" y2="12" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#00E676"/>
+                    <stop offset="0.5" stopColor="#FFEB3B"/>
+                    <stop offset="1" stopColor="#29B6F6"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Get it on</span>
+                <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Syne', sans-serif", letterSpacing: '-0.5px' }}>Google Play</span>
+              </div>
+            </a>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {/* App Mockup Visual */}
+            <div style={{ width: 280, height: 560, background: '#1A1A24', border: `8px solid #2A2A35`, borderRadius: 36, position: 'relative', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 100, height: 24, background: '#2A2A35', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, zIndex: 10 }}></div>
+              <div style={{ padding: '48px 24px 24px', height: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: C.lime }}></div>
+                  <div style={{ width: 80, height: 20, borderRadius: 10, background: 'rgba(255,255,255,0.1)' }}></div>
+                </div>
+                <div style={{ width: '100%', height: 120, borderRadius: 16, background: 'rgba(168,255,62,0.1)', border: `1px solid ${C.limeBorder}`, marginTop: 16 }}></div>
+                <div style={{ width: '100%', height: 60, borderRadius: 12, background: 'rgba(255,255,255,0.05)' }}></div>
+                <div style={{ width: '100%', height: 60, borderRadius: 12, background: 'rgba(255,255,255,0.05)' }}></div>
+                <div style={{ width: '100%', height: 60, borderRadius: 12, background: 'rgba(255,255,255,0.05)' }}></div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
