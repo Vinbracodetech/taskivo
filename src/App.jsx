@@ -28,7 +28,8 @@ import {
   AdminUsers as AdminUsersComp,
   AdminTasks as AdminTasksComp,
   AdminWithdrawals as AdminWithdrawalsComp,
-  AdminBlog as AdminBlogComp 
+  AdminBlog as AdminBlogComp,
+  AdminNotifications as AdminNotificationsComp
 } from "./pages/AdminPanel.jsx";
 
 // ── GLOBAL STICKY HEADER ──
@@ -389,6 +390,7 @@ export default function App() {
               <button onClick={() => navigate('admin-users')} style={{ background: 'transparent', border: 'none', color: view === 'admin-users' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Identity</button>
               <button onClick={() => navigate('admin-tasks')} style={{ background: 'transparent', border: 'none', color: view === 'admin-tasks' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Campaigns</button>
               <button onClick={() => navigate('admin-withdrawals')} style={{ background: 'transparent', border: 'none', color: view === 'admin-withdrawals' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Treasury</button>
+              <button onClick={() => navigate('admin-notifications')} style={{ background: 'transparent', border: 'none', color: view === 'admin-notifications' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Alerts</button>
               <button onClick={() => navigate('admin-blog')} style={{ background: 'transparent', border: 'none', color: view === 'admin-blog' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Blog CMS</button>
             </div>
           )}
@@ -423,6 +425,7 @@ export default function App() {
             {view === "admin-users" && user && <AdminUsersComp showToast={showToast} currentUser={user} />}
             {view === "admin-tasks" && user && <AdminTasksComp showToast={showToast} />}
             {view === "admin-withdrawals" && user && <AdminWithdrawalsComp showToast={showToast} />}
+            {view === "admin-notifications" && user && <AdminNotificationsComp showToast={showToast} />}
             {view === "admin-blog" && user && <AdminBlogComp showToast={showToast} />}
           </div>
         </div>
