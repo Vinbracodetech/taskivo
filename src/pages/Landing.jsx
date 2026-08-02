@@ -60,9 +60,9 @@ export default function Landing({ navigate, setAuthMode }) {
     const style = document.createElement('style');
     style.id = 'taskivo-styles';
     style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap');
       @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-      .heading { font-family: 'Syne', sans-serif; }
+      .heading { font-family: 'Montserrat', sans-serif; }
       .body-text { font-family: 'DM Sans', sans-serif; }
       .lp-hero-title { font-size: 64px; letter-spacing: -2px; line-height: 1.05; }
       .lp-hero-pad { padding: 100px 5% 0px; }
@@ -319,7 +319,7 @@ export default function Landing({ navigate, setAuthMode }) {
         </div>
       </section>
 
-      {/* 🔥 NEW APP DOWNLOAD SECTION 🔥 */}
+      {/* 🔥 CUSTOM APP MOCKUP SECTION 🔥 */}
       <section className="lp-section-pad" style={{ background: C.ink, color: C.white, borderTop: `1px solid ${C.darkLine}`, borderBottom: `1px solid ${C.darkLine}` }}>
         <div className="lp-grid-2" style={{ maxWidth: 1000, margin: '0 auto', alignItems: 'center' }}>
           <div>
@@ -343,30 +343,93 @@ export default function Landing({ navigate, setAuthMode }) {
               </svg>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                 <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Get it on</span>
-                <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Syne', sans-serif", letterSpacing: '-0.5px' }}>Google Play</span>
+                <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Montserrat', sans-serif", letterSpacing: '-0.5px' }}>Google Play</span>
               </div>
             </a>
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-            {/* App Mockup Visual */}
-            <div style={{ width: 280, height: 560, background: '#1A1A24', border: `8px solid #2A2A35`, borderRadius: 36, position: 'relative', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+            {/* 🔥 CSS DASHBOARD UI MOCKUP 🔥 */}
+            <div style={{ position: 'relative', width: 280, height: 560, background: '#0D0D14', border: `8px solid #2A2A35`, borderRadius: 36, overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
               
               {/* iPhone Notch */}
-              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 120, height: 24, background: '#2A2A35', borderBottomLeftRadius: 16, borderBottomRightRadius: 16, zIndex: 10 }}></div>
+              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 100, height: 24, background: '#2A2A35', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, zIndex: 10 }}></div>
               
-              {/* The Catchy Image (Swap this URL with your own app screenshot later!) */}
-              <img 
-                src="https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?auto=format&fit=crop&w=600&q=80" 
-                alt="Taskivo Mobile App UI" 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-              />
-              
-              {/* A subtle dark gradient overlay so it blends into your dark theme */}
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, #0D0D14 100%)', zIndex: 5 }}></div>
+              {/* UI Container */}
+              <div style={{ padding: '48px 20px 24px', height: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                
+                {/* Top Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#A8FF3E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', fontSize: 10, fontWeight: 'bold' }}>U</div>
+                    <div style={{ height: 8, width: 40, background: 'rgba(255,255,255,0.8)', borderRadius: 4 }}></div>
+                  </div>
+                  <div style={{ height: 16, width: 16, borderRadius: 4, background: 'rgba(255,255,255,0.1)' }}></div>
+                </div>
+
+                {/* Balance Card */}
+                <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, boxShadow: '0 4px 16px rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)' }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: '#6B7280', marginBottom: 8, letterSpacing: '1px' }}>Available Balance</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 16 }}>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: '#fff', fontFamily: "'Montserrat', sans-serif" }}>1,250</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#A8FF3E' }}>PTS</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ flex: 1, background: '#A8FF3E', height: 28, borderRadius: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                       <div style={{ width: 40, height: 4, background: '#000', borderRadius: 2 }}></div>
+                    </div>
+                    <div style={{ flex: 1, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', height: 28, borderRadius: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                       <div style={{ width: 30, height: 4, background: '#fff', borderRadius: 2 }}></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Card */}
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase' }}>Cashout Progress</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: '#fff' }}>12/100</div>
+                  </div>
+                  <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ width: '40%', height: '100%', background: '#A8FF3E' }}></div>
+                  </div>
+                </div>
+
+                {/* Mock Task List */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                     <div style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>Available Tasks</div>
+                     <div style={{ fontSize: 9, color: '#A8FF3E' }}>See all</div>
+                  </div>
+                  
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.02)', padding: 12, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(168,255,62,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>▶️</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ height: 6, width: '80%', background: 'rgba(255,255,255,0.8)', borderRadius: 3, marginBottom: 6 }}></div>
+                      <div style={{ height: 4, width: '40%', background: 'rgba(255,255,255,0.3)', borderRadius: 2 }}></div>
+                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#A8FF3E' }}>+25 PTS</div>
+                  </div>
+
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.02)', padding: 12, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(212,175,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🔍</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ height: 6, width: '60%', background: 'rgba(255,255,255,0.8)', borderRadius: 3, marginBottom: 6 }}></div>
+                      <div style={{ height: 4, width: '50%', background: 'rgba(255,255,255,0.3)', borderRadius: 2 }}></div>
+                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#D4AF37' }}>+30 PTS</div>
+                  </div>
+                </div>
+
+                {/* Bottom Nav Mockup */}
+                <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-around', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 4, background: '#A8FF3E' }}></div>
+                  <div style={{ width: 20, height: 20, borderRadius: 4, background: 'rgba(255,255,255,0.2)' }}></div>
+                  <div style={{ width: 20, height: 20, borderRadius: 4, background: 'rgba(255,255,255,0.2)' }}></div>
+                </div>
+              </div>
             </div>
-          </div>
+            
           </div>
         </div>
       </section>
