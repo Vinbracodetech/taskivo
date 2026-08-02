@@ -94,37 +94,37 @@ export default function Landing({ navigate, setAuthMode }) {
     document.head.appendChild(style);
   }, []);
 
-  // 🔥 NEW 5-TIER ACCESSIBLE PRICING ARRAYS 🔥
+  // 🔥 UPDATED: Added Guaranteed Seconds & Total Watch Hours 🔥
   const socialPricing = [
-    { name: 'Pilot Views', price: '$2', slots: 40, features: ['Guaranteed Views', 'Anti-Cheat Timers'] },
-    { name: 'Basic Views', price: '$5', slots: 105, features: ['Guaranteed Views', 'Anti-Cheat Timers'] },
-    { name: 'Starter Views', price: '$12', slots: 260, features: ['Guaranteed Views', 'Anti-Cheat Timers', 'Global Distribution'] },
-    { name: 'Traction Views', price: '$25', slots: 550, features: ['Guaranteed Views', 'Anti-Cheat Timers', 'Priority Routing'], isPopular: true },
-    { name: 'Scale Views', price: '$50', slots: 1120, features: ['Volume Discount', 'Anti-Cheat Timers', 'Priority Routing'] },
+    { name: 'Pilot Views', price: '$2', slots: 40, features: ['120s Guaranteed Dwell', '1.3 Hours Total Watch Time', 'Anti-Cheat Timers'] },
+    { name: 'Basic Views', price: '$5', slots: 105, features: ['120s Guaranteed Dwell', '3.5 Hours Total Watch Time', 'Anti-Cheat Timers'] },
+    { name: 'Starter Views', price: '$12', slots: 260, features: ['120s Guaranteed Dwell', '8.6 Hours Total Watch Time', 'Global Distribution'] },
+    { name: 'Traction Views', price: '$25', slots: 550, features: ['120s Guaranteed Dwell', '18.3 Hours Total Watch Time', 'Priority Routing'], isPopular: true },
+    { name: 'Scale Views', price: '$50', slots: 1120, features: ['120s Guaranteed Dwell', '37.3 Hours Total Watch Time', 'Priority Routing'] },
   ];
 
   const growthPricing = [
-    { name: 'Pilot Growth', price: '$3', slots: 40, features: ['Real Human Accounts', '1-Min Watch Rule'] },
-    { name: 'Basic Growth', price: '$7', slots: 95, features: ['Real Human Accounts', '1-Min Watch Rule'] },
-    { name: 'Starter Growth', price: '$15', slots: 210, features: ['Real Human Accounts', '1-Min Watch Rule', 'Zero Bot Drops'] },
-    { name: 'Traction Growth', price: '$30', slots: 430, features: ['Real Human Accounts', '1-Min Watch Rule', 'Priority Placement'], isPopular: true },
-    { name: 'Scale Growth', price: '$60', slots: 880, features: ['Real Human Accounts', '1-Min Watch Rule', 'Maximum Velocity'] },
+    { name: 'Pilot Growth', price: '$3', slots: 40, features: ['60s Mandatory Watch Time', '0.6 Hours Total Watch Time', 'Real Human Accounts'] },
+    { name: 'Basic Growth', price: '$7', slots: 95, features: ['60s Mandatory Watch Time', '1.5 Hours Total Watch Time', 'Real Human Accounts'] },
+    { name: 'Starter Growth', price: '$15', slots: 210, features: ['60s Mandatory Watch Time', '3.5 Hours Total Watch Time', 'Zero Bot Drops'] },
+    { name: 'Traction Growth', price: '$30', slots: 430, features: ['60s Mandatory Watch Time', '7.1 Hours Total Watch Time', 'Priority Placement'], isPopular: true },
+    { name: 'Scale Growth', price: '$60', slots: 880, features: ['60s Mandatory Watch Time', '14.6 Hours Total Watch Time', 'Maximum Velocity'] },
   ];
 
   const seoPricing = [
-    { name: 'Pilot Traffic', price: '$2.50', slots: 40, features: ['Standard Web Routing', 'Guaranteed Engagement'] },
-    { name: 'Basic Traffic', price: '$6', slots: 100, features: ['Standard Web Routing', 'Guaranteed Engagement'] },
-    { name: 'Starter Traffic', price: '$14', slots: 240, features: ['Standard Web Routing', 'Guaranteed Engagement', 'Human Navigators'] },
-    { name: 'Traction Traffic', price: '$28', slots: 500, features: ['Standard Web Routing', 'Guaranteed Engagement', 'Priority Routing'], isPopular: true },
-    { name: 'Scale Traffic', price: '$55', slots: 1000, features: ['Volume Discount', 'Guaranteed Engagement', 'Maximum Velocity'] },
+    { name: 'Pilot Traffic', price: '$2.50', slots: 40, features: ['60s Page Navigation', 'Standard Web Routing', 'Guaranteed Engagement'] },
+    { name: 'Basic Traffic', price: '$6', slots: 100, features: ['60s Page Navigation', 'Standard Web Routing', 'Guaranteed Engagement'] },
+    { name: 'Starter Traffic', price: '$14', slots: 240, features: ['60s Page Navigation', 'Human Navigators', 'Guaranteed Engagement'] },
+    { name: 'Traction Traffic', price: '$28', slots: 500, features: ['60s Page Navigation', 'Priority Routing', 'Guaranteed Engagement'], isPopular: true },
+    { name: 'Scale Traffic', price: '$55', slots: 1000, features: ['60s Page Navigation', 'Maximum Velocity', 'Guaranteed Engagement'] },
   ];
 
   const adsensePricing = [
-    { name: 'Pilot Arbitrage', price: '$3.50', slots: 45, features: ['Strict 2+ Min Dwell', 'Ad-Interaction Ready'] },
-    { name: 'Basic Arbitrage', price: '$8', slots: 105, features: ['Strict 2+ Min Dwell', 'Ad-Interaction Ready'] },
-    { name: 'Starter Arbitrage', price: '$18', slots: 240, features: ['Strict 2+ Min Dwell', 'Ad-Interaction Ready', 'Account Protection'] },
-    { name: 'Traction Arbitrage', price: '$38', slots: 510, features: ['Strict 2+ Min Dwell', 'Ad-Interaction Ready', 'Premium Routing'], isPopular: true },
-    { name: 'Scale Arbitrage', price: '$75', slots: 1020, features: ['Strict 2+ Min Dwell', 'Volume Injection', 'Maximum Velocity'] },
+    { name: 'Pilot Arbitrage', price: '$3.50', slots: 45, features: ['120s Strict Dwell Time', '1.5 Hours Total Session Time', 'Ad-Interaction Ready'] },
+    { name: 'Basic Arbitrage', price: '$8', slots: 105, features: ['120s Strict Dwell Time', '3.5 Hours Total Session Time', 'Ad-Interaction Ready'] },
+    { name: 'Starter Arbitrage', price: '$18', slots: 240, features: ['120s Strict Dwell Time', '8.0 Hours Total Session Time', 'Account Protection'] },
+    { name: 'Traction Arbitrage', price: '$38', slots: 510, features: ['120s Strict Dwell Time', '17.0 Hours Total Session Time', 'Premium Routing'], isPopular: true },
+    { name: 'Scale Arbitrage', price: '$75', slots: 1020, features: ['120s Strict Dwell Time', '34.0 Hours Total Session Time', 'Volume Injection'] },
   ];
 
   const qaPricing = [
@@ -151,10 +151,10 @@ export default function Landing({ navigate, setAuthMode }) {
                     (pricingMode === 'growth') ? 'Subscribers/Followers' : 'Verified Engagements';
 
   const serviceDetails = {
-    social: { title: 'YouTube & Social Views', icon: '▶️', desc: 'Boost algorithmic reach. Real humans watch and engage with your content. Every view is verified by our strict anti-cheat timers to ensure zero drop-offs.' },
-    growth: { title: 'Audience Growth (Subs & Follows)', icon: '👥', desc: 'Build a permanent follower base. To prevent algorithms from flagging spam, our earners are strictly required to watch 1+ minutes of your content before hitting subscribe or follow.' },
+    social: { title: 'YouTube & Social Views', icon: '▶️', desc: 'Boost algorithmic reach. Real humans watch and engage with your content. Every view is verified by our strict 120-second anti-cheat timers to ensure zero drop-offs and accumulate valid Watch Hours.' },
+    growth: { title: 'Audience Growth (Subs & Follows)', icon: '👥', desc: 'Build a permanent follower base. To prevent algorithms from flagging spam, our earners are strictly required to watch 60+ seconds of your content before hitting subscribe or follow.' },
     seo: { title: 'Standard SEO Traffic', icon: '🔍', desc: 'Dominate search engine rankings. Our network navigates to your blog or website, reducing bounce rates and signaling high search relevance to Google.' },
-    adsense: { title: 'AdSense & Arbitrage Traffic', icon: '💰', desc: 'High-tier traffic specifically engineered for AdSense Arbitrage. Strict 2+ minute dwell times and ad-interaction compliance to keep your Google ad accounts perfectly healthy.' },
+    adsense: { title: 'AdSense & Arbitrage Traffic', icon: '💰', desc: 'High-tier traffic specifically engineered for AdSense Arbitrage. Strict 120-second dwell times and ad-interaction compliance to keep your Google ad accounts perfectly healthy.' },
     qa: { title: 'App QA Testing', icon: '🐛', desc: 'Crowdsourced bug hunting. Deploy real users to download your app, test features, and upload manual feedback screenshots before your official launch.' },
     ugc: { title: 'Authentic UGC Videos', icon: '🤳', desc: 'Commission real people to record authentic, selfie-style video testimonials or product demos. You get full commercial rights to use them in your ad campaigns.' }
   };
@@ -162,8 +162,8 @@ export default function Landing({ navigate, setAuthMode }) {
   const faqs = [
     { q: 'Who is Taskivo?', a: 'Taskivo is a global attention network bridging the gap between enterprise marketing and distributed human contributors. We provide a secure infrastructure for real people to monetize their digital footprint while helping businesses grow.' },
     { q: 'How do Earners get paid? Is there a high threshold?', a: 'Unlike other platforms, Taskivo offers Day-One Liquidity. Earners can cash out their first ₦100 as soon as they hit just 100 Points. This takes as few as 3-4 tasks. Withdrawals are processed instantly via Paystack directly to your local bank account.' },
-    { q: 'What is the difference between Standard SEO and AdSense Arbitrage tasks?', a: 'Standard SEO tasks (30 PTS) focus on search visibility. AdSense Arbitrage tasks reward earners with higher pay (40 PTS) because they require strict 2+ minute dwell times and ad-interaction compliance to protect the Creator’s Google AdSense account health.' },
-    { q: 'How does the Audience Growth package guarantee permanent subscribers?', a: 'If a user just clicks "Subscribe" without watching, YouTube deletes it as spam. Our system forces Earners to watch your content for a minimum of 1 minute before subscribing. This costs slightly more, but guarantees permanent, algorithm-friendly followers.' },
+    { q: 'What is the difference between Standard SEO and AdSense Arbitrage tasks?', a: 'Standard SEO tasks (30 PTS) focus on search visibility. AdSense Arbitrage tasks reward earners with higher pay (40 PTS) because they require strict 120+ second dwell times and ad-interaction compliance to protect the Creator’s Google AdSense account health.' },
+    { q: 'How does the Audience Growth package guarantee permanent subscribers?', a: 'If a user just clicks "Subscribe" without watching, YouTube deletes it as spam. Our system forces Earners to watch your content for a minimum of 60 seconds before subscribing. This costs slightly more, but guarantees permanent, algorithm-friendly followers.' },
     { q: 'What are Internal Blog Tasks?', a: 'To keep our community engaged while waiting for new Creator campaigns, Taskivo injects its own liquidity to fund "Internal Blog Tasks." Earners get a quick 5 PTS booster just for reading official platform updates.' },
     { q: 'How does Taskivo prevent bot traffic?', a: 'We utilize Layer 3 Financial Verification. Every contributor must bind a real bank account to their identity. We pair this with strict pointer-lock technology and tab-switch detection.' }
   ];
