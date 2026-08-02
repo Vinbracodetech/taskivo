@@ -17,7 +17,6 @@ export default function CreateTask({ session, navigate, showToast }) {
     platform: 'youtube', // Default
     url: '',
     search_keyword: '',     
-    watch_duration: 120, 
     package: 'traction',
     paymentGateway: 'paystack'
   });
@@ -40,39 +39,47 @@ export default function CreateTask({ session, navigate, showToast }) {
 
   const EXCHANGE_RATE = 1500;
 
-  // 🔥 NEW 60/40 PROFIT PACKAGES 🔥
+  // 🔥 NEW 5-TIER ACCESSIBLE PRICING 🔥
   const packages = {
     social: {
-      basic: { label: 'Basic Views', views: 60, priceUSD: 3 },
-      starter: { label: 'Starter Views', views: 250, priceUSD: 12 },
-      traction: { label: 'Traction Views', views: 750, priceUSD: 35 },
-      enterprise: { label: 'Enterprise Views', views: 2250, priceUSD: 99 }
+      pilot: { label: 'Pilot Views', views: 40, priceUSD: 2 },
+      basic: { label: 'Basic Views', views: 105, priceUSD: 5 },
+      starter: { label: 'Starter Views', views: 260, priceUSD: 12 },
+      traction: { label: 'Traction Views', views: 550, priceUSD: 25 },
+      scale: { label: 'Scale Views', views: 1120, priceUSD: 50 }
     },
     growth: {
-      basic: { label: 'Basic Growth', views: 65, priceUSD: 5 },
-      starter: { label: 'Starter Growth', views: 200, priceUSD: 15 },
-      traction: { label: 'Traction Growth', views: 600, priceUSD: 45 },
-      enterprise: { label: 'Enterprise Growth', views: 1650, priceUSD: 120 }
+      pilot: { label: 'Pilot Growth', views: 40, priceUSD: 3 },
+      basic: { label: 'Basic Growth', views: 95, priceUSD: 7 },
+      starter: { label: 'Starter Growth', views: 210, priceUSD: 15 },
+      traction: { label: 'Traction Growth', views: 430, priceUSD: 30 },
+      scale: { label: 'Scale Growth', views: 880, priceUSD: 60 }
     },
     seo: {
-      basic: { label: 'Basic Traffic', views: 80, priceUSD: 5 },
-      starter: { label: 'Starter Traffic', views: 250, priceUSD: 15 },
-      traction: { label: 'Traction Traffic', views: 800, priceUSD: 45 },
-      enterprise: { label: 'Enterprise Traffic', views: 2200, priceUSD: 120 }
+      pilot: { label: 'Pilot Traffic', views: 40, priceUSD: 2.50 },
+      basic: { label: 'Basic Traffic', views: 100, priceUSD: 6 },
+      starter: { label: 'Starter Traffic', views: 240, priceUSD: 14 },
+      traction: { label: 'Traction Traffic', views: 500, priceUSD: 28 },
+      scale: { label: 'Scale Traffic', views: 1000, priceUSD: 55 }
     },
     adsense: {
-      basic: { label: 'Basic Arbitrage', views: 80, priceUSD: 6 },
+      pilot: { label: 'Pilot Arbitrage', views: 45, priceUSD: 3.50 },
+      basic: { label: 'Basic Arbitrage', views: 105, priceUSD: 8 },
       starter: { label: 'Starter Arbitrage', views: 240, priceUSD: 18 },
-      traction: { label: 'Traction Arbitrage', views: 660, priceUSD: 50 },
-      scale: { label: 'Scale Arbitrage', views: 1800, priceUSD: 135 }
+      traction: { label: 'Traction Arbitrage', views: 510, priceUSD: 38 },
+      scale: { label: 'Scale Arbitrage', views: 1020, priceUSD: 75 }
     },
     qa_testing: {
-      starter: { label: 'Starter QA', views: 30, priceUSD: 15 },
-      traction: { label: 'Scale QA', views: 100, priceUSD: 45 }
+      pilot: { label: 'Pilot QA', views: 10, priceUSD: 5 },
+      starter: { label: 'Starter QA', views: 25, priceUSD: 12 },
+      pro: { label: 'Pro QA', views: 60, priceUSD: 28 },
+      scale: { label: 'Scale QA', views: 135, priceUSD: 60 }
     },
     ugc: {
-      starter: { label: 'Starter UGC', views: 15, priceUSD: 45 },
-      traction: { label: 'Scale UGC', views: 45, priceUSD: 120 }
+      pilot: { label: 'Pilot UGC', views: 5, priceUSD: 15 },
+      starter: { label: 'Starter UGC', views: 10, priceUSD: 28 },
+      pro: { label: 'Pro UGC', views: 25, priceUSD: 65 },
+      scale: { label: 'Scale UGC', views: 50, priceUSD: 120 }
     }
   };
 
@@ -87,14 +94,13 @@ export default function CreateTask({ session, navigate, showToast }) {
   const activePackages = packages[currentPlatformType];
   const hasFreeCredit = freeCredits > 0;
   
-  const selectedPackageData = form.package === 'pilot' 
+  const selectedPackageData = form.package === 'pilot' && hasFreeCredit
     ? { label: 'Pilot Grant', views: 20, priceUSD: 0 } 
-    : activePackages[form.package] || activePackages['starter'] || activePackages['basic']; // Fallback fix
+    : activePackages[form.package] || activePackages['starter'] || activePackages['basic'];
 
   useEffect(() => {
     if (form.package !== 'pilot' && !activePackages[form.package]) {
-        // Auto-select the first available package if the current one doesn't exist in the new category
-        const defaultPkg = activePackages.traction ? 'traction' : 'starter';
+        const defaultPkg = activePackages.traction ? 'traction' : (activePackages.pro ? 'pro' : 'starter');
         setForm(prev => ({ ...prev, package: defaultPkg }));
     }
   }, [form.platform, activePackages, form.package]);
@@ -103,15 +109,15 @@ export default function CreateTask({ session, navigate, showToast }) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  // 🔥 UPDATED EARNER PAYOUT LOGIC (Perfectly Balanced for 100 PTS Threshold) 🔥
+  // 🔥 UPDATED EARNER PAYOUT LOGIC (1 PTS = ₦1) 🔥
   async function deployTaskToNetwork(isUsingPilot, amountPaid = 0) {
-    let earnerPayout = 20; // Default for Social
+    let earnerPayout = 25; // Default for Social
     
-    if (form.platform === 'blog') earnerPayout = 25; // Standard SEO
-    if (form.platform === 'adsense') earnerPayout = 30; // Premium SEO
-    if (form.platform === 'growth') earnerPayout = 35; // Subs/Follows
-    if (form.platform === 'qa_testing') earnerPayout = 100; // High Effort Manual
-    if (form.platform === 'ugc') earnerPayout = 1500; // Premium Video Submission
+    if (form.platform === 'blog') earnerPayout = 30; // Standard SEO
+    if (form.platform === 'adsense') earnerPayout = 40; // Premium Adsense
+    if (form.platform === 'growth') earnerPayout = 40; // Subs/Follows
+    if (form.platform === 'qa_testing') earnerPayout = 150; // Manual QA
+    if (form.platform === 'ugc') earnerPayout = 1500; // UGC Video
 
     const { data: newTask, error: insertErr } = await supabase.from('tasks').insert({
       creator_id: user.id, 
@@ -120,7 +126,6 @@ export default function CreateTask({ session, navigate, showToast }) {
       url: form.url,
       search_keyword: (form.platform === 'blog' || form.platform === 'adsense') ? form.search_keyword : null,
       secret_code: null,
-      watch_duration: 120, // Strict timer lock
       target_views: selectedPackageData.views, 
       current_views: 0, 
       status: 'active', 
@@ -167,7 +172,7 @@ export default function CreateTask({ session, navigate, showToast }) {
 
     try {
       setLoading(true);
-      const isUsingPilot = form.package === 'pilot';
+      const isUsingPilot = form.package === 'pilot' && hasFreeCredit;
 
       if (isUsingPilot) {
         await deployTaskToNetwork(true);
@@ -225,12 +230,12 @@ export default function CreateTask({ session, navigate, showToast }) {
       WebkitBackdropFilter: 'blur(16px)'
     },
     
-    label: { fontSize: 11, color: '#D4AF37', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12, display: 'block', fontFamily: "'Inter', sans-serif" },
+    label: { fontSize: 11, color: '#D4AF37', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12, display: 'block', fontFamily: "'Montserrat', sans-serif" },
     
     input: { width: '100%', padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#ffffff', fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', marginBottom: 24, transition: 'border-color 0.2s' },
     select: { width: '100%', padding: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#ffffff', fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', appearance: 'none', marginBottom: 24, transition: 'border-color 0.2s' },
     
-    btnPrimary: { width: '100%', background: '#D4AF37', border: 'none', color: '#000', borderRadius: 12, padding: '18px', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 16, transition: 'opacity 0.2s', boxShadow: '0 8px 24px rgba(212, 175, 55, 0.2)' },
+    btnPrimary: { width: '100%', background: '#D4AF37', border: 'none', color: '#000', borderRadius: 12, padding: '18px', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', marginTop: 16, transition: 'opacity 0.2s', boxShadow: '0 8px 24px rgba(212, 175, 55, 0.2)' },
     
     packageCard: (isActive) => ({ padding: 24, borderRadius: 16, cursor: 'pointer', transition: 'all 0.2s', background: isActive ? 'rgba(212, 175, 55, 0.1)' : 'rgba(0,0,0,0.3)', border: `1px solid ${isActive ? '#D4AF37' : 'rgba(255,255,255,0.1)'}`, color: '#ffffff' }),
     gatewayCard: (isActive) => ({ padding: '16px', borderRadius: '12px', cursor: 'pointer', border: `1px solid ${isActive ? '#D4AF37' : 'rgba(255,255,255,0.1)'}`, background: isActive ? 'rgba(212, 175, 55, 0.05)' : 'rgba(0,0,0,0.3)', flex: 1, display: 'flex', alignItems: 'center', gap: '16px', transition: 'all 0.2s' })
@@ -245,7 +250,7 @@ export default function CreateTask({ session, navigate, showToast }) {
     <div style={S.pageWrapper}>
       <div style={S.page}>
         <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
-          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: '#ffffff', margin: 0, fontWeight: 800, letterSpacing: '-0.5px' }}>Campaign Deployment</h1>
+          <h1 style={{ fontFamily: "'Montserrat', sans-serif", fontSize: 32, color: '#ffffff', margin: 0, fontWeight: 800, letterSpacing: '-0.5px' }}>Campaign Deployment</h1>
           <button onClick={() => navigate('creator-dashboard')} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', borderRadius: 8, padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}>← Command Center</button>
         </div>
 
@@ -293,16 +298,16 @@ export default function CreateTask({ session, navigate, showToast }) {
                     <input style={{...S.input, marginBottom: 0}} type="text" name="search_keyword" placeholder="e.g. Best FinTech 2026" value={form.search_keyword} onChange={handleInput} required />
                   </div>
                   <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: '16px 0 0 0', lineHeight: 1.5 }}>
-                    Earners will search for this keyword, find your URL, and wait for the strict 120s dwell timer. Our network will automatically generate a Single-Use Burnable Token for them once completed.
+                    Earners will search for this keyword and interact with your asset. Our network securely verifies their engagement and automatically generates a Single-Use Burnable Token upon completion.
                   </p>
                 </div>
               )}
 
               {!isManual && (
                 <div>
-                  <span style={S.label}>Verification Duration (Seconds)</span>
+                  <span style={S.label}>Verification Standards</span>
                   <div style={{ ...S.input, background: 'rgba(255,255,255,0.02)', color: 'rgba(255,255,255,0.4)', cursor: 'not-allowed', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    120 Seconds (Strict Network Dwell Standard)
+                    High Retention / Algorithm Safe Verification
                   </div>
                 </div>
               )}
@@ -317,7 +322,7 @@ export default function CreateTask({ session, navigate, showToast }) {
                         <div style={{ fontSize: 13, fontWeight: 800, color: form.package === 'pilot' ? '#D4AF37' : '#ffffff' }}>🎁 Pilot Grant</div>
                         <div style={{ fontSize: 11, fontWeight: 800, padding: '4px 8px', borderRadius: 100, border: `1px solid ${form.package === 'pilot' ? 'rgba(212, 175, 55, 0.3)' : 'rgba(255,255,255,0.1)'}`, color: form.package === 'pilot' ? '#D4AF37' : 'rgba(255,255,255,0.5)' }}>FREE</div>
                       </div>
-                      <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>20 <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>{unitLabel}</span></div>
+                      <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8, fontFamily: "'Montserrat', sans-serif" }}>20 <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>{unitLabel}</span></div>
                       <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>One-time network trial.</div>
                     </div>
                   )}
@@ -325,10 +330,10 @@ export default function CreateTask({ session, navigate, showToast }) {
                   {Object.entries(activePackages).map(([key, pkg]) => (
                     <div key={key} onClick={() => setForm(prev => ({ ...prev, package: key }))} style={S.packageCard(form.package === key)}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>{pkg.label}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "'Montserrat', sans-serif" }}>{pkg.label}</div>
                         <div style={{ fontSize: 11, fontWeight: 800, padding: '4px 8px', borderRadius: 100, background: form.package === key ? '#D4AF37' : 'rgba(255,255,255,0.1)', color: form.package === key ? '#000' : '#ffffff', border: `1px solid ${form.package === key ? '#D4AF37' : 'rgba(255,255,255,0.05)'}` }}>${pkg.priceUSD}</div>
                       </div>
-                      <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 8, fontFamily: "'Inter', sans-serif" }}>
+                      <div style={{ fontSize: 32, fontWeight: 800, marginBottom: 8, fontFamily: "'Montserrat', sans-serif" }}>
                         {pkg.views} <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{unitLabel}</span>
                       </div>
                       <div style={{ fontSize: 12, fontWeight: 600, color: form.package === key ? 'rgba(212, 175, 55, 0.8)' : 'rgba(255,255,255,0.4)', marginTop: 8 }}>
@@ -355,7 +360,7 @@ export default function CreateTask({ session, navigate, showToast }) {
               )}
 
               <button type="submit" disabled={loading} style={{ ...S.btnPrimary, opacity: loading ? 0.5 : 1 }}>
-                {loading ? 'Processing Transaction...' : form.package === 'pilot' ? `Deploy Pilot Campaign (Free)` : `Pay ₦${(selectedPackageData.priceUSD * EXCHANGE_RATE).toLocaleString()} & Deploy`}
+                {loading ? 'Processing Transaction...' : (form.package === 'pilot' && hasFreeCredit) ? `Deploy Pilot Campaign (Free)` : `Pay ₦${(selectedPackageData.priceUSD * EXCHANGE_RATE).toLocaleString()} & Deploy`}
               </button>
             </form>
           )}
@@ -366,46 +371,37 @@ export default function CreateTask({ session, navigate, showToast }) {
               <div style={{ width: 64, height: 64, background: 'rgba(168, 255, 62, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid rgba(168, 255, 62, 0.5)' }}>
                 <span style={{ fontSize: 24 }}>🚀</span>
               </div>
-              <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, color: '#ffffff', margin: '0 0 12px 0', fontWeight: 800 }}>Campaign Deployed!</h1>
+              <h1 style={{ fontFamily: "'Montserrat', sans-serif", fontSize: 28, color: '#ffffff', margin: '0 0 12px 0', fontWeight: 800 }}>Campaign Deployed!</h1>
               <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)', margin: '0 0 32px 0' }}>Your capital is locked in escrow. The network is ready.</p>
 
               {isSEO ? (
                 <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.3)', border: '1px solid #D4AF37', borderRadius: 16, padding: 24, marginTop: 16 }}>
-                  <h3 style={{ margin: '0 0 16px 0', color: '#ffffff', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', fontSize: 14, letterSpacing: '1px' }}>Integration Required</h3>
+                  <h3 style={{ margin: '0 0 16px 0', color: '#ffffff', fontFamily: "'Montserrat', sans-serif", textTransform: 'uppercase', fontSize: 14, letterSpacing: '1px' }}>Integration Required</h3>
                   <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: 20 }}>
-                    To enable Zero-Bot verification and Single-Use Burnable Tokens, copy the code below and paste it into the HTML of your target article (usually at the very bottom of the post).
+                    To enable verification and Single-Use Burnable Tokens, copy the code below and paste it into the HTML of your target article (usually at the very bottom of the post).
                   </p>
                   
                   <div style={{ position: 'relative' }}>
                     <pre style={{ background: '#000000', padding: 24, borderRadius: 12, overflowX: 'auto', fontSize: 12, color: '#10b981', border: '1px solid rgba(255,255,255,0.1)', fontFamily: 'monospace', lineHeight: 1.5 }}>
 {`<div id="taskivo-node" style="padding: 20px; text-align: center; border: 1px dashed #ccc; border-radius: 8px; margin-top: 30px;">
   <span id="t-status" style="font-family: sans-serif; font-size: 14px; color: #666;">Taskivo Secure Node active. Establishing connection...</span>
-  <div id="t-timer" style="font-size: 24px; font-weight: bold; color: #ef4444; margin-top: 10px;"></div>
 </div>
 
 <script>
 (function() {
   var taskId = '${deployedTask.id}';
   var statusEl = document.getElementById('t-status');
-  var timerEl = document.getElementById('t-timer');
   
   fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
     method: 'POST', body: JSON.stringify({ task_id: taskId })
   }).then(res => res.json()).then(data => {
     if(!data.session_id) return;
     
-    statusEl.innerText = "Tracking Organic Dwell Time. Do not switch tabs.";
-    var timeLeft = 120;
+    statusEl.innerText = "Tracking Organic Engagement. Do not switch tabs.";
     
-    var countdown = setInterval(function() {
-      if (document.hidden) return; // Pauses visual timer if they leave tab
-      timeLeft--;
-      timerEl.innerText = timeLeft + "s";
-      
-      if (timeLeft <= 0) {
-        clearInterval(countdown);
+    // Silent Background Tracking
+    setTimeout(function() {
         statusEl.innerText = "Verifying telemetry with server...";
-        timerEl.innerText = "";
         
         fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/claim', {
           method: 'POST', body: JSON.stringify({ session_id: data.session_id })
@@ -414,8 +410,7 @@ export default function CreateTask({ session, navigate, showToast }) {
              document.getElementById('taskivo-node').innerHTML = '<strong style="color: #10b981; font-family: sans-serif;">Verification Complete! Your Single-Use Code is:<br><br><span style="background: #eee; padding: 8px 12px; border-radius: 4px; letter-spacing: 1px; color: #000; word-break: break-all;">' + final.secret_code + '</span></strong>';
           }
         });
-      }
-    }, 1000);
+    }, 60000); // Background verification delay
   });
 })();
 </script>`}
@@ -428,7 +423,7 @@ export default function CreateTask({ session, navigate, showToast }) {
                 </div>
               ) : (
                 <div style={{ textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 32, marginTop: 16 }}>
-                  <h3 style={{ margin: '0 0 12px 0', color: '#ffffff', fontFamily: "'Inter', sans-serif" }}>Network is Live</h3>
+                  <h3 style={{ margin: '0 0 12px 0', color: '#ffffff', fontFamily: "'Montserrat', sans-serif" }}>Network is Live</h3>
                   <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>Your {form.platform.replace('_', ' ')} campaign is now indexing in the Earner pool. No further action is required.</p>
                 </div>
               )}
