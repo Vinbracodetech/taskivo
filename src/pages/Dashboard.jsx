@@ -19,6 +19,9 @@ export default function Dashboard({ user, navigate, showToast }) {
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // Communications & Inbox
+  const [messages, setMessages] = useState([]);
+
   // Support Ticket States
   const [tickets, setTickets] = useState([]);
   const [showTicketModal, setShowTicketModal] = useState(false);
@@ -29,6 +32,7 @@ export default function Dashboard({ user, navigate, showToast }) {
     if (!user) return;
     fetchDashboardData();
     fetchTickets();
+    fetchMessages();
     enforceDeviceFingerprint(user.id);
   }, [user]);
 
@@ -64,6 +68,24 @@ export default function Dashboard({ user, navigate, showToast }) {
     }
   }
 
+  // 🔥 FETCH INBOX MESSAGES 🔥
+  async function fetchMessages() {
+    try {
+      // RLS automatically filters out messages not meant for this user
+      const { data, error } = await supabase
+        .from('user_messages')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5); // Keep the dashboard clean by showing top 5 recent
+      
+      if (!error && data) {
+        setMessages(data);
+      }
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    }
+  }
+
   async function handleSubmitTicket() {
     if (!ticketForm.message.trim()) {
       if (showToast) showToast('Please enter a detailed message.', 'error');
@@ -96,7 +118,6 @@ export default function Dashboard({ user, navigate, showToast }) {
     try {
       if (!editForm.full_name) throw new Error("Full name is required");
       
-      // 🔥 FIX 1: Convert empty strings to null to prevent "Duplicate Account" crashes
       const safeAccount = editForm.payout_account?.trim() === '' ? null : editForm.payout_account?.trim();
       const safeBank = editForm.payout_bank_name?.trim() === '' ? null : editForm.payout_bank_name?.trim();
       const safeAccountName = editForm.payout_account_name?.trim() === '' ? null : editForm.payout_account_name?.trim();
@@ -118,7 +139,6 @@ export default function Dashboard({ user, navigate, showToast }) {
         throw new Error(`Database Error: ${error.message}`);
       }
       
-      // 🔥 FIX 2: Explicitly catch RLS policy blocks
       if (!data || data.length === 0) {
         throw new Error("Supabase RLS blocked the save. You need a SELECT policy.");
       }
@@ -126,7 +146,6 @@ export default function Dashboard({ user, navigate, showToast }) {
       if (showToast) showToast('Profile updated successfully!', 'success');
       setShowEditModal(false);
 
-      // Force a hard sync with App.jsx to reflect the new database state
       setTimeout(() => window.location.reload(), 1500);
 
     } catch (err) {
@@ -286,7 +305,6 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         </div>
 
-        {/* REVISED REFERRAL SECTION */}
         <div style={{ ...S.premiumCard, marginBottom: 48, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1, opacity: 0.7 }}>
           <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--slate)', color: 'var(--slate)', background: 'rgba(255,255,255,0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
@@ -303,6 +321,37 @@ export default function Dashboard({ user, navigate, showToast }) {
             CURRENTLY UNAVAILABLE
           </button>
         </div>
+
+        {/* 🔥 NEW INBOX & ALERTS SECTION 🔥 */}
+        {messages.length > 0 && (
+          <div style={{ ...S.glassCard, position: 'relative', zIndex: 1, marginBottom: 48, border: '1px solid rgba(168,255,62,0.3)', background: 'rgba(168,255,62,0.03)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+              <div style={{ background: 'var(--lime)', color: '#000', width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                🔔
+              </div>
+              <div>
+                <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, color: 'var(--ink)', margin: '0 0 4px 0', fontWeight: 800, letterSpacing: '-0.5px' }}>Inbox & Alerts</h2>
+                <p style={{ color: 'var(--slate)', fontSize: 14, margin: 0 }}>Official broadcasts and direct messages.</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {messages.map(msg => (
+                <div key={msg.id} style={{ background: 'var(--surface)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>{msg.title}</div>
+                    <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {new Date(msg.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    {msg.message}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div style={{ ...S.glassCard, position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
