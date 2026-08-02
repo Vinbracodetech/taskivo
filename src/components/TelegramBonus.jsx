@@ -7,8 +7,10 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [telegramId, setTelegramId] = useState('');
+  
+  // 🔥 NEW: Local error state so we can see exactly what fails on mobile
+  const [localError, setLocalError] = useState('');
 
-  // 🔥 Your Actual Official Link 🔥
   const TELEGRAM_URL = 'https://t.me/taskivoonline'; 
   const BONUS_REWARD = 20;
 
@@ -36,43 +38,54 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
 
   async function handleClaimReward() {
     if (claimed) return;
+    setLocalError(''); // Clear previous errors
+    
     if (!telegramId || telegramId.trim() === '') {
-      if (showToast) showToast('Please enter your Numeric Telegram ID', 'error');
+      setLocalError('Please enter your Numeric Telegram ID.');
       return;
     }
 
     setSubmitting(true);
     try {
-      // 1. Verify with your Supabase Edge Function
+      // STEP 1: Ping the Edge Function
       const { data: edgeData, error: edgeError } = await supabase.functions.invoke('verify-telegram', {
         body: { telegram_id: telegramId.trim() }
       });
 
-      if (edgeError || !edgeData?.verified) {
-        throw new Error('Verification failed. Are you sure you joined @taskivoonline?');
+      if (edgeError) {
+        throw new Error(`Edge Function Error: ${edgeError.message || 'Unknown network error'}`);
       }
 
-      // 2. Record the claim securely
+      if (!edgeData?.verified) {
+        throw new Error(edgeData?.error || 'Verification failed. Are you sure you joined @taskivoonline?');
+      }
+
+      // STEP 2: Record the claim securely
       const { error: claimErr } = await supabase
         .from('telegram_claims')
         .insert({ user_id: user.id });
 
       if (claimErr) {
-        if (claimErr.code === '23505') throw new Error('You have already claimed this bonus!');
-        throw claimErr;
+        if (claimErr.code === '23505') {
+          setClaimed(true);
+          throw new Error('You have already claimed this bonus!');
+        }
+        throw new Error(`Database Error (Claims): ${claimErr.message}`);
       }
 
-      // 3. Fetch and update points
+      // STEP 3: Fetch and update points
       const { data: profileData, error: profileErr } = await supabase
         .from('profiles').select('points').eq('id', user.id).single();
 
-      if (profileErr) throw profileErr;
+      if (profileErr) throw new Error(`Database Error (Profile): ${profileErr.message}`);
 
       const newPoints = (profileData.points || 0) + BONUS_REWARD;
 
-      await supabase.from('profiles').update({ points: newPoints }).eq('id', user.id);
+      const { error: updateErr } = await supabase.from('profiles').update({ points: newPoints }).eq('id', user.id);
+      
+      if (updateErr) throw new Error(`Database Error (Update): ${updateErr.message}`);
 
-      // 4. Log ledger transaction
+      // STEP 4: Log ledger transaction
       await supabase.from('transactions').insert({
         user_id: user.id,
         type: 'telegram_bonus',
@@ -82,11 +95,13 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
       });
 
       setClaimed(true);
+      setLocalError('');
       if (showToast) showToast(`Success! +${BONUS_REWARD} PTS verified and added.`, 'success');
       if (onBonusClaimed) onBonusClaimed(newPoints);
 
     } catch (err) {
-      if (showToast) showToast(err.message || 'Failed to verify membership', 'error');
+      // Print the exact error on the screen
+      setLocalError(err.message || 'An unknown error occurred.');
     } finally {
       setSubmitting(false);
     }
@@ -126,6 +141,12 @@ export default function TelegramBonus({ session, showToast, onBonusClaimed }) {
                 onChange={(e) => setTelegramId(e.target.value)}
                 style={{ width: '100%', padding: '12px 16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(0,136,204,0.3)', borderRadius: 8, color: '#fff', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: 14, boxSizing: 'border-box' }}
               />
+              {/* 🔥 EXPLICIT ERROR DISPLAY 🔥 */}
+              {localError && (
+                <div style={{ marginTop: 12, padding: 12, background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, color: '#ef4444', fontSize: 13, fontWeight: 600 }}>
+                  🚨 {localError}
+                </div>
+              )}
             </div>
           )}
         </div>
