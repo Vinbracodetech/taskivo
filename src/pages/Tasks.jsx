@@ -20,16 +20,16 @@ export default function Tasks({ session, navigate }) {
 
   const [toastMessage, setToastMessage] = useState('');
 
-  // --- ADMOB NATIVE BRIDGE LOGIC ---
+  // --- PREMIUM AD NETWORK BRIDGE LOGIC ---
   useEffect(() => {
     if (!user) return;
 
     window.onAdRewardSuccess = async (points) => {
-      // 1. INSTANT FRONTEND LOCK: Instantly disables the button so they cannot spam click
+      // 1. INSTANT FRONTEND LOCK: 15-Minute Cooldown Trigger
       localStorage.setItem('admob_last_watched', Date.now().toString());
       setCooldowns(prev => ({
         ...prev, 
-        '11111111-1111-1111-1111-111111111111': '60M'
+        '11111111-1111-1111-1111-111111111111': '15M'
       }));
 
       setToastMessage('Processing Video Yield...');
@@ -43,7 +43,7 @@ export default function Tasks({ session, navigate }) {
 
         if (error) {
            if (error.message.includes('Network Cooldown')) {
-             throw new Error("Cooldown active. Please wait 1 hour.");
+             throw new Error("Cooldown active. Please wait 15 minutes.");
            }
            throw error;
         }
@@ -68,7 +68,6 @@ export default function Tasks({ session, navigate }) {
   useEffect(() => {
     if (!user) return;
     
-    // Check verification status, but DO NOT return early so listeners still attach!
     if (!user.payout_account || !user.payout_bank_name) {
       setNeedsPayoutVerification(true);
       setLoading(false);
@@ -76,9 +75,7 @@ export default function Tasks({ session, navigate }) {
       fetchMarketplace();
     }
     
-    // Listeners are now always attached securely
     const handleSilentSync = () => {
-      // Only fetch if they aren't stuck on the payout screen
       if (user.payout_account && user.payout_bank_name) {
         fetchMarketplace(true);
         setToastMessage('+ Yield Secured! Network balances synchronized.');
@@ -127,9 +124,9 @@ export default function Tasks({ session, navigate }) {
         else if (['ugc', 'qa_testing', 'growth'].includes(h.platform)) pCount++; 
         else if (h.task_id === '11111111-1111-1111-1111-111111111111') nativeCount++;
         
-        // Database Cooldown Logic
+        // Database Cooldown Logic (15 Minute Lock for Native Ads)
         if (h.task_id === '11111111-1111-1111-1111-111111111111') {
-            const minutesLeft = Math.ceil(60 - ((now - completedAt) / 60000));
+            const minutesLeft = Math.ceil(15 - ((now - completedAt) / 60000));
             if (minutesLeft > 0) cooldownMap[h.task_id] = `${minutesLeft}M`;
         } else {
             const hoursLeft = Math.ceil(24 - ((now - completedAt) / 3600000));
@@ -137,12 +134,12 @@ export default function Tasks({ session, navigate }) {
         }
       });
 
-      // --- BULLETPROOF FRONTEND OVERRIDE ---
+      // --- BULLETPROOF FRONTEND OVERRIDE (15 Min Check) ---
       const localAdWatchTime = localStorage.getItem('admob_last_watched');
       if (localAdWatchTime) {
           const minsPassed = Math.floor((Date.now() - parseInt(localAdWatchTime)) / 60000);
-          if (minsPassed < 60) {
-              cooldownMap['11111111-1111-1111-1111-111111111111'] = `${60 - minsPassed}M`;
+          if (minsPassed < 15) {
+              cooldownMap['11111111-1111-1111-1111-111111111111'] = `${15 - minsPassed}M`;
           } else {
               localStorage.removeItem('admob_last_watched'); 
           }
@@ -152,7 +149,6 @@ export default function Tasks({ session, navigate }) {
       const readSlugs = [];
       (allBlogReadsRes.data || []).forEach(b => {
         const completedAt = new Date(b.created_at);
-        // Only hide the post if it was read within the last 24 hours
         if (completedAt >= twentyFourHoursAgo) {
           intCount++; 
           readSlugs.push(b.post_slug);
@@ -215,7 +211,6 @@ export default function Tasks({ session, navigate }) {
         if (error.code === '23505') throw new Error("This payout channel is already registered to another user.");
         throw error;
       }
-      // Properly update state instead of just mutating
       user.payout_account = payoutForm.account_number;
       user.payout_bank_name = payoutForm.bank_name;
       user.payout_account_name = payoutForm.account_name;
@@ -419,10 +414,10 @@ export default function Tasks({ session, navigate }) {
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: '#D4AF37', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Premium Network</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.nativeAds} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 5</span>
+              {quotas.nativeAds} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 8</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.nativeAds / 5) * 100}%`, height: '100%', background: '#D4AF37', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.nativeAds / 8) * 100}%`, height: '100%', background: '#D4AF37', borderRadius: 4 }} />
             </div>
           </div>
         </div>
@@ -455,7 +450,7 @@ export default function Tasks({ session, navigate }) {
               if (isVideo && quotas.videos >= 3) quotaHit = true;
               if (isSeoBlog && quotas.seoBlogs >= 3) quotaHit = true;
               if (isInternalBlog && quotas.internalBlogs >= 5) quotaHit = true;
-              if (task.is_native_ad && quotas.nativeAds >= 5) quotaHit = true; 
+              if (task.is_native_ad && quotas.nativeAds >= 8) quotaHit = true; 
               
               const isLocked = quotaHit || cooldowns[task.id];
               
@@ -498,7 +493,6 @@ export default function Tasks({ session, navigate }) {
                       <div style={{ fontSize: 20, fontWeight: 800, color: isLocked ? 'var(--slate)' : isInternalStyle ? 'var(--lime)' : 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>+{task.reward_points} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500 }}>PTS</span></div>
                     </div>
                     
-                    {/* BUTTON HIERARCHY FIX: Quota limit shows first, then the 60M cooldown */}
                     {quotaHit ? (
                       <button disabled style={S.btnLocked}>LIMIT REACHED</button>
                     ) : cooldowns[task.id] ? (
