@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase';
 import DailySpin from '../components/DailySpin';
 import TelegramBonus from '../components/TelegramBonus';
 import { enforceDeviceFingerprint } from '../lib/security';
-import { AdsterraSocialBar } from '../components/WebAds';
 
 export default function Dashboard({ user, navigate, showToast }) {
   const [loading, setLoading] = useState(true);
@@ -165,7 +164,6 @@ export default function Dashboard({ user, navigate, showToast }) {
   const progressPercent = Math.min((localPoints / minWithdrawal) * 100, 100);
   const isVerified = Boolean(user.payout_account && user.payout_bank_name);
   
-  // Filter out messages the user has already dismissed
   const activeMessages = messages.filter(msg => !dismissedAlerts.includes(msg.id));
 
   const S = {
@@ -204,7 +202,7 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   return (
     <div style={S.pageWrapper}>
-      <AdsterraSocialBar />
+      
       <div style={S.page}>
         
         <div style={S.avatarHeader}>
@@ -268,7 +266,7 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         </div>
 
-        {/* 🔥 NEW TELEGRAM BONUS INTEGRATION 🔥 */}
+        {/* 🔥 TELEGRAM BONUS INTEGRATION 🔥 */}
         <div style={{ position: 'relative', zIndex: 1 }}>
           <TelegramBonus 
             session={{ user }} 
