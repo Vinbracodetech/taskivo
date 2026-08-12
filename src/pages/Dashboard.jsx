@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import DailySpin from '../components/DailySpin';
 import TelegramBonus from '../components/TelegramBonus';
 import { enforceDeviceFingerprint } from '../lib/security';
+import { AdsterraSocialBar } from '../components/WebAds';
 
 export default function Dashboard({ user, navigate, showToast }) {
   const [loading, setLoading] = useState(true);
@@ -203,6 +204,7 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   return (
     <div style={S.pageWrapper}>
+      <AdsterraSocialBar />
       <div style={S.page}>
         
         <div style={S.avatarHeader}>
