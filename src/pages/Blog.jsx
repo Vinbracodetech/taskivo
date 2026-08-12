@@ -170,7 +170,6 @@ export function BlogIndex({ navigate }) {
 
   return (
     <div style={S.pageWrapper}>
-      {/* 🔥 THE FULL DUAL MONETAG ENGINE 🔥 */}
       <MonetagPopunder />
       <MonetagVignette />
       <div style={{ padding: '80px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" }}>
@@ -508,7 +507,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
         
         <div className="article-prose" dangerouslySetInnerHTML={{ __html: post.content }} />
 
-        {/* 🔥 FIX: Passing clean tracking slug instead of fragile browser window URL string 🔥 */}
         <TaskivoSecureNode slug={slug} />
 
         {!localUser && (
