@@ -56,7 +56,7 @@ export function MonetagVignette() {
 
 export const SMART_LINKS = [
   'https://omg10.com/4/11559316', // Primary Monetag Link
-  // Add your 2nd and 3rd Monetag SmartLinks here when generated
+  // Add your 2nd and 3rd Monetag SmartLinks here when generated:
 ];
 
 export function getTaskSmartLink() {
