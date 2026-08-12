@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { AdsterraPopunder } from '../components/WebAds';
 
 export default function TaskPlayer({ session, navigate, taskId }) {
   const user = session?.user;
@@ -15,7 +14,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   // Security & Input States
   const [cooldown, setCooldown] = useState(null);
   const [handle, setHandle] = useState('');
-  const [proofFile, setProofFile] = useState(null); // Changed to handle actual file uploads
+  const [proofFile, setProofFile] = useState(null);
   const [proofText, setProofText] = useState(''); 
   const [seoCodeInput, setSeoCodeInput] = useState(''); 
   const [gateUnlocked, setGateUnlocked] = useState(false);
@@ -42,9 +41,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     if (user?.id) init();
   }, [taskId, user]);
 
-  // 🔥 ADDED 'growth' to the manual task checker
   const isManualTask = task?.platform === 'ugc' || task?.platform === 'qa_testing' || task?.platform === 'growth';
-  // 🔥 UPDATED to include AdSense Arbitrage tasks
   const isBlog = task?.platform === 'blog' || task?.platform === 'adsense';
 
   useEffect(() => {
@@ -189,7 +186,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       task_id: task.id, 
       platform: task.platform, 
       social_handle: handle,
-      proof_url: uploadedProofUrl, // Database gets the generated URL
+      proof_url: uploadedProofUrl,
       proof_text: proofText,
       status: finalStatus
     };
@@ -243,7 +240,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
   return (
     <div style={S.wrap}>
-      <AdsterraPopunder />
       <div style={S.card}>
         <div style={S.header}>{statusText}</div>
         {cheatWarning && !verification && <div style={S.cheatToast}>{cheatWarning}</div>}
