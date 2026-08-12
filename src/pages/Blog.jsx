@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { MonetagPopunder, MonetagVignette } from '../components/WebAds';
 
 // ── ELITE ARTICLE TYPOGRAPHY ENGINE ──
 const proseStyles = `
@@ -169,6 +170,8 @@ export function BlogIndex({ navigate }) {
 
   return (
     <div style={S.pageWrapper}>
+      <MonetagPopunder />
+      <MonetagVignette />
       <div style={{ padding: '80px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" }}>
         <h1 style={{ fontSize: 48, fontFamily: "'Inter', sans-serif", fontWeight: 800, color: 'var(--ink)', marginBottom: 16, letterSpacing: '-1.5px' }}>Taskivo Intelligence</h1>
         <p style={{ fontSize: 18, color: 'var(--slate)', marginBottom: 56, maxWidth: 600 }}>Insights on digital engagement, algorithmic growth, and maximizing yield.</p>
