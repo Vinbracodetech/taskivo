@@ -170,6 +170,7 @@ export function BlogIndex({ navigate }) {
 
   return (
     <div style={S.pageWrapper}>
+      {/* 🔥 THE FULL DUAL MONETAG ENGINE 🔥 */}
       <MonetagPopunder />
       <MonetagVignette />
       <div style={{ padding: '80px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" }}>
@@ -442,7 +443,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
             <>
               <div>
                 <div style={{ fontSize: 10, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Mission Complete</div>
-                {/* 🔥 UPDATED: Notification overlay reflects new 3 PTS limit 🔥 */}
                 <div style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>+3 PTS Secured</div>
               </div>
               <button onClick={() => navigate('tasks')} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>Return</button>
