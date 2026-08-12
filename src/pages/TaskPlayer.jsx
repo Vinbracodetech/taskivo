@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { AdsterraPopunder } from '../components/WebAds';
 
 export default function TaskPlayer({ session, navigate, taskId }) {
   const user = session?.user;
@@ -242,6 +243,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
   return (
     <div style={S.wrap}>
+      <AdsterraPopunder />
       <div style={S.card}>
         <div style={S.header}>{statusText}</div>
         {cheatWarning && !verification && <div style={S.cheatToast}>{cheatWarning}</div>}
