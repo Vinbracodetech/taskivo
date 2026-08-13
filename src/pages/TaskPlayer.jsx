@@ -387,7 +387,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
                 </div>
               </div>
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight 700, textTransform: 'uppercase', marginBottom: 6 }}>Step 2: Target Acquisition</div>
+                <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Step 2: Target Acquisition</div>
                 <div style={{ color: 'var(--ink)', fontSize: 14 }}>
                   Find <strong style={{ color: 'var(--lime)' }}>{new URL(task.url).hostname}</strong> and open the article titled:
                 </div>
