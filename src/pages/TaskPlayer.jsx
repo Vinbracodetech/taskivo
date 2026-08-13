@@ -11,7 +11,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [timer, setTimer] = useState(0);
   const [isLive, setIsLive] = useState(false);
   const [verification, setVerification] = useState(false);
-  const [endTime, setEndTime] = useState(null); // 🔥 NEW: Tracks absolute time
   
   // Security & Input States
   const [cooldown, setCooldown] = useState(null);
@@ -23,13 +22,19 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [cheatWarning, setCheatWarning] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Trackers
   const ytPlayerRef = useRef(null);
-  const adWindowRef = useRef(null); 
 
   useEffect(() => {
     async function init() {
-      const { data: c } = await supabase.from('completions').select('created_at').eq('task_id', taskId).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      const { data: c } = await supabase
+        .from('completions')
+        .select('created_at')
+        .eq('task_id', taskId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
       if (c) {
         const h = (new Date() - new Date(c.created_at)) / 3600000;
         if (h < 24) { setCooldown(Math.ceil(24 - h)); setLoading(false); return; }
@@ -42,7 +47,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
         if (t.platform === 'smartlink') {
           const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-          const { count } = await supabase.from('completions')
+          const { count } = await supabase
+             .from('completions')
              .select('*', { count: 'exact', head: true })
              .eq('user_id', user.id)
              .eq('platform', 'smartlink')
@@ -52,6 +58,19 @@ export default function TaskPlayer({ session, navigate, taskId }) {
              setCooldown('QUOTA_REACHED');
              setLoading(false);
              return;
+          }
+
+          // Restore existing active session timer if user refreshed during a task
+          const savedStartTime = localStorage.getItem(`task_start_${taskId}`);
+          if (savedStartTime) {
+            const elapsed = Math.floor((Date.now() - parseInt(savedStartTime)) / 1000);
+            const remaining = Math.max(0, t.watch_duration - elapsed);
+            setTimer(remaining);
+            setIsLive(true);
+            if (remaining <= 0) {
+              setVerification(true);
+              setIsLive(false);
+            }
           }
         }
       }
@@ -111,41 +130,44 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [verification, isManualTask, isBlog, isSmartlink]);
 
-  // 🔥 UPGRADED BULLETPROOF TIMER LOGIC 🔥
+  // 🔥 ABSOLUTE TIMESTAMP DELTA TIMER (Mobile Bulletproof) 🔥
   useEffect(() => {
     if (isManualTask || isBlog) return;
-    if (timer <= 0 && task && !verification) {
-      setVerification(true); setIsLive(false); setCheatWarning("");
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') ytPlayerRef.current.pauseVideo();
-      return;
-    }
-    
-    let interval;
-    if (isLive && timer > 0) { 
-      interval = setInterval(() => { 
-        
-        // 1. Strict Anti-Cheat: If they completely closed the ad tab early
-        if (isSmartlink && adWindowRef.current && adWindowRef.current.closed) {
-          clearInterval(interval);
-          setIsLive(false);
-          setEndTime(null);
-          setCheatWarning("⚠️ SPONSOR TAB CLOSED EARLY. You must keep the target portal open in the background for the full duration. Refresh to restart.");
-          return;
-        }
 
-        // 2. Clock Math for Mobile SmartLinks (Bypasses frozen background tabs)
-        if (isSmartlink && endTime) {
-          const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-          setTimer(remaining);
-        } 
-        // 3. Standard active-tab requirement (YouTube/Others)
-        else if (!document.hidden) {
-          setTimer((prev) => prev - 1); 
+    let interval;
+    if (isLive && !verification) {
+      interval = setInterval(() => {
+        if (isSmartlink) {
+          const savedStartTime = localStorage.getItem(`task_start_${taskId}`);
+          if (savedStartTime) {
+            const elapsed = Math.floor((Date.now() - parseInt(savedStartTime)) / 1000);
+            const remaining = Math.max(0, task.watch_duration - elapsed);
+            
+            setTimer(remaining);
+
+            if (remaining <= 0) {
+              setVerification(true);
+              setIsLive(false);
+              localStorage.removeItem(`task_start_${taskId}`);
+              clearInterval(interval);
+            }
+          }
+        } else if (!document.hidden) {
+          setTimer((prev) => {
+            if (prev <= 1) {
+              setVerification(true);
+              setIsLive(false);
+              clearInterval(interval);
+              return 0;
+            }
+            return prev - 1;
+          });
         }
-      }, 500); // 500ms allows it to catch up instantly when switching tabs back
+      }, 1000);
     }
+
     return () => clearInterval(interval);
-  }, [isLive, timer, task, verification, isManualTask, isBlog, isSmartlink, endTime]);
+  }, [isLive, verification, isManualTask, isBlog, isSmartlink, task, taskId]);
 
   function handleOpenApp() { window.open(task.url, '_blank'); setGateUnlocked(true); setIsLive(true); }
 
@@ -247,6 +269,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         if (user) user.points = (user.points || 0) + task.reward_points;
         await supabase.from('tasks').update({ current_views: task.current_views + 1 }).eq('id', task.id);
       }
+      localStorage.removeItem(`task_start_${taskId}`);
       navigate('tasks');
     }
     setSubmitting(false);
@@ -279,17 +302,15 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     header: { padding: 15, background: 'var(--surface-card)', borderBottom: '1px solid var(--line)', color: statusColor, fontWeight: 800, textAlign: 'center', fontFamily: "var(--font-display)", letterSpacing: '1px' },
     verifBox: { padding: 40, background: 'var(--surface-card)', textAlign: 'center' },
     input: { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)', outline: 'none' },
-    btnRed: { background: '#00D1FF', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 13, letterSpacing: '0.5px' },
-    btnGreen: { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16, fontFamily: "var(--font-display)", textTransform: 'uppercase' },
-    warningBox: { background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 16, marginBottom: 24, textAlign: 'left' },
-    cheatToast: { background: '#ef4444', color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' }
+    btnBlue: { background: '#00D1FF', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 13, letterSpacing: '0.5px' },
+    btnGreen: { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16, fontFamily: "var(--font-display)", textTransform: 'uppercase' }
   };
 
   return (
     <div style={S.wrap}>
       <div style={S.card}>
         <div style={S.header}>{statusText}</div>
-        {cheatWarning && !verification && <div style={S.cheatToast}>{cheatWarning}</div>}
+        {cheatWarning && !verification && <div style={{ background: '#ef4444', color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' }}>{cheatWarning}</div>}
         
         {!isManualTask && task.platform === 'youtube' && (
           <div style={{ display: verification ? 'none' : 'block', pointerEvents: isLive ? 'none' : 'auto' }}>
@@ -297,36 +318,30 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           </div>
         )}
 
-        {/* 🔥 MOBILE-OPTIMIZED SMARTLINK TASK UI 🔥 */}
         {isSmartlink && (
           <div style={{ padding: '32px 24px', background: 'var(--surface-card)', textAlign: 'center' }}>
             <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 16, fontFamily: "var(--font-display)" }}>
-              Background Dwell Task
+              Sponsor Engagement Task
             </h3>
             <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 32, lineHeight: 1.5 }}>
-              1. Tap the button to launch the sponsor portal.<br/>
-              2. Keep it open in the background.<br/>
-              3. <strong style={{ color: 'var(--ink)' }}>Return to this tab immediately to watch the timer.</strong>
+              1. Tap below to launch the sponsor portal in a new tab.<br/>
+              2. Keep the ad tab open in the background.<br/>
+              3. <strong style={{ color: 'var(--ink)' }}>Switch back to Taskivo—the timer will auto-update.</strong>
             </p>
             
             {!isLive && !verification ? (
               <button 
                 onClick={() => {
                   const adUrl = getTaskSmartLink();
-                  const newTab = window.open(adUrl, '_blank', 'noopener,noreferrer');
+                  window.open(adUrl, '_blank', 'noopener,noreferrer');
                   
-                  if (newTab) {
-                    adWindowRef.current = newTab;
-                  }
-                  
-                  // Set Absolute Clock Time
-                  setEndTime(Date.now() + (timer * 1000));
+                  // Save timestamp to storage
+                  localStorage.setItem(`task_start_${taskId}`, Date.now().toString());
                   setIsLive(true);
-                  setCheatWarning("");
                 }} 
-                style={S.btnRed}
+                style={S.btnBlue}
               >
-                ▶ LAUNCH PORTAL & RETURN HERE
+                ▶ LAUNCH PORTAL & START TIMER
               </button>
             ) : null}
 
@@ -358,45 +373,30 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           </div>
         )}
 
-        {/* ... [Rest of Blog, Manual, and standard Engagement views remain exactly the same below] ... */}
         {isBlog && (
           <div style={{ padding: '32px 24px', background: 'var(--surface-card)' }}>
-            
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 24, textAlign: 'left', marginBottom: 32, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
-              <div style={{ fontSize: 11, color: 'var(--lime)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1.5px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ display: 'inline-block', width: 8, height: 8, background: 'var(--lime)', borderRadius: '50%', animation: 'pulse 2s infinite' }}></span>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 16, padding: 24, textAlign: 'left', marginBottom: 32 }}>
+              <div style={{ fontSize: 11, color: 'var(--lime)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '1.5px', marginBottom: 20 }}>
                 Mission Briefing
               </div>
-
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Step 1: Search Protocol</div>
-                <div style={{ color: 'var(--ink)', fontSize: 14, lineHeight: 1.5 }}>Open a new browser tab, go to <strong>Google.com</strong>, and search for this exact phrase:</div>
+                <div style={{ color: 'var(--ink)', fontSize: 14 }}>Go to <strong>Google.com</strong> and search for:</div>
                 <div style={{ background: 'var(--surface-card)', border: '1px dashed var(--slate)', borderRadius: 8, padding: '12px 16px', marginTop: 8, color: 'var(--lime)', fontSize: 16, fontFamily: 'monospace', fontWeight: 700 }}>
                   {task.search_keyword}
                 </div>
               </div>
-
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Step 2: Target Acquisition</div>
-                <div style={{ color: 'var(--ink)', fontSize: 14, lineHeight: 1.6 }}>
-                  Look through the Google search results for the website <strong style={{ color: 'var(--lime)' }}>{new URL(task.url).hostname}</strong>. 
-                  <br/><br/>
-                  Specifically, you must click on the article with this exact title:
+                <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight 700, textTransform: 'uppercase', marginBottom: 6 }}>Step 2: Target Acquisition</div>
+                <div style={{ color: 'var(--ink)', fontSize: 14 }}>
+                  Find <strong style={{ color: 'var(--lime)' }}>{new URL(task.url).hostname}</strong> and open the article titled:
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderLeft: '3px solid var(--lime)', borderRadius: '0 8px 8px 0', padding: '12px 16px', marginTop: 12, color: '#fff', fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderLeft: '3px solid var(--lime)', padding: '12px 16px', marginTop: 12, color: '#fff', fontSize: 15, fontWeight: 600 }}>
                   "{task.title}"
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>Step 3: Extract Payload</div>
-                <div style={{ color: 'var(--ink)', fontSize: 14, lineHeight: 1.5 }}>
-                  Click the article, scroll to the bottom, and wait for the verification timer to finish. Copy the Single-Use Code it generates.
                 </div>
               </div>
             </div>
             
-            <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 11, fontWeight: 800, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px' }}>Single-Use Payload Code</div>
             <input 
               placeholder="e.g. TSK-A1B2C3D4E5" 
               value={seoCodeInput} 
@@ -412,33 +412,12 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
         {isManualTask && (
            <div style={S.verifBox}>
-              <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 12, fontFamily: "var(--font-display)" }}>Manual Submission Required</h3>
-              <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24 }}>
-                Follow the campaign instructions. Once complete, upload your screenshot proof.
-              </p>
-              
+              <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 12 }}>Manual Submission Required</h3>
               <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', padding: 16, borderRadius: 8, marginBottom: 24, textAlign: 'left', wordBreak: 'break-all' }}>
-                <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Campaign URL</div>
                 <a href={task.url} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}>{task.url}</a>
               </div>
-
-              <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Upload Screenshot Proof</div>
-              <input 
-                type="file"
-                accept="image/*,video/*"
-                onChange={e => setProofFile(e.target.files[0])} 
-                style={{ ...S.input, padding: '12px', background: 'var(--surface-card)', color: 'var(--ink)', cursor: 'pointer' }} 
-              />
-
-              <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Submission Notes (Optional)</div>
-              <textarea 
-                rows="3" 
-                placeholder="Describe what you did or leave a note for the Creator..." 
-                value={proofText} 
-                onChange={e => setProofText(e.target.value)} 
-                style={{ ...S.input, resize: 'vertical' }} 
-              />
-              
+              <input type="file" accept="image/*,video/*" onChange={e => setProofFile(e.target.files[0])} style={{ ...S.input, padding: '12px' }} />
+              <textarea rows="3" placeholder="Submission Notes..." value={proofText} onChange={e => setProofText(e.target.value)} style={{ ...S.input, resize: 'vertical' }} />
               <button onClick={claimTask} disabled={submitting || (!proofText && !proofFile)} style={{ ...S.btnGreen, opacity: (submitting || (!proofText && !proofFile)) ? 0.5 : 1 }}>
                 {submitting ? 'UPLOADING...' : 'SUBMIT FOR REVIEW'}
               </button>
@@ -447,26 +426,17 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         
         {verification && !isManualTask && !isBlog && !isSmartlink && (
           <div style={S.verifBox}>
-            <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 24, fontFamily: "var(--font-display)" }}>Engagement Required</h3>
-            <button onClick={handleOpenApp} style={S.btnRed}>▶ 1. OPEN APP TO LIKE, COMMENT & SUBSCRIBE</button>
-            
+            <button onClick={handleOpenApp} style={{ background: '#ef4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800 }}>
+              ▶ 1. OPEN APP TO LIKE, COMMENT & SUBSCRIBE
+            </button>
             {gateUnlocked ? (
               <>
-                <div style={S.warningBox}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.5px' }}>⚠️ Strict Verification Warning</div>
-                  <div style={{ fontSize: 13, color: 'var(--slate)', lineHeight: 1.5 }}>Creators actively audit this network. If a Creator reports your engagement as fake or missing, you will face a <strong style={{ color: '#ef4444' }}>50 PTS deduction</strong>.</div>
-                </div>
-                <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>2. Drop your handle for audit</div>
                 <input placeholder="e.g., @YourUsername" value={handle} onChange={e => setHandle(e.target.value)} style={S.input} />
                 <button onClick={claimTask} disabled={submitting} style={{ ...S.btnGreen, opacity: submitting ? 0.5 : 1 }}>
-                  {submitting ? 'CLAIMING...' : `3. CLAIM ${task.reward_points} POINTS`}
+                  {submitting ? 'CLAIMING...' : `CLAIM ${task.reward_points} POINTS`}
                 </button>
               </>
-            ) : (
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: 20, color: 'var(--slate)', fontSize: 14, marginTop: 16 }}>
-                🔒 Click the red button above to open the target asset. The claim form will unlock automatically.
-              </div>
-            )}
+            ) : null}
           </div>
         )}
       </div>
