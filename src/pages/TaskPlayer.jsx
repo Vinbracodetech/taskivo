@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { getTaskSmartLink } from '../components/WebAds';
 
 export default function TaskPlayer({ session, navigate, taskId }) {
   const user = session?.user;
@@ -35,6 +36,22 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       if (t) { 
         setTask(t); 
         setTimer(t.watch_duration); 
+
+        // 🔥 ENFORCE 10-SPONSORED TASKS PER 24h 🔥
+        if (t.platform === 'smartlink') {
+          const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const { count } = await supabase.from('completions')
+             .select('*', { count: 'exact', head: true })
+             .eq('user_id', user.id)
+             .eq('platform', 'smartlink')
+             .gte('created_at', yesterday);
+             
+          if (count >= 10) {
+             setCooldown('QUOTA_REACHED');
+             setLoading(false);
+             return;
+          }
+        }
       }
       setLoading(false);
     }
@@ -43,9 +60,10 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
   const isManualTask = task?.platform === 'ugc' || task?.platform === 'qa_testing' || task?.platform === 'growth';
   const isBlog = task?.platform === 'blog' || task?.platform === 'adsense';
+  const isSmartlink = task?.platform === 'smartlink';
 
   useEffect(() => {
-    if (!task || cooldown || verification || isManualTask || isBlog) return;
+    if (!task || cooldown || verification || isManualTask || isBlog || isSmartlink) return;
     
     if (task.platform === 'youtube') {
       const loadPlayer = () => {
@@ -75,10 +93,12 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; window.onYouTubeIframeAPIReady = loadPlayer; document.body.appendChild(s);
       } else { loadPlayer(); }
     }
-  }, [task, cooldown, verification, isManualTask, isBlog]);
+  }, [task, cooldown, verification, isManualTask, isBlog, isSmartlink]);
 
   useEffect(() => {
-    if (isManualTask || isBlog) return; 
+    // We explicitly exclude isSmartlink here so the timer keeps ticking when they open the ad tab!
+    if (isManualTask || isBlog || isSmartlink) return; 
+    
     const handleVisibility = () => {
       if (document.hidden) {
         setIsLive(false);
@@ -88,7 +108,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [verification, isManualTask, isBlog]);
+  }, [verification, isManualTask, isBlog, isSmartlink]);
 
   useEffect(() => {
     if (isManualTask || isBlog) return;
@@ -149,7 +169,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         setSubmitting(false); 
         return; 
       }
-    } else {
+    } else if (!isSmartlink) {
       if (!handle.trim()) { 
         alert("Enter your platform handle to claim points."); 
         setSubmitting(false); 
@@ -157,7 +177,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       }
     }
     
-    // 🔥 IMAGE UPLOAD LOGIC 🔥
     let uploadedProofUrl = '';
     
     if (isManualTask && proofFile) {
@@ -185,7 +204,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       earner_id: user.id, 
       task_id: task.id, 
       platform: task.platform, 
-      social_handle: handle,
+      social_handle: isSmartlink ? 'SYSTEM_SMARTLINK' : handle,
       proof_url: uploadedProofUrl,
       proof_text: proofText,
       status: finalStatus
@@ -209,6 +228,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   }
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>Decrypting asset...</div>;
+  if (cooldown === 'QUOTA_REACHED') return <div style={{ padding: 40, textAlign: 'center', color: '#ef4444', fontWeight: 800 }}>🛑 Daily Quota Reached: You have completed 10 Sponsor Tasks today. Come back tomorrow!</div>;
   if (cooldown) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--slate)' }}>⏱️ Cooldown Active: {cooldown}h left</div>;
 
   let statusText = 'PLAYBACK PAUSED';
@@ -218,6 +238,8 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     statusText = 'MANUAL UPLOAD REQUIRED'; statusColor = '#fbbf24';
   } else if (isBlog) {
     statusText = 'AWAITING PAYLOAD SYNCHRONIZATION'; statusColor = '#fbbf24';
+  } else if (isSmartlink) {
+    statusText = verification ? '✅ YIELD SECURED' : 'SPONSOR TASK ACTIVE'; statusColor = verification ? 'var(--lime)' : '#fbbf24';
   } else if (verification) { 
     statusText = '✅ VERIFICATION READY'; statusColor = 'var(--lime)'; 
   } else if (isLive) { 
@@ -250,7 +272,57 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           </div>
         )}
 
-        {/* 🔥 UPGRADED MISSION BRIEFING UI 🔥 */}
+        {/* 🔥 NEW CUSTOM SMARTLINK TASK UI 🔥 */}
+        {isSmartlink && (
+          <div style={{ padding: '32px 24px', background: 'var(--surface-card)', textAlign: 'center' }}>
+            <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 16, fontFamily: "var(--font-display)" }}>
+              Sponsor Engagement Task
+            </h3>
+            <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 32, lineHeight: 1.5 }}>
+              Launch the sponsor portal in a new tab. Keep it open until the timer completes to secure your points.
+            </p>
+            
+            {!isLive && !verification ? (
+              <button 
+                onClick={() => {
+                  const adUrl = getTaskSmartLink();
+                  window.open(adUrl, '_blank', 'noopener,noreferrer');
+                  setIsLive(true);
+                }} 
+                style={S.btnRed}
+              >
+                ▶ LAUNCH PORTAL & START TIMER
+              </button>
+            ) : null}
+
+            {isLive && !verification ? (
+              <div style={{ padding: '24px', border: '1px dashed var(--line)', borderRadius: '12px' }}>
+                <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--lime)', marginBottom: 8, fontFamily: 'monospace' }}>
+                  {timer}s
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  Dwell Time Tracking Active
+                </div>
+              </div>
+            ) : null}
+
+            {verification ? (
+              <div style={{ marginTop: 24 }}>
+                <div style={{ fontSize: 12, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 16 }}>
+                  ✅ Dwell Time Complete
+                </div>
+                <button 
+                  onClick={claimTask} 
+                  disabled={submitting} 
+                  style={{ ...S.btnGreen, opacity: submitting ? 0.5 : 1 }}
+                >
+                  {submitting ? 'SECURING YIELD...' : 'CLAIM REWARD'}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        )}
+
         {isBlog && (
           <div style={{ padding: '32px 24px', background: 'var(--surface-card)' }}>
             
@@ -314,7 +386,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
                 <a href={task.url} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}>{task.url}</a>
               </div>
 
-              {/* 🔥 NEW NATIVE FILE UPLOAD INPUT 🔥 */}
               <div style={{ textAlign: 'left', marginBottom: 8, fontSize: 12, fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Upload Screenshot Proof</div>
               <input 
                 type="file"
@@ -338,7 +409,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
            </div>
         )}
         
-        {verification && !isManualTask && !isBlog && (
+        {verification && !isManualTask && !isBlog && !isSmartlink && (
           <div style={S.verifBox}>
             <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 24, fontFamily: "var(--font-display)" }}>Engagement Required</h3>
             <button onClick={handleOpenApp} style={S.btnRed}>▶ 1. OPEN APP TO LIKE, COMMENT & SUBSCRIBE</button>
