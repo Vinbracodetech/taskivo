@@ -11,6 +11,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [timer, setTimer] = useState(0);
   const [isLive, setIsLive] = useState(false);
   const [verification, setVerification] = useState(false);
+  const [endTime, setEndTime] = useState(null); // 🔥 NEW: Tracks absolute time
   
   // Security & Input States
   const [cooldown, setCooldown] = useState(null);
@@ -24,7 +25,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
 
   // Trackers
   const ytPlayerRef = useRef(null);
-  const adWindowRef = useRef(null); // 🔥 Tracks the background sponsor tab
+  const adWindowRef = useRef(null); 
 
   useEffect(() => {
     async function init() {
@@ -39,7 +40,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
         setTask(t); 
         setTimer(t.watch_duration); 
 
-        // 🔥 ENFORCE 10-SPONSORED TASKS PER 24h 🔥
         if (t.platform === 'smartlink') {
           const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
           const { count } = await supabase.from('completions')
@@ -111,6 +111,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [verification, isManualTask, isBlog, isSmartlink]);
 
+  // 🔥 UPGRADED BULLETPROOF TIMER LOGIC 🔥
   useEffect(() => {
     if (isManualTask || isBlog) return;
     if (timer <= 0 && task && !verification) {
@@ -122,22 +123,29 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     let interval;
     if (isLive && timer > 0) { 
       interval = setInterval(() => { 
-        // 🔥 ANTI-CHEAT: Instantly flag if the sponsor tab is closed early
+        
+        // 1. Strict Anti-Cheat: If they completely closed the ad tab early
         if (isSmartlink && adWindowRef.current && adWindowRef.current.closed) {
           clearInterval(interval);
           setIsLive(false);
-          setCheatWarning("⚠️ SPONSOR TAB CLOSED EARLY. You must keep the portal open for the full duration. Refresh the page to restart.");
+          setEndTime(null);
+          setCheatWarning("⚠️ SPONSOR TAB CLOSED EARLY. You must keep the target portal open in the background for the full duration. Refresh to restart.");
           return;
         }
 
-        // Allow countdown if the tab is visible OR if it's a smartlink background task
-        if (!document.hidden || isSmartlink) {
+        // 2. Clock Math for Mobile SmartLinks (Bypasses frozen background tabs)
+        if (isSmartlink && endTime) {
+          const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+          setTimer(remaining);
+        } 
+        // 3. Standard active-tab requirement (YouTube/Others)
+        else if (!document.hidden) {
           setTimer((prev) => prev - 1); 
         }
-      }, 1000); 
+      }, 500); // 500ms allows it to catch up instantly when switching tabs back
     }
     return () => clearInterval(interval);
-  }, [isLive, timer, task, verification, isManualTask, isBlog, isSmartlink]);
+  }, [isLive, timer, task, verification, isManualTask, isBlog, isSmartlink, endTime]);
 
   function handleOpenApp() { window.open(task.url, '_blank'); setGateUnlocked(true); setIsLive(true); }
 
@@ -271,7 +279,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     header: { padding: 15, background: 'var(--surface-card)', borderBottom: '1px solid var(--line)', color: statusColor, fontWeight: 800, textAlign: 'center', fontFamily: "var(--font-display)", letterSpacing: '1px' },
     verifBox: { padding: 40, background: 'var(--surface-card)', textAlign: 'center' },
     input: { width: '100%', boxSizing: 'border-box', padding: 16, marginBottom: 24, borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)', outline: 'none' },
-    btnRed: { background: '#ef4444', color: '#fff', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 13, letterSpacing: '0.5px' },
+    btnRed: { background: '#00D1FF', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, marginBottom: 24, fontWeight: 800, cursor: 'pointer', fontSize: 13, letterSpacing: '0.5px' },
     btnGreen: { background: 'var(--lime)', color: '#000', padding: 16, width: '100%', border: 'none', borderRadius: 8, fontWeight: 800, cursor: 'pointer', fontSize: 16, fontFamily: "var(--font-display)", textTransform: 'uppercase' },
     warningBox: { background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 16, marginBottom: 24, textAlign: 'left' },
     cheatToast: { background: '#ef4444', color: '#fff', padding: '10px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' }
@@ -289,14 +297,16 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           </div>
         )}
 
-        {/* 🔥 NEW CUSTOM SMARTLINK TASK UI 🔥 */}
+        {/* 🔥 MOBILE-OPTIMIZED SMARTLINK TASK UI 🔥 */}
         {isSmartlink && (
           <div style={{ padding: '32px 24px', background: 'var(--surface-card)', textAlign: 'center' }}>
             <h3 style={{ color: 'var(--ink)', marginTop: 0, marginBottom: 16, fontFamily: "var(--font-display)" }}>
-              Sponsor Engagement Task
+              Background Dwell Task
             </h3>
             <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 32, lineHeight: 1.5 }}>
-              Launch the sponsor portal in a new tab. Keep it open until the timer completes to secure your points.
+              1. Tap the button to launch the sponsor portal.<br/>
+              2. Keep it open in the background.<br/>
+              3. <strong style={{ color: 'var(--ink)' }}>Return to this tab immediately to watch the timer.</strong>
             </p>
             
             {!isLive && !verification ? (
@@ -305,24 +315,24 @@ export default function TaskPlayer({ session, navigate, taskId }) {
                   const adUrl = getTaskSmartLink();
                   const newTab = window.open(adUrl, '_blank', 'noopener,noreferrer');
                   
-                  // 🔥 POP-UNDER EFFECT & TRACKER ATTACHMENT 🔥
                   if (newTab) {
                     adWindowRef.current = newTab;
-                    window.focus();
                   }
                   
+                  // Set Absolute Clock Time
+                  setEndTime(Date.now() + (timer * 1000));
                   setIsLive(true);
                   setCheatWarning("");
                 }} 
                 style={S.btnRed}
               >
-                ▶ LAUNCH PORTAL & START TIMER
+                ▶ LAUNCH PORTAL & RETURN HERE
               </button>
             ) : null}
 
             {isLive && !verification ? (
               <div style={{ padding: '24px', border: '1px dashed var(--line)', borderRadius: '12px' }}>
-                <div style={{ fontSize: 40, fontWeight: 800, color: 'var(--lime)', marginBottom: 8, fontFamily: 'monospace' }}>
+                <div style={{ fontSize: 40, fontWeight: 800, color: '#00D1FF', marginBottom: 8, fontFamily: 'monospace' }}>
                   {timer}s
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -348,6 +358,7 @@ export default function TaskPlayer({ session, navigate, taskId }) {
           </div>
         )}
 
+        {/* ... [Rest of Blog, Manual, and standard Engagement views remain exactly the same below] ... */}
         {isBlog && (
           <div style={{ padding: '32px 24px', background: 'var(--surface-card)' }}>
             
