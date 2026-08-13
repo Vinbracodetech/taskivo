@@ -231,7 +231,6 @@ export default function Dashboard({ user, navigate, showToast }) {
           <div style={S.glassCard}>
             <span style={S.label}>Available Balance</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
-              {/* Uses localPoints so it updates instantly without refresh */}
               <div style={S.valueGlow}>{localPoints.toLocaleString()}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
             </div>
@@ -266,7 +265,6 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         </div>
 
-        {/* 🔥 TELEGRAM BONUS INTEGRATION 🔥 */}
         <div style={{ position: 'relative', zIndex: 1 }}>
           <TelegramBonus 
             session={{ user }} 
@@ -275,7 +273,6 @@ export default function Dashboard({ user, navigate, showToast }) {
           />
         </div>
 
-        {/* ALWAYS-VISIBLE INBOX WIDGET */}
         <div 
           onClick={() => setShowInboxModal(true)}
           style={{ ...S.glassCard, position: 'relative', zIndex: 1, marginBottom: 48, cursor: 'pointer', transition: 'all 0.2s', border: activeMessages.length > 0 ? '1px solid rgba(168,255,62,0.3)' : '1px solid rgba(255,255,255,0.05)', background: activeMessages.length > 0 ? 'rgba(168,255,62,0.02)' : 'var(--surface-card)' }}
