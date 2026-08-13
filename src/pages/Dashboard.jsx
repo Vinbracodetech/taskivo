@@ -218,6 +218,15 @@ export default function Dashboard({ user, navigate, showToast }) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
+            
+            {/* 🔥 TEMPORARY VIGNETTE TEST BUTTON 🔥 */}
+            <a 
+              href="https://google.com" 
+              style={{ ...S.btnSecondary, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: '#ef4444', textDecoration: 'none' }}
+            >
+              Test Vignette Ad
+            </a>
+
             <button onClick={() => navigate('history')} style={S.btnSecondary}>Activity Ledger</button>
             <button onClick={() => setShowEditModal(true)} style={S.btnSecondary}>Edit Profile</button>
           </div>
