@@ -117,10 +117,18 @@ export default function TaskPlayer({ session, navigate, taskId }) {
       if (ytPlayerRef.current && typeof ytPlayerRef.current.pauseVideo === 'function') ytPlayerRef.current.pauseVideo();
       return;
     }
+    
     let interval;
-    if (isLive && !document.hidden && timer > 0) { interval = setInterval(() => { setTimer((prev) => prev - 1); }, 1000); }
+    if (isLive && timer > 0) { 
+      interval = setInterval(() => { 
+        // 🔥 BACKGROUND EXECUTION: Timer will count down if visible OR if it is a smartlink task
+        if (!document.hidden || isSmartlink) {
+          setTimer((prev) => prev - 1); 
+        }
+      }, 1000); 
+    }
     return () => clearInterval(interval);
-  }, [isLive, timer, task, verification, isManualTask, isBlog]);
+  }, [isLive, timer, task, verification, isManualTask, isBlog, isSmartlink]);
 
   function handleOpenApp() { window.open(task.url, '_blank'); setGateUnlocked(true); setIsLive(true); }
 
@@ -286,7 +294,13 @@ export default function TaskPlayer({ session, navigate, taskId }) {
               <button 
                 onClick={() => {
                   const adUrl = getTaskSmartLink();
-                  window.open(adUrl, '_blank', 'noopener,noreferrer');
+                  const newTab = window.open(adUrl, '_blank', 'noopener,noreferrer');
+                  
+                  // 🔥 POP-UNDER EFFECT: Pull focus back immediately
+                  if (newTab) {
+                    window.focus();
+                  }
+                  
                   setIsLive(true);
                 }} 
                 style={S.btnRed}
