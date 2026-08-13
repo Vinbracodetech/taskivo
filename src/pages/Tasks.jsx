@@ -9,7 +9,7 @@ export default function Tasks({ session, navigate }) {
   const [activeCategory, setActiveCategory] = useState('All');
   const [displayCount, setDisplayCount] = useState(15);
   
-  const [quotas, setQuotas] = useState({ videos: 0, seoBlogs: 0, internalBlogs: 0, premium: 0, nativeAds: 0 });
+  const [quotas, setQuotas] = useState({ videos: 0, seoBlogs: 0, internalBlogs: 0, premium: 0, nativeAds: 0, smartlinks: 0 });
   const [lockout, setLockout] = useState(false);
   const [cooldowns, setCooldowns] = useState({});
 
@@ -25,7 +25,6 @@ export default function Tasks({ session, navigate }) {
     if (!user) return;
 
     window.onAdRewardSuccess = async (points) => {
-      // 1. INSTANT FRONTEND LOCK: 15-Minute Cooldown Trigger
       localStorage.setItem('admob_last_watched', Date.now().toString());
       setCooldowns(prev => ({
         ...prev, 
@@ -35,7 +34,6 @@ export default function Tasks({ session, navigate }) {
       setToastMessage('Processing Video Yield...');
       
       try {
-        // 2. Secure Backend Sync
         const { error } = await supabase.rpc('increment_ad_reward', { 
           p_user_id: user.id, 
           p_reward_points: points 
@@ -113,7 +111,7 @@ export default function Tasks({ session, navigate }) {
         supabase.from('posts').select('*').eq('status', 'published')
       ]);
 
-      let vCount = 0, seoCount = 0, intCount = 0, pCount = 0, nativeCount = 0;
+      let vCount = 0, seoCount = 0, intCount = 0, pCount = 0, nativeCount = 0, smartCount = 0;
       const cooldownMap = {};
 
       (compRes.data || []).forEach(h => {
@@ -121,10 +119,10 @@ export default function Tasks({ session, navigate }) {
         
         if (h.platform === 'blog' || h.platform === 'adsense') seoCount++; 
         else if (h.platform === 'youtube') vCount++;
+        else if (h.platform === 'smartlink') smartCount++;
         else if (['ugc', 'qa_testing', 'growth'].includes(h.platform)) pCount++; 
         else if (h.task_id === '11111111-1111-1111-1111-111111111111') nativeCount++;
         
-        // Database Cooldown Logic (15 Minute Lock for Native Ads)
         if (h.task_id === '11111111-1111-1111-1111-111111111111') {
             const minutesLeft = Math.ceil(15 - ((now - completedAt) / 60000));
             if (minutesLeft > 0) cooldownMap[h.task_id] = `${minutesLeft}M`;
@@ -134,7 +132,6 @@ export default function Tasks({ session, navigate }) {
         }
       });
 
-      // --- BULLETPROOF FRONTEND OVERRIDE (15 Min Check) ---
       const localAdWatchTime = localStorage.getItem('admob_last_watched');
       if (localAdWatchTime) {
           const minsPassed = Math.floor((Date.now() - parseInt(localAdWatchTime)) / 60000);
@@ -145,7 +142,6 @@ export default function Tasks({ session, navigate }) {
           }
       }
 
-      // --- RECYCLING LOOP FIX ---
       const readSlugs = [];
       (allBlogReadsRes.data || []).forEach(b => {
         const completedAt = new Date(b.created_at);
@@ -155,7 +151,7 @@ export default function Tasks({ session, navigate }) {
         }
       });
 
-      setQuotas({ videos: vCount, seoBlogs: seoCount, internalBlogs: intCount, premium: pCount, nativeAds: nativeCount });
+      setQuotas({ videos: vCount, seoBlogs: seoCount, internalBlogs: intCount, premium: pCount, nativeAds: nativeCount, smartlinks: smartCount });
       setCooldowns(cooldownMap);
 
       const freshTasks = (activeTasksRes.data || [])
@@ -229,7 +225,7 @@ export default function Tasks({ session, navigate }) {
     if (activeCategory === 'SEO & AdSense') return (task.platform === 'blog' || task.platform === 'adsense') && !task.is_internal_blog;
     if (activeCategory === 'Internal Intel') return task.is_internal_blog;
     if (activeCategory === 'Social Views') return task.platform === 'youtube';
-    if (activeCategory === 'Premium & Growth') return task.is_native_ad || ['ugc', 'qa_testing', 'growth'].includes(task.platform);
+    if (activeCategory === 'Premium & Growth') return task.is_native_ad || ['ugc', 'qa_testing', 'growth', 'smartlink'].includes(task.platform);
     return true;
   });
 
@@ -269,10 +265,10 @@ export default function Tasks({ session, navigate }) {
       transition: 'all 0.2s'
     }),
 
-    taskCard: (isPremium, isInternalStyle) => ({ 
+    taskCard: (isPremium, isInternalStyle, isSmartlink) => ({ 
       background: 'var(--surface-card)', 
       border: '1px solid rgba(255,255,255,0.03)', 
-      borderLeft: `4px solid ${isPremium ? '#D4AF37' : isInternalStyle ? '#A8FF3E' : 'rgba(255,255,255,0.1)'}`,
+      borderLeft: `4px solid ${isPremium ? '#D4AF37' : isSmartlink ? '#00D1FF' : isInternalStyle ? '#A8FF3E' : 'rgba(255,255,255,0.1)'}`,
       borderRadius: 16, 
       padding: '24px', 
       display: 'flex', 
@@ -284,7 +280,7 @@ export default function Tasks({ session, navigate }) {
       transition: 'transform 0.2s, box-shadow 0.2s'
     }),
     
-    btnActive: (isPremium, isInternalStyle) => ({ background: isPremium ? 'var(--gold)' : isInternalStyle ? 'var(--lime-dim)' : 'var(--lime)', color: isInternalStyle ? 'var(--lime)' : '#000', border: isInternalStyle ? '1px solid var(--lime)' : 'none', padding: '10px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' }),
+    btnActive: (isPremium, isInternalStyle, isSmartlink) => ({ background: isPremium ? 'var(--gold)' : isSmartlink ? '#00D1FF' : isInternalStyle ? 'var(--lime-dim)' : 'var(--lime)', color: (isInternalStyle && !isSmartlink) ? 'var(--lime)' : '#000', border: isInternalStyle ? '1px solid var(--lime)' : 'none', padding: '10px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' }),
     btnLocked: { background: 'var(--surface)', color: 'var(--slate)', border: '1px solid var(--line)', padding: '10px 24px', borderRadius: 100, fontSize: 12, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif" },
     
     payoutOverlay: { position: 'relative', minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
@@ -400,12 +396,12 @@ export default function Tasks({ session, navigate }) {
           <div style={{ width: 1, background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} className="hide-on-mobile" />
 
           <div style={S.quotaItem}>
-            <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Internal Intel</span>
+            <span style={{ fontSize: 11, color: '#00D1FF', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Sponsor Tasks</span>
             <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              {quotas.internalBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 5</span>
+              {quotas.smartlinks} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 10</span>
             </div>
             <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ width: `${(quotas.internalBlogs / 5) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+              <div style={{ width: `${(quotas.smartlinks / 10) * 100}%`, height: '100%', background: '#00D1FF', borderRadius: 4 }} />
             </div>
           </div>
 
@@ -443,6 +439,7 @@ export default function Tasks({ session, navigate }) {
               const isSeoBlog = (task.platform === 'blog' || task.platform === 'adsense') && !task.is_internal_blog && !task.is_house_campaign;
               const isInternalBlog = task.is_internal_blog;
               const isPremium = task.is_native_ad || ['ugc', 'qa_testing', 'growth'].includes(task.platform);
+              const isSmartlink = task.platform === 'smartlink';
               
               const isInternalStyle = task.is_internal_blog || task.is_house_campaign;
               
@@ -450,6 +447,7 @@ export default function Tasks({ session, navigate }) {
               if (isVideo && quotas.videos >= 3) quotaHit = true;
               if (isSeoBlog && quotas.seoBlogs >= 3) quotaHit = true;
               if (isInternalBlog && quotas.internalBlogs >= 5) quotaHit = true;
+              if (isSmartlink && quotas.smartlinks >= 10) quotaHit = true;
               if (task.is_native_ad && quotas.nativeAds >= 8) quotaHit = true; 
               
               const isLocked = quotaHit || cooldowns[task.id];
@@ -460,28 +458,29 @@ export default function Tasks({ session, navigate }) {
               if (task.platform === 'ugc') icon = '📸';
               if (task.platform === 'qa_testing') icon = '🛠️';
               if (task.platform === 'growth') icon = '👥';
+              if (task.platform === 'smartlink') icon = '⚡';
               if (task.is_native_ad) icon = '💎'; 
 
               return (
-                <div key={task.id} style={{ ...S.taskCard(isPremium, isInternalStyle), opacity: isLocked ? 0.6 : 1 }}>
+                <div key={task.id} style={{ ...S.taskCard(isPremium, isInternalStyle, isSmartlink), opacity: isLocked ? 0.6 : 1 }}>
                   
-                  {isPremium && (
+                  {isPremium && !isSmartlink && (
                     <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(212,175,55,0.1)', color: '#D4AF37', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', border: '1px solid rgba(212,175,55,0.2)' }}>
                       Premium
                     </div>
                   )}
 
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: isInternalStyle ? 'var(--lime-dim)' : 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: isSmartlink ? 'rgba(0, 209, 255, 0.1)' : isInternalStyle ? 'var(--lime-dim)' : 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                       {icon}
                     </div>
                     <div style={{ flex: 1, paddingRight: isPremium ? 70 : 0 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: isInternalStyle ? 'var(--lime)' : 'var(--slate)', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.5px' }}>
-                        {task.is_house_campaign ? 'Official Task' : task.platform}
+                      <div style={{ fontSize: 10, fontWeight: 800, color: isSmartlink ? '#00D1FF' : isInternalStyle ? 'var(--lime)' : 'var(--slate)', textTransform: 'uppercase', marginBottom: 6, letterSpacing: '0.5px' }}>
+                        {task.is_house_campaign ? 'Official Task' : task.platform === 'smartlink' ? 'Sponsor Task' : task.platform}
                       </div>
                       <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.3 }}>{task.title}</div>
                       <div style={{ fontSize: 12, color: 'var(--slate)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                         <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: isPremium ? '#D4AF37' : 'var(--lime)' }} />
+                         <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: isSmartlink ? '#00D1FF' : isPremium ? '#D4AF37' : 'var(--lime)' }} />
                          {task.is_native_ad ? 'Native App Exclusive' : (isPremium ? 'Manual Verification' : (task.watch_duration ? `${task.watch_duration}s Enforced Dwell` : 'Automated Verification'))}
                       </div>
                     </div>
@@ -490,7 +489,7 @@ export default function Tasks({ session, navigate }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 'auto', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div>
                       <div style={{ fontSize: 10, color: 'var(--slate)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Yield</div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: isLocked ? 'var(--slate)' : isInternalStyle ? 'var(--lime)' : 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>+{task.reward_points} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500 }}>PTS</span></div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: isLocked ? 'var(--slate)' : isSmartlink ? '#00D1FF' : isInternalStyle ? 'var(--lime)' : 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>+{task.reward_points} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 500 }}>PTS</span></div>
                     </div>
                     
                     {quotaHit ? (
@@ -510,7 +509,7 @@ export default function Tasks({ session, navigate }) {
                             }
                             navigate(`player/${task.id}`);
                           }
-                      }} style={S.btnActive(isPremium, isInternalStyle)}>Initiate</button>
+                      }} style={S.btnActive(isPremium, isInternalStyle, isSmartlink)}>Initiate</button>
                     )}
                   </div>
                 </div>
