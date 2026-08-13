@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { MonetagVignette } from '../components/WebAds';
 
 // ── ELITE ARTICLE TYPOGRAPHY ENGINE ──
 const proseStyles = `
