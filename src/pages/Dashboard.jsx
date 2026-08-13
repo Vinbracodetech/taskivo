@@ -218,28 +218,18 @@ export default function Dashboard({ user, navigate, showToast }) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
+            {/* 🔥 TEMPORARY VIGNETTE TEST BUTTON 🔥 */}
+            <a 
+              href="https://google.com" 
+              style={{ ...S.btnSecondary, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: '#ef4444', textDecoration: 'none' }}
+            >
+              Test Vignette Ad
+            </a>
+            
             <button onClick={() => navigate('history')} style={S.btnSecondary}>Activity Ledger</button>
             <button onClick={() => setShowEditModal(true)} style={S.btnSecondary}>Edit Profile</button>
           </div>
         </div>
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <DailySpin session={{ user }} showToast={showToast} />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
-          <div style={S.glassCard}>
-            <span style={S.label}>Available Balance</span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
-              <div style={S.valueGlow}>{localPoints.toLocaleString()}</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
-            </div>
-            
-            <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
-              <button onClick={() => navigate('wallet')} style={{ ...S.btnPrimary, flex: 1 }}>Withdraw Funds</button>
-              <button onClick={() => navigate('history')} style={{ ...S.btnSecondary, flex: 1 }}>Ledger</button>
-            </div>
-          </div>
 
           <div style={S.glassCard}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
