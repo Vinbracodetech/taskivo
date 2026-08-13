@@ -1,32 +1,5 @@
-import { useEffect } from 'react';
-
 // ==========================================
-// 1. MONETAG VIGNETTE (Clean Transition Ad for Blog)
-// ==========================================
-
-export function MonetagVignette() {
-  useEffect(() => {
-    if (document.getElementById('monetag-vignette-script')) return;
-
-    const script = document.createElement('script');
-    script.id = 'monetag-vignette-script';
-    script.dataset.zone = '11559334';
-    script.src = 'https://n6wxm.com/vignette.min.js';
-    script.async = true;
-    
-    (document.body || document.documentElement).appendChild(script);
-
-    return () => {
-      const el = document.getElementById('monetag-vignette-script');
-      if (el) el.remove();
-    };
-  }, []);
-
-  return null;
-}
-
-// ==========================================
-// 2. SMARTLINK ROTATOR ENGINE (10 Unique Monetag Links)
+// SMARTLINK ROTATOR ENGINE (10 Unique Monetag Links)
 // ==========================================
 
 export const SMART_LINKS = [
