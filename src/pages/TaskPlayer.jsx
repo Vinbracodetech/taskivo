@@ -22,7 +22,9 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   const [cheatWarning, setCheatWarning] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Trackers
   const ytPlayerRef = useRef(null);
+  const adWindowRef = useRef(null); // 🔥 Tracks the background sponsor tab
 
   useEffect(() => {
     async function init() {
@@ -96,7 +98,6 @@ export default function TaskPlayer({ session, navigate, taskId }) {
   }, [task, cooldown, verification, isManualTask, isBlog, isSmartlink]);
 
   useEffect(() => {
-    // We explicitly exclude isSmartlink here so the timer keeps ticking when they open the ad tab!
     if (isManualTask || isBlog || isSmartlink) return; 
     
     const handleVisibility = () => {
@@ -121,7 +122,15 @@ export default function TaskPlayer({ session, navigate, taskId }) {
     let interval;
     if (isLive && timer > 0) { 
       interval = setInterval(() => { 
-        // 🔥 BACKGROUND EXECUTION: Timer will count down if visible OR if it is a smartlink task
+        // 🔥 ANTI-CHEAT: Instantly flag if the sponsor tab is closed early
+        if (isSmartlink && adWindowRef.current && adWindowRef.current.closed) {
+          clearInterval(interval);
+          setIsLive(false);
+          setCheatWarning("⚠️ SPONSOR TAB CLOSED EARLY. You must keep the portal open for the full duration. Refresh the page to restart.");
+          return;
+        }
+
+        // Allow countdown if the tab is visible OR if it's a smartlink background task
         if (!document.hidden || isSmartlink) {
           setTimer((prev) => prev - 1); 
         }
@@ -296,12 +305,14 @@ export default function TaskPlayer({ session, navigate, taskId }) {
                   const adUrl = getTaskSmartLink();
                   const newTab = window.open(adUrl, '_blank', 'noopener,noreferrer');
                   
-                  // 🔥 POP-UNDER EFFECT: Pull focus back immediately
+                  // 🔥 POP-UNDER EFFECT & TRACKER ATTACHMENT 🔥
                   if (newTab) {
+                    adWindowRef.current = newTab;
                     window.focus();
                   }
                   
                   setIsLive(true);
+                  setCheatWarning("");
                 }} 
                 style={S.btnRed}
               >
