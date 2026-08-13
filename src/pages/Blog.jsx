@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { MonetagPopunder, MonetagVignette } from '../components/WebAds';
+import { MonetagVignette } from '../components/WebAds';
 
 // ── ELITE ARTICLE TYPOGRAPHY ENGINE ──
 const proseStyles = `
@@ -170,7 +170,6 @@ export function BlogIndex({ navigate }) {
 
   return (
     <div style={S.pageWrapper}>
-      <MonetagPopunder />
       <MonetagVignette />
       <div style={{ padding: '80px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" }}>
         <h1 style={{ fontSize: 48, fontFamily: "'Inter', sans-serif", fontWeight: 800, color: 'var(--ink)', marginBottom: 16, letterSpacing: '-1.5px' }}>Taskivo Intelligence</h1>
@@ -247,11 +246,9 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     fetchPost();
   }, [slug]);
 
-  // 🔥 UPGRADED METADATA & ARTICLE JSON-LD INJECTION 🔥
   useEffect(() => {
     if (!post) return;
 
-    // 1. Basic Meta Tags
     document.title = `${post.title} | Taskivo`;
     
     let metaDesc = document.querySelector('meta[name="description"]');
@@ -262,7 +259,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     }
     metaDesc.content = post.meta_desc || 'Read the latest intelligence briefing from Taskivo.';
 
-    // 2. BlogPosting Structured Data
     const articleSchema = {
       "@context": "https://schema.org",
       "@type": "BlogPosting",
@@ -289,7 +285,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       }
     };
 
-    // Remove existing script if any
     const existingScript = document.getElementById('taskivo-article-schema');
     if (existingScript) existingScript.remove();
 
@@ -299,11 +294,9 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     script.text = JSON.stringify(articleSchema);
     document.head.appendChild(script);
 
-    // Cleanup when leaving the article
     return () => {
       const scriptToRemove = document.getElementById('taskivo-article-schema');
       if (scriptToRemove) scriptToRemove.remove();
-      // Restore default description
       if (metaDesc) metaDesc.content = 'The world\'s most secure omnichannel engagement infrastructure.';
     };
   }, [post]);
@@ -369,7 +362,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       const { data: profile, error: profErr } = await supabase.from('profiles').select('points').eq('id', localUser.id).single();
       if (profErr) throw new Error("Profile Fetch Error: " + profErr.message);
       
-      // 🔥 UPDATED: Rebalanced economy to 3 PTS 🔥
       const { error: updateErr } = await supabase.from('profiles').update({ points: (profile.points || 0) + 3 }).eq('id', localUser.id);
       if (updateErr) throw new Error("Profile Update Error: " + updateErr.message);
       
@@ -386,7 +378,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
 
   function handleBackClick() {
     if (isActiveMission && !claimed && timeLeft > 0) {
-      // 🔥 UPDATED: Warning prompt reflects new 3 PTS limit 🔥
       const confirmLeave = window.confirm("WARNING: You have not completed the required dwell time. Leaving now will forfeit your 3 PTS reward.\n\nAre you sure you want to exit?");
       if (!confirmLeave) return;
     }
