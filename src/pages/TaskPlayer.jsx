@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { getTaskSmartLink } from '../components/WebAds';
 
 export default function TaskPlayer({ session, navigate, taskId }) {
   const user = session?.user;
