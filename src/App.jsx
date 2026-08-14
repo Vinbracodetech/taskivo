@@ -13,6 +13,7 @@ import Tasks from "./pages/Tasks.jsx";
 import TaskPlayer from "./pages/TaskPlayer.jsx";
 import Wallet from "./pages/Wallet.jsx";
 import History from "./pages/History.jsx"; 
+import Offerwalls from "./pages/Offerwalls.jsx"; // 🔥 NEW: Offerwalls Imported
 
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
@@ -414,6 +415,9 @@ export default function App() {
             {view.startsWith("player/") && user && <TaskPlayer session={{user}} navigate={navigate} taskId={view.split('/')[1]} />}
             {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
             {view === "history" && user && <History session={{user}} />}
+            
+            {/* 🔥 NEW: Offerwalls Route Inserted Here */}
+            {view === "offerwalls" && user && <Offerwalls session={{user}} navigate={navigate} />}
 
             {view === "creator-dashboard" && user && <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />}
             {view === "create-task" && user && <CreateTask session={{user}} navigate={navigate} />}
