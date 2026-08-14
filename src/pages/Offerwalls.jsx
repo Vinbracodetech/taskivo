@@ -21,8 +21,7 @@ export default function Offerwalls({ session, navigate }) {
       description: 'Complete mobile app installs, verifications, and high-yield CPA tasks.',
       rewardEstimate: 'Earn up to 2,500 PTS',
       color: '#a8ff3e',
-      // Replace YOUR_CPAGRIP_WALL_ID with your generated wall ID from the CPAGrip dashboard
-      url: `https://www.cpagrip.com/show.php?l=YOUR_CPAGRIP_WALL_ID&mode=wall&tracking_id=${user.id}`
+      url: `https://singingfiles.com/show.php?l=1909035&mode=wall&tracking_id=${user.id}`
     }
   ];
 
