@@ -1,29 +1,3 @@
-export default function App() {
-  // 🔴 MAINTENANCE KILL SWITCH 🔴
-  // Set to 'true' to lock down the site. Set to 'false' to go live.
-  const IS_MAINTENANCE_MODE = true; 
-
-  if (IS_MAINTENANCE_MODE) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface)', color: 'var(--ink)', fontFamily: "'Inter', sans-serif", padding: 20, textAlign: 'center' }}>
-        <div style={{ background: 'var(--surface-card)', border: '1px solid var(--lime)', borderRadius: 24, padding: '60px 40px', maxWidth: 500, boxShadow: '0 20px 60px rgba(168,255,62,0.1)' }}>
-          <div style={{ fontSize: 64, marginBottom: 24 }}>🛠️</div>
-          <h1 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 16px', letterSpacing: '-1px' }}>Network Upgrade in Progress</h1>
-          <p style={{ color: 'var(--slate)', fontSize: 16, lineHeight: 1.6, margin: '0 0 32px' }}>
-            Taskivo is currently undergoing scheduled infrastructure upgrades to bring you higher-paying tasks and faster payouts. 
-          </p>
-          <div style={{ display: 'inline-block', background: 'rgba(168,255,62,0.1)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.2)', padding: '8px 16px', borderRadius: 100, fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
-            We will be back shortly
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ... the rest of your normal App() code starts here:
-  // 🔥 ROUTING LOGIC
-  var rawPath = window.location.pathname.replace(/^\/+/, "");
-  // ...
 import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase.js";
 import CSS from "./styles/global.js";
@@ -146,6 +120,27 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
 }
 
 export default function App() {
+  // 🔴 MAINTENANCE KILL SWITCH 🔴
+  // Set to 'true' to lock down the site. Set to 'false' to go live.
+  const IS_MAINTENANCE_MODE = true; 
+
+  if (IS_MAINTENANCE_MODE) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface)', color: 'var(--ink)', fontFamily: "'Inter', sans-serif", padding: 20, textAlign: 'center' }}>
+        <div style={{ background: 'var(--surface-card)', border: '1px solid var(--lime)', borderRadius: 24, padding: '60px 40px', maxWidth: 500, boxShadow: '0 20px 60px rgba(168,255,62,0.1)' }}>
+          <div style={{ fontSize: 64, marginBottom: 24 }}>🛠️</div>
+          <h1 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 16px', letterSpacing: '-1px' }}>Network Upgrade in Progress</h1>
+          <p style={{ color: 'var(--slate)', fontSize: 16, lineHeight: 1.6, margin: '0 0 32px' }}>
+            Taskivo is currently undergoing scheduled infrastructure upgrades to bring you higher-paying tasks and faster payouts. 
+          </p>
+          <div style={{ display: 'inline-block', background: 'rgba(168,255,62,0.1)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.2)', padding: '8px 16px', borderRadius: 100, fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
+            We will be back shortly
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 🔥 ROUTING LOGIC
   var rawPath = window.location.pathname.replace(/^\/+/, "");
   var cleanPath = rawPath.split("?")[0] || "landing";
