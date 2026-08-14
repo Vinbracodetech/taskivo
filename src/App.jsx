@@ -122,7 +122,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
 export default function App() {
   // 🔴 MAINTENANCE KILL SWITCH 🔴
   // Set to 'true' to lock down the site. Set to 'false' to go live.
-  const IS_MAINTENANCE_MODE = true; 
+  const IS_MAINTENANCE_MODE = false; 
 
   if (IS_MAINTENANCE_MODE) {
     return (
