@@ -370,6 +370,25 @@ export default function Tasks({ session, navigate }) {
           </button>
         </div>
 
+        {/* 🔥 NEW: OFFERWALLS MEGA BANNER */}
+        <div 
+          onClick={() => navigate('offerwalls')}
+          style={{ background: 'var(--surface-card)', border: '1px solid var(--lime)', borderRadius: 24, padding: 32, marginBottom: 32, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20, boxShadow: '0 12px 40px rgba(168,255,62,0.1)', position: 'relative', overflow: 'hidden' }}
+        >
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'var(--lime)' }} />
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 18 }}>💎</span>
+              <span style={{ fontSize: 11, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Premium Yield Sector</span>
+            </div>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: 'var(--ink)', margin: '0 0 8px 0' }}>Offerwalls & Intelligence Surveys</h2>
+            <p style={{ color: 'var(--slate)', margin: 0, fontSize: 14 }}>Access high-paying market research and mobile app discovery tasks.</p>
+          </div>
+          <button style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '14px 28px', borderRadius: 100, fontSize: 13, fontWeight: 800, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', pointerEvents: 'none' }}>
+            Open Portal →
+          </button>
+        </div>
+
         <div style={S.quotaPanel}>
           <div style={S.quotaItem}>
             <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Video Metrics</span>
