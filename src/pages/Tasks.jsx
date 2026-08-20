@@ -384,7 +384,7 @@ export default function Tasks({ session, navigate }) {
           <button 
             onClick={() => {
               if (typeof window !== 'undefined' && window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL_AD' }));
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
               }
               navigate('user-dashboard');
             }} 
@@ -538,10 +538,19 @@ export default function Tasks({ session, navigate }) {
                       <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]} WAIT</button>
                     ) : (
                       <button onClick={() => {
+                          // 🔥 INJECTED INTERSTITIAL TRIGGER 🔥
+                          // Fires the interstitial on all standard task clicks BEFORE routing them
+                          if (typeof window !== 'undefined' && window.ReactNativeWebView && !task.is_native_ad) {
+                             window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
+                          }
+
                           if (isCpa) {
                             window.open(task.url, '_blank');
                           } else if (task.is_native_ad) {
-                            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_REWARDED_AD' }));
+                            // This stays REWARDED because it pays points
+                            if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+                              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_REWARDED_AD' }));
+                            }
                           } else if (task.is_internal_blog) {
                             localStorage.setItem('taskivo_active_mission', task.slug);
                             navigate(`article-${task.slug}`);
