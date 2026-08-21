@@ -12,6 +12,7 @@ export default function Tasks({ session, navigate }) {
   const [quotas, setQuotas] = useState({ videos: 0, seoBlogs: 0, internalBlogs: 0, premium: 0, nativeAds: 0 });
   const [lockout, setLockout] = useState(false);
   const [cooldowns, setCooldowns] = useState({});
+  const [bufferingAd, setBufferingAd] = useState(false); // NEW: Network buffer state
 
   const [needsPayoutVerification, setNeedsPayoutVerification] = useState(false);
   const [payoutForm, setPayoutForm] = useState({ bank_name: '', account_name: '', account_number: '' });
@@ -20,7 +21,7 @@ export default function Tasks({ session, navigate }) {
 
   const [toastMessage, setToastMessage] = useState('');
 
-  // --- PREMIUM AD NETWORK BRIDGE LOGIC (RESTORED) ---
+  // --- PREMIUM AD NETWORK BRIDGE LOGIC ---
   useEffect(() => {
     if (!user) return;
 
@@ -153,7 +154,6 @@ export default function Tasks({ session, navigate }) {
       setQuotas({ videos: vCount, seoBlogs: seoCount, internalBlogs: intCount, premium: pCount, nativeAds: nativeCount });
       setCooldowns(cooldownMap);
 
-      // Filter out monetag, cpx, and timewall from Supabase tasks
       const freshTasks = (activeTasksRes.data || [])
         .filter(t => t.id !== '11111111-1111-1111-1111-111111111111' && t.platform !== 'admob' && t.platform !== 'smartlink' && t.platform !== 'cpx' && t.platform !== 'monetag')
         .map(t => ({
@@ -185,7 +185,6 @@ export default function Tasks({ session, navigate }) {
         });
       }
 
-      // 🔥 FETCH CPAGRIP NATIVE JSON FEED 🔥
       let cpaTasks = [];
       try {
         const cpaRes = await fetch(`https://www.cpagrip.com/common/offer_feed_json.php?user_id=1064388&pubkey=68db332dde9664f68379f3fa5c0c7d97&tracking_id=${user.id}`);
@@ -208,7 +207,6 @@ export default function Tasks({ session, navigate }) {
         console.error("Failed to load CPAGrip JSON Feed:", err);
       }
 
-      // Merge and sort all task sources
       const mergedFeed = [...adTask, ...cpaTasks, ...freshTasks, ...freshPosts].sort((a, b) => {
         return new Date(b.created_at) - new Date(a.created_at);
       });
@@ -436,6 +434,19 @@ export default function Tasks({ session, navigate }) {
             </div>
           </div>
 
+          {/* NEW: RESTORED INTERNAL INTEL QUOTA ITEM */}
+          <div style={{ width: 1, background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} className="hide-on-mobile" />
+
+          <div style={S.quotaItem}>
+            <span style={{ fontSize: 11, color: 'var(--slate)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '1px' }}>Internal Intel</span>
+            <div style={{ color: 'var(--ink)', fontSize: 24, fontWeight: 800, fontFamily: "'Inter', sans-serif", display: 'flex', alignItems: 'baseline', gap: 4 }}>
+              {quotas.internalBlogs} <span style={{ fontSize: 14, color: 'var(--slate)', fontWeight: 500 }}>/ 5</span>
+            </div>
+            <div style={{ height: 4, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
+              <div style={{ width: `${(quotas.internalBlogs / 5) * 100}%`, height: '100%', background: 'var(--lime)', borderRadius: 4 }} />
+            </div>
+          </div>
+
           <div style={{ width: 1, background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} className="hide-on-mobile" />
 
           <div style={S.quotaItem}>
@@ -537,9 +548,9 @@ export default function Tasks({ session, navigate }) {
                     ) : cooldowns[task.id] ? (
                       <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]} WAIT</button>
                     ) : (
-                      <button onClick={() => {
-                          // 🔥 INJECTED INTERSTITIAL TRIGGER 🔥
-                          // Fires the interstitial on all standard task clicks BEFORE routing them
+                      <button 
+                        onClick={() => {
+                          // 🔥 INJECTED INTERSTITIAL TRIGGER FOR NON-NATIVE ADS 🔥
                           if (typeof window !== 'undefined' && window.ReactNativeWebView && !task.is_native_ad) {
                              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
                           }
@@ -547,10 +558,16 @@ export default function Tasks({ session, navigate }) {
                           if (isCpa) {
                             window.open(task.url, '_blank');
                           } else if (task.is_native_ad) {
-                            // This stays REWARDED because it pays points
+                            // NEW: Set buffering state to prevent double-clicks on live ads
+                            setBufferingAd(true);
+                            setToastMessage('Buffering Premium Video... Please wait.');
+                            
                             if (typeof window !== 'undefined' && window.ReactNativeWebView) {
                               window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_REWARDED_AD' }));
                             }
+                            
+                            // Reset the button after 6 seconds if ad hasn't played
+                            setTimeout(() => setBufferingAd(false), 6000); 
                           } else if (task.is_internal_blog) {
                             localStorage.setItem('taskivo_active_mission', task.slug);
                             navigate(`article-${task.slug}`);
@@ -560,7 +577,12 @@ export default function Tasks({ session, navigate }) {
                             }
                             navigate(`player/${task.id}`);
                           }
-                      }} style={S.btnActive(isPremium, isInternalStyle, isCpa)}>Initiate</button>
+                      }} 
+                      style={S.btnActive(isPremium, isInternalStyle, isCpa)}
+                      disabled={task.is_native_ad && bufferingAd}
+                      >
+                        {task.is_native_ad && bufferingAd ? 'BUFFERING...' : 'Initiate'}
+                      </button>
                     )}
                   </div>
                 </div>
