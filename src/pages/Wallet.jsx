@@ -87,6 +87,12 @@ export default function Wallet({ user, navigate, showToast }) {
       return;
     }
 
+    // 🔥 INJECTED INTERSTITIAL TRIGGER 🔥
+    // Fires only when the user passes all checks and legitimately requests a withdrawal
+    if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
+    }
+
     try {
       setSubmitting(true);
       
