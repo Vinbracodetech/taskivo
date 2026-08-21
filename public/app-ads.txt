@@ -150,3 +150,6 @@ metup.it, AJxF6R118a9M6CaTvK, RESELLER
 themediagrid.com, KH6MJT, RESELLER, 35d5010d7789b49d
 uis.mobfox.com, 2568, RESELLER, 5529a3d1f59865be
 improvedigital.com, 2417, RESELLER
+wovenaudience.com, 1008, RESELLER
+rubiconproject.com, 28673, RESELLER, 0bfd66d529a55807
+triplelift.com, 14858, RESELLER, 6c33edb13117fd86
