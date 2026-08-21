@@ -1,3 +1,140 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+
+// ── ELITE ARTICLE TYPOGRAPHY ENGINE ──
+const proseStyles = `
+  .article-prose { color: var(--slate); font-size: 17px; line-height: 1.8; font-family: 'DM Sans', sans-serif; }
+  .article-prose h2 { color: var(--ink); font-size: 24px; font-weight: 800; margin: 48px 0 16px 0; font-family: 'Inter', sans-serif; letter-spacing: -0.5px; }
+  .article-prose h3 { color: var(--ink); font-size: 20px; font-weight: 700; margin: 32px 0 12px 0; font-family: 'Inter', sans-serif; }
+  .article-prose p { margin-bottom: 24px; }
+  .article-prose blockquote { border-left: 4px solid var(--lime); padding-left: 20px; font-style: italic; color: var(--slate); background: rgba(168,255,62,0.05); padding: 16px 20px; border-radius: 0 12px 12px 0; margin: 32px 0; }
+  .article-prose ul { padding-left: 20px; margin-bottom: 24px; }
+  .article-prose li { margin-bottom: 12px; }
+  .article-prose strong { color: var(--ink); font-weight: 700; }
+  .article-prose a { color: var(--lime); text-decoration: none; border-bottom: 1px solid rgba(168,255,62,0.3); transition: border-color 0.2s; }
+`;
+
+// ── SHARED BACKGROUND STYLES ──
+const S = {
+  pageWrapper: {
+    minHeight: '100vh',
+    backgroundColor: 'var(--surface)',
+    backgroundImage: `
+      radial-gradient(circle at top center, rgba(168,255,62,0.15) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg width='80' height='138.6' viewBox='0 0 80 138.6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 138.6L0 115.5V69.3l40-23.1 40 23.1v46.2zM40 46.2L0 23.1V-23.1l40-23.1 40 23.1v46.2z' fill='none' stroke='%23A8FF3E' stroke-width='2' stroke-opacity='0.1'/%3E%3C/svg%3E")
+    `,
+    backgroundSize: '100%, 80px 138.6px',
+    backgroundAttachment: 'fixed',
+  }
+};
+
+// 🔥 PRODUCTION SECURE NODE COMPONENT 🔥
+export function TaskivoSecureNode({ slug }) {
+  const [status, setStatus] = useState("Taskivo Secure Node active. Establishing connection...");
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [token, setToken] = useState(null);
+  const [isActive, setIsActive] = useState(false);
+
+  useEffect(() => {
+    let countdownInterval;
+
+    async function initializeNode() {
+      try {
+        const cleanTargetUrl = `https://taskivo.online/article-${slug}`;
+
+        const initRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target_url: cleanTargetUrl })
+        });
+        
+        const initData = await initRes.json();
+
+        if (!initData.session_id) {
+          const fallbackUrl = `https://www.taskivo.online/article-${slug}`;
+          const retryRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_url: fallbackUrl })
+          });
+          const retryData = await retryRes.json();
+          if (!retryData.session_id) return;
+          initData.session_id = retryData.session_id;
+        }
+
+        setIsActive(true);
+        setStatus("Tracking Organic Dwell Time...");
+        
+        setTimeLeft(120);
+        let currentTime = 120;
+
+        countdownInterval = setInterval(async () => {
+          if (document.hidden) return; 
+          
+          currentTime--;
+          setTimeLeft(currentTime);
+
+          if (currentTime <= 0) {
+            clearInterval(countdownInterval);
+            setStatus("Verifying telemetry with server...");
+            setTimeLeft(null);
+
+            const claimRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/claim', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ session_id: initData.session_id })
+            });
+            
+            const claimData = await claimRes.json();
+            
+            if (claimData.secret_code) {
+              setToken(claimData.secret_code);
+              setStatus("Verification Complete!");
+            } else {
+              setStatus(`SERVER ERROR: ${claimData.error || JSON.stringify(claimData)}`);
+            }
+          }
+        }, 1000);
+
+      } catch (err) {
+        console.error("Node error:", err);
+      }
+    }
+
+    if (slug) initializeNode();
+
+    return () => {
+      if (countdownInterval) clearInterval(countdownInterval);
+    };
+  }, [slug]);
+
+  if (!isActive) return null;
+
+  return (
+    <div style={{ padding: '24px', textAlign: 'center', border: '1px dashed rgba(168,255,62,0.3)', borderRadius: '12px', marginTop: '48px', marginBottom: '24px', background: 'var(--surface-card)', clear: 'both' }}>
+      {token ? (
+        <strong style={{ color: 'var(--lime)', fontFamily: "'Inter', sans-serif" }}>
+          Verification Complete! Your Single-Use Code is:<br/><br/>
+          <span style={{ background: 'var(--surface)', border: '1px solid var(--line)', padding: '12px 16px', borderRadius: '8px', letterSpacing: '2px', color: 'var(--ink)', wordBreak: 'break-all', display: 'inline-block', fontSize: '16px' }}>
+            {token}
+          </span>
+        </strong>
+      ) : (
+        <>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: status.includes('SERVER ERROR') ? '#ef4444' : 'var(--slate)' }}>
+            {status}
+          </span>
+          {timeLeft !== null && (
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#ef4444', marginTop: '12px', fontFamily: 'monospace' }}>
+              {timeLeft}s
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── THE BLOG INDEX ──
 export function BlogIndex({ navigate }) {
   const [posts, setPosts] = useState([]);
@@ -47,7 +184,6 @@ export function BlogIndex({ navigate }) {
 
               return (
                 <div key={post.slug} onClick={() => {
-                  // 🔥 INJECTED: Interstitial fires when opening an article
                   if (typeof window !== 'undefined' && window.ReactNativeWebView) {
                     window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
                   }
@@ -249,7 +385,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       if (!confirmLeave) return;
     }
     
-    // 🔥 INJECTED: Interstitial fires when backing out of an article
     if (typeof window !== 'undefined' && window.ReactNativeWebView) {
       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
     }
@@ -308,7 +443,6 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
                 <div style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>+3 PTS Secured</div>
               </div>
               <button onClick={() => {
-                // 🔥 INJECTED: Interstitial fires when returning after claim
                 if (typeof window !== 'undefined' && window.ReactNativeWebView) {
                   window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
                 }
