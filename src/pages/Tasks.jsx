@@ -12,7 +12,7 @@ export default function Tasks({ session, navigate }) {
   const [quotas, setQuotas] = useState({ videos: 0, seoBlogs: 0, internalBlogs: 0, premium: 0, nativeAds: 0 });
   const [lockout, setLockout] = useState(false);
   const [cooldowns, setCooldowns] = useState({});
-  const [bufferingAd, setBufferingAd] = useState(false); // NEW: Network buffer state
+  const [bufferingAd, setBufferingAd] = useState(false); 
 
   const [needsPayoutVerification, setNeedsPayoutVerification] = useState(false);
   const [payoutForm, setPayoutForm] = useState({ bank_name: '', account_name: '', account_number: '' });
@@ -434,7 +434,6 @@ export default function Tasks({ session, navigate }) {
             </div>
           </div>
 
-          {/* NEW: RESTORED INTERNAL INTEL QUOTA ITEM */}
           <div style={{ width: 1, background: 'rgba(255,255,255,0.05)', margin: '0 8px' }} className="hide-on-mobile" />
 
           <div style={S.quotaItem}>
@@ -550,7 +549,6 @@ export default function Tasks({ session, navigate }) {
                     ) : (
                       <button 
                         onClick={() => {
-                          // 🔥 INJECTED INTERSTITIAL TRIGGER FOR NON-NATIVE ADS 🔥
                           if (typeof window !== 'undefined' && window.ReactNativeWebView && !task.is_native_ad) {
                              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
                           }
@@ -558,16 +556,20 @@ export default function Tasks({ session, navigate }) {
                           if (isCpa) {
                             window.open(task.url, '_blank');
                           } else if (task.is_native_ad) {
-                            // NEW: Set buffering state to prevent double-clicks on live ads
+                            
                             setBufferingAd(true);
-                            setToastMessage('Buffering Premium Video... Please wait.');
+                            setToastMessage('Requesting Premium Video from network...');
                             
                             if (typeof window !== 'undefined' && window.ReactNativeWebView) {
                               window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_REWARDED_AD' }));
                             }
                             
-                            // Reset the button after 6 seconds if ad hasn't played
-                            setTimeout(() => setBufferingAd(false), 6000); 
+                            // 🔥 NEW: 7 Second Network Failsafe
+                            setTimeout(() => {
+                              setBufferingAd(false);
+                              setToastMessage('Video inventory syncing. Please try again in a few moments.');
+                            }, 7000); 
+
                           } else if (task.is_internal_blog) {
                             localStorage.setItem('taskivo_active_mission', task.slug);
                             navigate(`article-${task.slug}`);
