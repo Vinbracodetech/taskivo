@@ -456,8 +456,6 @@ export default function Landing({ navigate, setAuthMode }) {
             })}
           </div>
         </div>
-        <div data-abx-banner="3a7b9feb6b78" data-abx-w="320" data-abx-h="50" style="display:inline-block;width:320px;height:50px;line-height:0"></div>
-<script async src="https://sdk.adsbitvex.com/functions/v1/banner-serve?action=sdk"></script>
       </section>
 
       {/* 🔥 PUBLIC SUPPORT BLOCK 🔥 */}
