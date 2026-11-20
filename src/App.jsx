@@ -440,6 +440,7 @@ export default function App() {
             
             {/* 🔥 NEW: Offerwalls Route Inserted Here */}
             {view === "offerwalls" && user && <Offerwalls session={{user}} navigate={navigate} />}
+            {view === "play-earn" && user && (user.role === 'earner' || user.role === 'admin') && <PlayEarn user={user} navigate={navigate} />}
 
             {view === "creator-dashboard" && user && <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />}
             {view === "create-task" && user && <CreateTask session={{user}} navigate={navigate} />}
