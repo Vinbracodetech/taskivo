@@ -307,7 +307,7 @@ export default function Tasks({ session, navigate }) {
     <div style={S.pageWrapper}>
       <div style={S.payoutOverlay}>
         <div style={{...S.payoutCard, borderColor: '#ef4444'}}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🛑</div>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>ðŸ›‘</div>
           <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: '#ef4444', marginBottom: 8 }}>Network Lockout</h2>
           <p style={{ color: 'var(--slate)', fontSize: 15, lineHeight: 1.6 }}>Anomalous activity detected. Your access to the liquidity pool has been temporarily suspended to protect our B2B partners.</p>
         </div>
@@ -321,7 +321,7 @@ export default function Tasks({ session, navigate }) {
         <div style={S.payoutOverlay}>
           <div style={S.payoutCard}>
             <div style={{ width: 64, height: 64, background: 'var(--lime-dim)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: '1px solid var(--lime)' }}>
-               <span style={{ fontSize: 24 }}>🛡️</span>
+               <span style={{ fontSize: 24 }}>ðŸ›¡ï¸</span>
             </div>
             <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 28, fontWeight: 800, color: 'var(--ink)', marginBottom: 8, letterSpacing: '-0.5px' }}>Bind Payout Node</h2>
             <p style={{ fontSize: 14, color: 'var(--slate)', marginBottom: 32, lineHeight: 1.5 }}>To enforce our zero-bot moat, you must link a verifiable financial institution before executing missions.</p>
@@ -350,7 +350,7 @@ export default function Tasks({ session, navigate }) {
     <div style={S.pageWrapper}>
       {toastMessage && (
         <div style={S.toast}>
-          <span style={{ fontSize: 20 }}>✅</span>
+          <span style={{ fontSize: 20 }}>âœ…</span>
           {toastMessage}
         </div>
       )}
@@ -371,8 +371,18 @@ export default function Tasks({ session, navigate }) {
             }} 
             style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s', backdropFilter: 'blur(5px)' }}
           >
-            My Hub →
+            My Hub â†’
           </button>
+        </div>
+
+        {/* PLAY & EARN GAMES */}
+        <div onClick={() => navigate('play-earn')} role="link" tabIndex={0}
+          onKeyDown={e => { if (e.key === 'Enter') navigate('play-earn'); }}
+          style={{ background: 'var(--surface-card)', border: '1px solid var(--lime)', borderRadius: 24,
+            padding: 24, marginBottom: 24, cursor: 'pointer' }}>
+          <div style={{ color: 'var(--lime)', fontSize: 12, fontWeight: 800 }}>SCREENSHOT VERIFICATION PILOT</div>
+          <h2 style={{ color: 'var(--ink)', margin: '8px 0' }}>ðŸŽ® Play & Earn Games</h2>
+          <p style={{ color: 'var(--slate)', margin: 0 }}>Candy Crush Glass and Glass Puzzle Zen. Submit level screenshots for review. Rewards are not yet payable.</p>
         </div>
 
         {/* OFFERWALLS MEGA BANNER */}
@@ -383,14 +393,14 @@ export default function Tasks({ session, navigate }) {
           <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: 'var(--lime)' }} />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 18 }}>💎</span>
+              <span style={{ fontSize: 18 }}>ðŸ’Ž</span>
               <span style={{ fontSize: 11, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Premium Yield Sector</span>
             </div>
             <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: 'var(--ink)', margin: '0 0 8px 0' }}>Offerwalls & Surveys</h2>
             <p style={{ color: 'var(--slate)', margin: 0, fontSize: 14 }}>Access high-paying market research and mobile app discovery tasks.</p>
           </div>
           <button style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '14px 28px', borderRadius: 100, fontSize: 13, fontWeight: 800, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '1px', pointerEvents: 'none' }}>
-            Open Portal →
+            Open Portal â†’
           </button>
         </div>
 
@@ -453,7 +463,7 @@ export default function Tasks({ session, navigate }) {
 
         {filteredTasks.length === 0 ? (
            <div style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 80, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', backdropFilter: 'blur(10px)' }}>
-             <div style={{ fontSize: 48, marginBottom: 16 }}>🛰️</div>
+             <div style={{ fontSize: 48, marginBottom: 16 }}>ðŸ›°ï¸</div>
              <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>No {activeCategory !== 'All' ? activeCategory : 'Tasks'} Available</div>
              <div style={{ fontSize: 14, color: 'var(--slate)', maxWidth: 300, margin: '8px auto 0' }}>All available campaigns in this sector have met their targets. Return shortly.</div>
            </div>
@@ -474,13 +484,13 @@ export default function Tasks({ session, navigate }) {
               
               const isLocked = quotaHit || cooldowns[task.id];
               
-              let icon = '▶️';
-              if (task.platform === 'blog' || isInternalStyle) icon = '📄';
-              if (task.platform === 'adsense') icon = '💰';
-              if (task.platform === 'ugc') icon = '📸';
-              if (task.platform === 'qa_testing') icon = '🛠️';
-              if (task.platform === 'growth') icon = '👥';
-              if (task.is_native_ad) icon = '💎'; 
+              let icon = 'â–¶ï¸';
+              if (task.platform === 'blog' || isInternalStyle) icon = 'ðŸ“„';
+              if (task.platform === 'adsense') icon = 'ðŸ’°';
+              if (task.platform === 'ugc') icon = 'ðŸ“¸';
+              if (task.platform === 'qa_testing') icon = 'ðŸ› ï¸';
+              if (task.platform === 'growth') icon = 'ðŸ‘¥';
+              if (task.is_native_ad) icon = 'ðŸ’Ž'; 
 
               return (
                 <div key={task.id} style={{ ...S.taskCard(isPremium, isInternalStyle), opacity: isLocked ? 0.6 : 1 }}>
@@ -517,7 +527,7 @@ export default function Tasks({ session, navigate }) {
                     {quotaHit ? (
                       <button disabled style={S.btnLocked}>LIMIT REACHED</button>
                     ) : cooldowns[task.id] ? (
-                      <button disabled style={S.btnLocked}>🔒 {cooldowns[task.id]} WAIT</button>
+                      <button disabled style={S.btnLocked}>ðŸ”’ {cooldowns[task.id]} WAIT</button>
                     ) : (
                       <button 
                         onClick={() => {
@@ -573,7 +583,7 @@ export default function Tasks({ session, navigate }) {
               onClick={() => setDisplayCount(prev => prev + 15)}
               style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', padding: '14px 32px', borderRadius: 100, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", transition: 'all 0.2s', backdropFilter: 'blur(5px)' }}
             >
-              Load More Operations ↓
+              Load More Operations â†“
             </button>
           </div>
         )}
