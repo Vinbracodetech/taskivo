@@ -14,6 +14,7 @@ import TaskPlayer from "./pages/TaskPlayer.jsx";
 import Wallet from "./pages/Wallet.jsx";
 import History from "./pages/History.jsx"; 
 import Offerwalls from "./pages/Offerwalls.jsx"; // 🔥 NEW: Offerwalls Imported
+import PlayEarn from "./pages/PlayEarn.jsx";
 
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
