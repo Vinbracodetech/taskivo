@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 const origin = 'https://www.taskivo.online';
 const template = await readFile('dist/index.html','utf8');
 const escape = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const setMeta = (html, key, value) => html.replace(new RegExp('<meta (?:name|property)="'+key+'" content="[^"]*"\\s*/?>'), m => m.replace(/content="[^"]*"/,'content="'+escape(value)+'"'));
+const setMeta = (html, key, value) => html.replace(new RegExp('<meta (?:name|property)="'+key+'" content="[^"]*"\\s*/?>'), m => m.replace(/content="[^"]*"/,()=> 'content="'+escape(value)+'"'));
 const nav = () => h('nav',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',height:72,padding:'0 5%',background:'var(--surface)',borderBottom:'1px solid var(--line)'}},h('a',{href:'/',style:{color:'var(--ink)',fontWeight:900,fontSize:26,textDecoration:'none'}},'Taskivo'),h('div',{style:{display:'flex',gap:16}},h('a',{href:'/blog'},'Blog'),h('a',{href:'/auth'},'Log in')));
 const server = await createServer({server:{middlewareMode:true},appType:'custom'});
 const manifest = [];
@@ -18,13 +18,13 @@ try {
   const {default:css} = await server.ssrLoadModule('/src/styles/global.js');
   const {supabaseUrl,supabaseAnonKey} = await server.ssrLoadModule('/src/lib/supabase.js');
   const navigate = () => {};
-  const fields = 'slug,title,meta_desc,category,created_at,content,image_url';
+  const fields = 'slug,title,meta_desc,category,created_at,content';
   const posts = [];
   for(let offset=0;;offset+=100) {
     const url = new URL('/rest/v1/posts',supabaseUrl);
     url.search = new URLSearchParams({select:fields,status:'eq.published',order:'created_at.desc,slug.asc',limit:'100',offset:String(offset)});
     const response = await fetch(url,{headers:{apikey:supabaseAnonKey,Authorization:'Bearer '+supabaseAnonKey},signal:AbortSignal.timeout(15000)});
-    if (!response.ok) throw new Error('Public post fetch failed: HTTP '+response.status);
+    if (!response.ok) { const error = await response.json().catch(()=>({})); throw new Error('Public post fetch failed: HTTP '+response.status+' '+String(error.code||'')+' '+String(error.message||'').slice(0,200)); }
     const batch = await response.json();
     if(!Array.isArray(batch)) throw new Error('Public post fetch did not return a list');
     posts.push(...batch.filter(p=>/^[a-z0-9-]+$/.test(p.slug) && p.title && p.content));
@@ -33,7 +33,7 @@ try {
   }
   const writePage = async (path,title,description,component,article=null) => {
     const canonical = origin + path;
-    let html = template.replace(/<title>[\s\S]*?<\/title>/,'<title>'+escape(title)+'</title>');
+    let html = template.replace(/<title>[\s\S]*?<\/title>/,()=> '<title>'+escape(title)+'</title>');
     for(const [k,v] of Object.entries({'title':title,'description':description,'og:title':title,'og:description':description,'og:url':canonical,'og:type':article?'article':'website','twitter:title':title,'twitter:description':description,'twitter:url':canonical})) html=setMeta(html,k,v);
     const schema = article ? {'@context':'https://schema.org','@type':'BlogPosting',headline:article.title,description,datePublished:article.created_at,mainEntityOfPage:canonical,author:{'@type':'Organization',name:'Taskivo'},publisher:{'@type':'Organization',name:'Taskivo'}} : null;
     html=html.replace('</head>','<link rel="canonical" href="'+escape(canonical)+'"><meta name="robots" content="index, follow">'+(schema?'<script type="application/ld+json">'+JSON.stringify(schema).replace(/</g,'\\u003c')+'</script>':'')+'</head>');
