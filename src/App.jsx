@@ -341,7 +341,7 @@ export default function App() {
       }
     } else {
       // User does not exist yet (First time logging in after registration OR ghost account recovery)
-      var intendedRole = localStorage.getItem('taskivo_role') || "earner";
+      var intendedRole = localStorage.getItem('taskivo_role') === 'creator' ? 'creator' : 'earner';
       var grantRequested = localStorage.getItem('taskivo_grant') === 'true';
       
       var newProfile = {
@@ -350,12 +350,12 @@ export default function App() {
         full_name: authUser.user_metadata ? authUser.user_metadata.full_name || "" : "",
         role: intendedRole, 
         points: 0,
-        pilot_claimed: grantRequested,
+        pilot_claimed: false,
         local_currency: 'NGN' // Ensuring default currency to prevent crash
       };
       
       // 🔥 FIX: Replaced .insert() with .upsert() to resurrect deleted ghost accounts safely
-      const { error: upsertErr } = await supabase.from("profiles").upsert(newProfile);
+      const { error: upsertErr } = await supabase.from("profiles").insert(newProfile);
       
       if (upsertErr) {
         console.error("Upsert failed:", upsertErr);
@@ -456,8 +456,8 @@ export default function App() {
             {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} user={user} setAuthMode={setAuthMode} />}
 
             {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
-            {view === "tasks" && user && <Tasks session={{user}} navigate={navigate} />}
-            {view.startsWith("player/") && user && <TaskPlayer session={{user}} navigate={navigate} taskId={view.split('/')[1]} />}
+            {view === "tasks" && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Earning opportunities</h1><p style={{lineHeight:1.7,color:'var(--slate)'}}>Legacy tasks are temporarily paused while reward verification is upgraded. Partner-funded surveys will open after settlement and safety checks.</p><button onClick={()=>navigate('offerwalls')} style={{background:'var(--lime)',color:'#000',border:0,borderRadius:12,padding:'12px 20px',fontWeight:700}}>Explore Offerwalls & Surveys</button></div>}
+            {view.startsWith("player/") && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Earning opportunities</h1><p style={{lineHeight:1.7,color:'var(--slate)'}}>Legacy tasks are temporarily paused while reward verification is upgraded. Partner-funded surveys will open after settlement and safety checks.</p><button onClick={()=>navigate('offerwalls')} style={{background:'var(--lime)',color:'#000',border:0,borderRadius:12,padding:'12px 20px',fontWeight:700}}>Explore Offerwalls & Surveys</button></div>}
             {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
             {view === "history" && user && <History session={{user}} />}
             
@@ -465,10 +465,10 @@ export default function App() {
             {view === "offerwalls" && user && <Offerwalls session={{user}} navigate={navigate} />}
 
             {view === "creator-dashboard" && user && <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />}
-            {view === "create-task" && user && <CreateTask session={{user}} navigate={navigate} />}
+            {view === "create-task" && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Campaigns temporarily paused</h1><p style={{color:'var(--slate)',lineHeight:1.7}}>We are upgrading payment verification. Do not make a campaign payment during maintenance. Existing records remain available.</p></div>}
             {view === "creator-tasks" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />}
             {view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
-            {view === "creator-approvals" && user && <CreatorApprovals user={user} navigate={navigate} showToast={showToast} />}
+            {view === "creator-approvals" && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Campaigns temporarily paused</h1><p style={{color:'var(--slate)',lineHeight:1.7}}>We are upgrading payment verification. Do not make a campaign payment during maintenance. Existing records remain available.</p></div>}
 
             {view === "admin-dashboard" && user?.role === "admin" && <AdminOverview navigate={navigate} showToast={showToast} />}
             {view === "admin-users" && user?.role === "admin" && <AdminUsersComp showToast={showToast} currentUser={user} />}
