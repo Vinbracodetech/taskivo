@@ -6,6 +6,7 @@ export default function Offerwalls({ session, navigate }) {
   const [activeWall, setActiveWall] = useState(null);
   const [opening, setOpening] = useState(false);
   const [notice, setNotice] = useState('');
+  const previewUrl = 'https://offerwall.gg/wall/8542a96e28f4b8ade0318ce71a324144';
 
   if (!user) {
     return (
@@ -24,7 +25,7 @@ export default function Offerwalls({ session, navigate }) {
     try {
       const { data, error } = await supabase.functions.invoke('offerwall-gg-link', { body: {} });
       if (error) throw error;
-      if (!data?.enabled) { setNotice('This partner is not open for earning yet.'); return; }
+      if (!data?.enabled) { setNotice('Live earning is not open yet. You can explore the read-only provider preview below.'); return; }
       const link = new URL(data.url);
       if (link.origin !== 'https://offerwall.gg' || !link.pathname.startsWith('/wall/')) throw new Error('Invalid wall URL');
       setActiveWall({ ...partner, url: link.href });
@@ -157,6 +158,7 @@ export default function Offerwalls({ session, navigate }) {
           <iframe
             src={activeWall.url}
             style={styles.iframe}
+            allow="clipboard-write"
             referrerPolicy="strict-origin-when-cross-origin"
             title={activeWall.name}
           />
@@ -174,6 +176,11 @@ export default function Offerwalls({ session, navigate }) {
           </button>
         </div>
 
+        <div style={{...styles.card,cursor:'default',marginBottom:20}}>
+          <h2 style={{fontSize:18,margin:'0 0 8px'}}>Preview available offers</h2>
+          <p style={styles.cardDesc}>Explore the provider catalogue without a linked earning account. Preview mode does not award points. Live earning opens only after approval and integration testing.</p>
+          <a href={previewUrl} target="_blank" rel="noopener noreferrer" style={{...styles.backBtn,display:'inline-block',textDecoration:'none'}}>Open read-only offerwall preview ↗</a>
+        </div>
         {notice && <p role="status" style={{ color: "var(--slate)", marginTop: 16 }}>{notice}</p>}
         <div style={styles.grid}>
           {partners.map((partner) => (
