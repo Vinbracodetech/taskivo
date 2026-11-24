@@ -50,7 +50,7 @@ export function CampaignRequest({user,navigate,setAuthMode}) {
         <label>Project URL (optional)<input style={field} type="url" maxLength={1000} value={url} onChange={e=>setUrl(e.target.value)}/></label>
         <label>Proposed budget and currency (optional)<input style={field} maxLength={100} placeholder="e.g. ₦25,000 or request a quote" value={budget} onChange={e=>setBudget(e.target.value)}/></label>
         <label>Campaign brief<textarea style={field} rows={5} required minLength={20} maxLength={3000} value={brief} onChange={e=>setBrief(e.target.value)} placeholder="Audience, deliverables, timing and project goals"/></label>
-        <button style={{...button,opacity:sending?.6:1}} disabled={sending} type="submit">{sending?'Submitting…':'Submit campaign request'}</button>
+        <button style={{...button,opacity:sending ? 0.6 : 1}} disabled={sending} type="submit">{sending?'Submitting…':'Submit campaign request'}</button>
         {status&&<p role="status" style={{color:'var(--ink)',lineHeight:1.6}}>{status}</p>}
       </form>}
     </div>
