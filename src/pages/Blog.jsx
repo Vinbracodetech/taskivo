@@ -233,7 +233,7 @@ export function ArticleView({ navigate, id, user, setAuthMode, initialPost = nul
   const [quizError, setQuizError] = useState(false);
 
   const slug = id.replace('article-', ''); 
-  const isActiveMission = typeof window !== 'undefined' && localStorage.getItem('taskivo_active_mission') === slug;
+  const isActiveMission = false; // Public articles are not incentivized; learning activities live in /tasks.
 
   useEffect(() => {
     if (!localUser) {

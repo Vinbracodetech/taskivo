@@ -11,7 +11,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   
   var [role, setRole] = useState(function() {
     if (typeof window !== "undefined") {
-      return localStorage.getItem('taskivo_role') || "earner";
+      return "earner";
     }
     return "earner";
   });
@@ -91,7 +91,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
       
       {mode === "register" && (
         <div style={{ display: "flex", background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 4, marginBottom: 24, gap: 4 }}>
-          {["earner", "creator"].map(function (r) { return <button key={r} onClick={function () { handleRoleChange(r); }} style={roleTabStyle(role === r)}>{r === "earner" ? "🎯 Contributor" : "✦ Business"}</button>; })}
+          {["earner"].map(function (r) { return <button key={r} onClick={function () { handleRoleChange(r); }} style={roleTabStyle(role === r)}>{r === "earner" ? "🎯 Contributor" : "✦ Business"}</button>; })}
         </div>
       )}
 
@@ -129,7 +129,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
           <div style={leftStyle}>
             <div style={logoStyle} onClick={function() { if(navigate) navigate(''); }}><span style={logoTextStyle}>⚡ Taskivo</span><span style={logoBadgeStyle}>BETA</span></div>
             <div style={headlineStyle}>Scale your reach.<br /><span style={{ color: "#A8FF3E" }}>Earn from real engagement.</span></div>
-            <div style={subStyle}>An omnichannel infrastructure connecting businesses with a global network of verified contributors.</div>
+            <div style={subStyle}>Join Taskivo to explore learning tasks and eligible partner-funded opportunities.</div>
             <div style={{ display: "flex", gap: 32, marginBottom: 48 }}>
               {statData.map(function (s) { return <div key={s.label}><div style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 800, color: "#A8FF3E" }}>{s.num}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{s.label}</div></div>; })}
             </div>

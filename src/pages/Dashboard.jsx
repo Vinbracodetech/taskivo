@@ -224,26 +224,26 @@ export default function Dashboard({ user, navigate, showToast }) {
         </div>
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <DailySpin session={{ user }} showToast={showToast} />
+          <div style={{...S.glassCard,marginBottom:24}}><h2 style={{fontSize:23,marginTop:0}}>Your task network</h2><p style={{color:'var(--slate)',lineHeight:1.6}}>Explore internal learning tasks and the Offerwall.GG pilot. Rewarded videos are coming soon.</p><div style={{display:'flex',flexWrap:'wrap',gap:12}}><button style={S.btnPrimary} onClick={()=>navigate('tasks')}>Explore tasks</button><button style={S.btnSecondary} onClick={()=>navigate('offerwalls')}>Offerwalls</button></div></div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
           <div style={S.glassCard}>
-            <span style={S.label}>Available Balance</span>
+            <span style={S.label}>Existing wallet points</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
               <div style={S.valueGlow}>{localPoints.toLocaleString()}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
             </div>
             
             <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
-              <button onClick={() => navigate('wallet')} style={{ ...S.btnPrimary, flex: 1 }}>Withdraw Funds</button>
+              <button onClick={() => navigate('wallet')} style={{ ...S.btnPrimary, flex: 1 }}>View wallet</button>
               <button onClick={() => navigate('history')} style={{ ...S.btnSecondary, flex: 1 }}>Ledger</button>
             </div>
           </div>
 
           <div style={S.glassCard}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <span style={{ ...S.label, marginBottom: 0 }}>Day-One Cashout Progress</span>
+              <span style={{ ...S.label, marginBottom: 0 }}>Existing account activity</span>
               <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--ink)', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 100, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" }}>
                 {stats.completions} TASKS COMPLETED
               </div>
@@ -251,26 +251,22 @@ export default function Dashboard({ user, navigate, showToast }) {
             
             <div style={{ marginTop: 24, marginBottom: 32 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', fontWeight: 600, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>
-                <span>Liquidity Target (100 PTS)</span>
-                <span style={{ color: 'var(--ink)' }}>{localPoints} / {minWithdrawal}</span>
+                <span>Legacy point balance</span>
+                <span style={{ color: 'var(--ink)' }}>{Number(localPoints||0).toLocaleString()} PTS</span>
               </div>
               <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.02)' }}>
-                <div style={{ width: `${progressPercent}%`, height: '100%', background: 'var(--lime)', borderRadius: 10, transition: 'width 0.5s ease-out' }}></div>
+                <div style={{ width: '0%', height: '100%', background: 'var(--lime)', borderRadius: 10, transition: 'width 0.5s ease-out' }}></div>
               </div>
             </div>
 
             <div style={{ marginTop: 'auto' }}>
-              <button onClick={() => navigate('tasks')} style={{ ...S.btnPrimary, width: '100%', display: 'block' }}>Acquire More Tasks</button>
+              <button onClick={() => navigate('tasks')} style={{ ...S.btnPrimary, width: '100%', display: 'block' }}>Explore Tasks</button>
             </div>
           </div>
         </div>
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <TelegramBonus 
-            session={{ user }} 
-            showToast={showToast} 
-            onBonusClaimed={(newPts) => setLocalPoints(newPts)} 
-          />
+          <p style={{color:'var(--slate)',fontSize:14}}>Daily spin and community cash bonuses remain paused until funding is available.</p>
         </div>
 
         <div 

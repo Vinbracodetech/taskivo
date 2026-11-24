@@ -133,7 +133,7 @@ export default function App() {
           <div style={{ fontSize: 64, marginBottom: 24 }}>🛠️</div>
           <h1 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 16px', letterSpacing: '-1px' }}>Network Upgrade in Progress</h1>
           <p style={{ color: 'var(--slate)', fontSize: 16, lineHeight: 1.6, margin: '0 0 32px' }}>
-            Taskivo is currently undergoing scheduled infrastructure upgrades to bring you higher-paying tasks and faster payouts. 
+            Taskivo is growing its contributor network. Paid offers are in a limited pilot, and withdrawals are paused. 
           </p>
           <div style={{ display: 'inline-block', background: 'rgba(168,255,62,0.1)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.2)', padding: '8px 16px', borderRadius: 100, fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
             We will be back shortly
@@ -345,7 +345,7 @@ export default function App() {
       }
     } else {
       // User does not exist yet (First time logging in after registration OR ghost account recovery)
-      var intendedRole = localStorage.getItem('taskivo_role') === 'creator' ? 'creator' : 'earner';
+      var intendedRole = 'earner';
       var grantRequested = localStorage.getItem('taskivo_grant') === 'true';
       
       var newProfile = {
@@ -382,7 +382,8 @@ export default function App() {
     const next = sessionStorage.getItem("taskivo_return_to");
     sessionStorage.removeItem("taskivo_return_to");
     if (["offerwalls","wallet","tasks","history"].includes(next) && ["admin","earner"].includes(role)) {navigate(next);return;}
-    if (role !== "admin" && localStorage.getItem("taskivo_requested_service")) { navigate("create-task"); return; }
+    localStorage.removeItem("taskivo_requested_service");
+    localStorage.removeItem("taskivo_requested_package");
     if (role === "admin") navigate("admin-dashboard");
     else if (role === "creator") navigate("creator-dashboard");
     else navigate("user-dashboard");
@@ -457,7 +458,7 @@ export default function App() {
           )}
 
           <div className="animate-fadeIn" key={view}>
-            {view === "landing" && <Landing navigate={navigate} setAuthMode={setAuthMode} />}
+            {view === "landing" && <Landing navigate={navigate} setAuthMode={setAuthMode} user={user} />}
             {view === "auth" && <Auth authMode={authMode} setAuthMode={setAuthMode} navigate={navigate} loadProfile={loadProfile} />}
             
            {/* Static Pages */}
@@ -472,7 +473,7 @@ export default function App() {
             {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} user={user} setAuthMode={setAuthMode} />}
 
             {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
-            {view === "tasks" && user && <EarningMarketplace navigate={navigate} />}
+            {view === "tasks" && user && <EarningMarketplace navigate={navigate} user={user} />}
             {view.startsWith("player/") && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Earning opportunities</h1><p style={{lineHeight:1.7,color:'var(--slate)'}}>Legacy tasks are temporarily paused while reward verification is upgraded. Partner-funded surveys will open after settlement and safety checks.</p><button onClick={()=>navigate('offerwalls')} style={{background:'var(--lime)',color:'#000',border:0,borderRadius:12,padding:'12px 20px',fontWeight:700}}>Explore Offerwalls & Surveys</button></div>}
             {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
             {view === "history" && user && <History session={{user}} />}
@@ -480,10 +481,10 @@ export default function App() {
             {/* 🔥 NEW: Offerwalls Route Inserted Here */}
             {view === "offerwalls" && user && <Offerwalls session={{user}} navigate={navigate} />}
 
-            {view === "creator-dashboard" && user && <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />}
+            {view === "creator-dashboard" && user && <CampaignRequest user={user} navigate={navigate} />}
             {view === "create-task" && <CampaignRequest user={user} navigate={navigate} setAuthMode={setAuthMode} />}
-            {view === "creator-tasks" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />}
-            {view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
+            {view === "creator-tasks" && user && <CampaignRequest user={user} navigate={navigate} />}
+            {view === "creator-analytics" && user && <CampaignRequest user={user} navigate={navigate} />}
             {view === "creator-approvals" && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Campaigns temporarily paused</h1><p style={{color:'var(--slate)',lineHeight:1.7}}>We are upgrading payment verification. Do not make a campaign payment during maintenance. Existing records remain available.</p></div>}
 
             {view === "admin-dashboard" && user?.role === "admin" && <><div style={{padding:"16px 5%"}}><button style={{background:"var(--lime)",color:"#111",padding:"12px 20px",border:0,borderRadius:8,fontWeight:700}} onClick={()=>navigate("offerwalls")}>Test Offerwall.GG</button></div><AdminOverview navigate={navigate} showToast={showToast} /></>}

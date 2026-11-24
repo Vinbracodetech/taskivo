@@ -156,7 +156,7 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
           <MenuItem icon={IconHome} label="Dashboard" onClick={() => handleNavigate(homeRoute)} />
           
           {user.role === 'earner' && (<><MenuItem icon={IconTasks} label="Task Network" onClick={() => handleNavigate('tasks')} /><MenuItem icon={IconWallet} label="Wallet & Withdrawals" onClick={() => handleNavigate('wallet')} /></>)}
-          {user.role === 'creator' && (<><MenuItem icon={<span style={{fontSize: 18}}>🚀</span>} label="Launch Campaign" onClick={() => handleNavigate('create-task')} /><MenuItem icon={IconAnalytics} label="Campaign Analytics" onClick={() => handleNavigate('creator-analytics')} /></>)}
+          {user.role === 'creator' && (<><MenuItem icon={<span style={{fontSize: 18}}>🚀</span>} label="Business services (paused)" onClick={() => handleNavigate('create-task')} /><MenuItem icon={IconAnalytics} label="Business account status" onClick={() => handleNavigate('creator-analytics')} /></>)}
           {user.role === 'admin' && (<><MenuItem icon={IconUsers} label="Manage Users" onClick={() => handleNavigate('admin-users')} /><MenuItem icon={IconAdminList} label="Review Network Tasks" onClick={() => handleNavigate('admin-tasks')} /><MenuItem icon={IconWallet} label="Process Withdrawals" onClick={() => handleNavigate('admin-withdrawals')} /></>)}
           
           <button onClick={toggleTheme} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'transparent', border: 'none', padding: '16px 0', color: C.textMain, cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: 16, fontWeight: 500, borderBottom: `1px solid ${C.line}` }}>
