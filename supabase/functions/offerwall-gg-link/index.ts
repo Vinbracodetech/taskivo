@@ -1,7 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 
-const previewOrigin = "https://taskivo-34bm-bdla2nq9y-vinbracodetechs-projects.vercel.app";
-const origins = new Set(["https://www.taskivo.online","https://taskivo.online",previewOrigin]);
+const origins = new Set(["https://www.taskivo.online","https://taskivo.online"]);
 const appId = "8542a96e28f4b8ade0318ce71a324144";
 const enc = new TextEncoder();
 
@@ -26,9 +25,9 @@ Deno.serve(async (req) => {
   if(error||!data.user||data.user.is_anonymous) return reply({error:"Sign in first"},401);
   const {data:profile,error:profileError}=await supabase.from("profiles").select("role").eq("id",data.user.id).single();
   if(profileError||!profile||!["admin","earner"].includes(profile.role)) return reply({enabled:false});
-  // Restricted, admin-only signed link test on this specific preview.
-  const pilot = origin===previewOrigin && profile.role==="admin";
-  const publicEnabled = origin!==previewOrigin && profile.role==="earner" && Deno.env.get("OFFERWALL_GG_ENABLED")==="true";
+  // Restrict the live-domain pilot to the existing administrator account.
+  const pilot = profile.role==="admin";
+  const publicEnabled = profile.role==="earner" && Deno.env.get("OFFERWALL_GG_ENABLED")==="true";
   if(!pilot&&!publicEnabled) return reply({enabled:false});
   const ts=String(Math.floor(Date.now()/1000)), userId=data.user.id;
   const params=new URLSearchParams({appId,ts,userId});
