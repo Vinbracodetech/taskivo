@@ -115,9 +115,7 @@ export default function Landing({ navigate, setAuthMode }) {
   }
 
   function goRegisterCreator() {
-    localStorage.setItem('taskivo_role', 'creator');
-    if (setAuthMode) setAuthMode("register");
-    navigate("auth");
+    navigate("create-task");
   }
 
   return (
@@ -136,7 +134,7 @@ export default function Landing({ navigate, setAuthMode }) {
           <p className="lp-hero-sub body-text" style={{ color: 'rgba(255,255,255,0.7)', maxWidth: 540, fontWeight: 400, lineHeight: 1.6 }}>Explore microtasks, app testing and partner-funded surveys. Help businesses improve products through genuine feedback.</p>
           
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
-            <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>Launch a Campaign</button>
+            <button style={{ background: C.lime, color: C.ink, border: 'none', borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>Request a Campaign</button>
             <button style={{ background: 'transparent', color: C.white, border: `1px solid ${C.darkLine}`, borderRadius: 8, padding: '14px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterEarner}>Explore Earning Opportunities</button>
           </div>
           
@@ -240,7 +238,7 @@ export default function Landing({ navigate, setAuthMode }) {
               <div key={i} style={{ background: plan.isPopular ? C.ink : C.white, color: plan.isPopular ? C.white : C.ink, border: `1px solid ${plan.isPopular ? C.ink : C.line}`, borderRadius: 16, padding: plan.isPopular ? '48px 24px' : '32px 24px', boxShadow: plan.isPopular ? '0 20px 40px rgba(0,0,0,0.1)' : 'none', position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 {plan.isPopular && <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: C.lime, color: C.ink, fontSize: 11, fontWeight: 700, padding: '6px 16px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap' }}>Best Value</div>}
                 <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{plan.name}</div>
-                <div className="heading" style={{ fontSize: 36, color: plan.isPopular ? C.lime : C.ink, marginBottom: 8 }}>{plan.price}</div>
+                <div className="heading" style={{ fontSize: 30, color: plan.isPopular ? C.lime : C.ink, marginBottom: 8 }}>{plan.price}</div>
                 <div style={{ fontSize: 13, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>{unitLabel}</div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 14, flexGrow: 1 }}>
                   {plan.features.map(function(feat, idx) {
