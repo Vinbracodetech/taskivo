@@ -95,7 +95,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
           {theme === 'dark' ? IconSun : IconMoon}
         </button>
 
-        <span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 14, fontWeight: 600 }} onClick={function() { navigate("blog"); }}>Blog</span>
+        <a href="/blog" style={{ color: "var(--slate)", fontSize: 14, fontWeight: 600 }} onClick={function(e) { if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate("blog"); }}>Blog</a>
         
         {!user ? (
           <div style={{ display: "flex", gap: 8 }}>
@@ -143,7 +143,7 @@ export default function App() {
 
   // 🔥 ROUTING LOGIC
   var rawPath = window.location.pathname.replace(/^\/+/, "");
-  var cleanPath = rawPath.split("?")[0] || "landing";
+  var cleanPath = rawPath.replace(/\/+$/, "") || "landing";
   
   var [view, setView] = useState(cleanPath);
   var [authMode, setAuthMode] = useState("login");
@@ -276,7 +276,7 @@ export default function App() {
   // Listen for back/forward browser buttons
   useEffect(function() {
     function handlePopState() {
-      var path = window.location.pathname.replace(/^\/+/, "") || "landing";
+      var path = window.location.pathname.replace(/^\/+|\/+$/g, "") || "landing";
       if (path.includes("?")) {
           path = path.split("?")[0];
       }
@@ -302,9 +302,9 @@ export default function App() {
 
   useEffect(function () {
     supabase.auth.getSession().then(function (result) {
-      var session = result.data.session;
-      if (session) { loadProfile(session.user); } else { setLoading(false); }
-    });
+      var session = result.data?.session;
+      if (session) { loadProfile(session.user).catch(() => setLoading(false)); } else { setLoading(false); }
+    }).catch(() => setLoading(false));
 
     var listener = supabase.auth.onAuthStateChange(function (event, session) {
       if (event === "SIGNED_OUT") { setUser(null); navigate("landing"); setLoading(false); }
@@ -384,7 +384,29 @@ export default function App() {
     showToast("Logged out successfully.", "info");
   }
 
-  if (loading) {
+  const publicView = ["landing", "about", "terms", "privacy", "disclaimer", "delete-account", "blog"].includes(view) || /^article-[a-z0-9-]+$/.test(view);
+
+  useEffect(() => {
+    const origin = "https://www.taskivo.online";
+    const path = view === "landing" ? "/" : "/" + view;
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (publicView) {
+      if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.appendChild(canonical); }
+      canonical.href = origin + path;
+    } else if (canonical) canonical.remove();
+    let robots = document.querySelector('meta[name="robots"]');
+    if (!robots) { robots = document.createElement("meta"); robots.name = "robots"; document.head.appendChild(robots); }
+    robots.content = publicView ? "index, follow" : "noindex, follow";
+    if (view === "blog") {
+      document.title = "Taskivo Blog | Microtasks, App Testing & Digital Work";
+      document.querySelector('meta[name="description"]').content = "Practical guides to online microtasks, app testing, user research and digital work.";
+    } else if (!publicView) {
+      document.title = "Taskivo | Account";
+      document.querySelector('meta[name="description"]').content = "Manage your Taskivo account.";
+    }
+  }, [view, publicView]);
+
+  if (loading && !publicView) {
     return (
       <>
         <style>{CSS}</style>
@@ -446,12 +468,12 @@ export default function App() {
             {view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
             {view === "creator-approvals" && user && <CreatorApprovals user={user} navigate={navigate} showToast={showToast} />}
 
-            {view === "admin-dashboard" && user && <AdminOverview navigate={navigate} showToast={showToast} />}
-            {view === "admin-users" && user && <AdminUsersComp showToast={showToast} currentUser={user} />}
-            {view === "admin-tasks" && user && <AdminTasksComp showToast={showToast} />}
-            {view === "admin-withdrawals" && user && <AdminWithdrawalsComp showToast={showToast} />}
-            {view === "admin-notifications" && user && <AdminNotificationsComp showToast={showToast} />}
-            {view === "admin-blog" && user && <AdminBlogComp showToast={showToast} />}
+            {view === "admin-dashboard" && user?.role === "admin" && <AdminOverview navigate={navigate} showToast={showToast} />}
+            {view === "admin-users" && user?.role === "admin" && <AdminUsersComp showToast={showToast} currentUser={user} />}
+            {view === "admin-tasks" && user?.role === "admin" && <AdminTasksComp showToast={showToast} />}
+            {view === "admin-withdrawals" && user?.role === "admin" && <AdminWithdrawalsComp showToast={showToast} />}
+            {view === "admin-notifications" && user?.role === "admin" && <AdminNotificationsComp showToast={showToast} />}
+            {view === "admin-blog" && user?.role === "admin" && <AdminBlogComp showToast={showToast} />}
           </div>
         </div>
 
