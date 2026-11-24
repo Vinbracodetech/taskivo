@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { safeArticleHtml } from '../lib/safeArticleHtml.js';
 
 // ── ELITE ARTICLE TYPOGRAPHY ENGINE ──
 const proseStyles = `
@@ -40,7 +41,7 @@ export function TaskivoSecureNode({ slug }) {
 
     async function initializeNode() {
       try {
-        const cleanTargetUrl = `https://taskivo.online/article-${slug}`;
+        const cleanTargetUrl = `https://www.taskivo.online/article-${slug}`;
 
         const initRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
           method: 'POST',
@@ -136,9 +137,9 @@ export function TaskivoSecureNode({ slug }) {
 }
 
 // ── THE BLOG INDEX ──
-export function BlogIndex({ navigate }) {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+export function BlogIndex({ navigate, initialPosts = null }) {
+  const [posts, setPosts] = useState(initialPosts || []);
+  const [loading, setLoading] = useState(initialPosts === null);
 
   useEffect(() => {
     async function fetchPosts() {
@@ -183,12 +184,14 @@ export function BlogIndex({ navigate }) {
                 : 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2070&auto=format&fit=crop';
 
               return (
-                <div key={post.slug} onClick={() => {
+                <a href={`/article-${post.slug}`} key={post.slug} onClick={(e) => {
+                  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+                  e.preventDefault();
                   if (typeof window !== 'undefined' && window.ReactNativeWebView) {
                     window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
                   }
                   navigate(`article-${post.slug}`);
-                }} style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', backdropFilter: 'blur(10px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                }} style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', backdropFilter: 'blur(10px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', textDecoration: 'none' }}>
                   
                   <div style={{ height: 180, backgroundImage: `url(${imgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 0%, var(--surface-card) 100%)' }} />
@@ -204,7 +207,7 @@ export function BlogIndex({ navigate }) {
                     <h2 style={{ fontSize: 22, color: 'var(--ink)', fontWeight: 800, marginBottom: 12, lineHeight: 1.3, fontFamily: "'Inter', sans-serif", letterSpacing: '-0.5px' }}>{post.title}</h2>
                     <p style={{ color: 'var(--slate)', fontSize: 15, lineHeight: 1.6, margin: 0 }}>{post.meta_desc}</p>
                   </div>
-                </div>
+                </a>
               );
             })
           )}
@@ -215,8 +218,9 @@ export function BlogIndex({ navigate }) {
 }
 
 // ── THE ELITE ARTICLE VIEW ──
-export function ArticleView({ navigate, id, user, setAuthMode }) {
-  const [post, setPost] = useState(null);
+export function ArticleView({ navigate, id, user, setAuthMode, initialPost = null }) {
+  const [post, setPost] = useState(initialPost);
+  const [postState, setPostState] = useState(initialPost ? 'ready' : 'loading');
   const [localUser, setLocalUser] = useState(user);
   
   const [timeLeft, setTimeLeft] = useState(120); 
@@ -229,7 +233,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
   const [quizError, setQuizError] = useState(false);
 
   const slug = id.replace('article-', ''); 
-  const isActiveMission = localStorage.getItem('taskivo_active_mission') === slug;
+  const isActiveMission = typeof window !== 'undefined' && localStorage.getItem('taskivo_active_mission') === slug;
 
   useEffect(() => {
     if (!localUser) {
@@ -241,13 +245,22 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
 
   useEffect(() => {
     async function fetchPost() {
-      const { data } = await supabase.from('posts').select('*').eq('slug', slug).single();
-      if (data) {
-        setPost(data);
-      }
+      try {
+        const { data, error } = await supabase.from('posts').select('*').eq('slug', slug).eq('status', 'published').maybeSingle();
+        if (error) throw error;
+        if (data) { setPost(data); setPostState('ready'); }
+        else { setPostState('missing'); }
+      } catch { setPostState('error'); }
     }
     fetchPost();
   }, [slug]);
+
+  useEffect(() => {
+    if (postState !== 'missing') return;
+    const robots = document.querySelector('meta[name="robots"]');
+    if (robots) robots.content = 'noindex, follow';
+    document.title = 'Article not found | Taskivo';
+  }, [postState]);
 
   useEffect(() => {
     if (!post) return;
@@ -267,7 +280,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       "@type": "BlogPosting",
       "mainEntityOfPage": {
         "@type": "WebPage",
-        "@id": `https://taskivo.online/article-${post.slug}`
+        "@id": `https://www.taskivo.online/article-${post.slug}`
       },
       "headline": post.title,
       "description": post.meta_desc,
@@ -276,14 +289,14 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
       "author": {
         "@type": "Organization",
         "name": "Taskivo Intelligence",
-        "url": "https://taskivo.online"
+        "url": "https://www.taskivo.online"
       },
       "publisher": {
         "@type": "Organization",
         "name": "Taskivo",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://taskivo.online/logo.png"
+          "url": "https://www.taskivo.online/logo.png"
         }
       }
     };
@@ -390,6 +403,14 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
     }
     navigate(localUser ? 'tasks' : 'blog');
   }
+
+  if (postState === 'missing' || postState === 'error') return (
+    <main style={{padding: '80px 5%', color: 'var(--ink)'}}>
+      <h1>{postState === 'missing' ? 'Article not found' : 'Article temporarily unavailable'}</h1>
+      <p>{postState === 'missing' ? 'This article is not published or no longer exists.' : 'Please try again later.'}</p>
+      <a href="/blog" style={{color: 'var(--ink)'}}>Browse the blog</a>
+    </main>
+  );
 
   if (!post) return (
     <div style={S.pageWrapper}>
@@ -508,14 +529,14 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
           </div>
         </div>
         
-        <div className="article-prose" dangerouslySetInnerHTML={{ __html: post.content }} />
+        <div className="article-prose" dangerouslySetInnerHTML={{ __html: safeArticleHtml(post.content) }} />
 
-        <TaskivoSecureNode slug={slug} />
+        {isActiveMission && localUser && <TaskivoSecureNode slug={slug} />}
 
         {!localUser && (
           <div style={{ background: 'linear-gradient(135deg, rgba(168,255,62,0.1) 0%, transparent 100%)', border: '1px solid var(--lime)', borderRadius: 24, padding: 40, textAlign: 'center', marginTop: 80, backdropFilter: 'blur(10px)' }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif", marginBottom: 12, letterSpacing: '-0.5px' }}>Monetize Your Attention.</div>
-            <p style={{ color: 'var(--slate)', fontSize: 16, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px', lineHeight: 1.6 }}>Taskivo earners get paid fiat currency for reading intelligence briefings just like this one.</p>
+            <p style={{ color: 'var(--slate)', fontSize: 16, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px', lineHeight: 1.6 }}>Explore eligible earning opportunities. Rewards depend on task availability, verification and funding.</p>
             <button onClick={() => { if(setAuthMode) setAuthMode('register'); navigate('auth'); }} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '16px 32px', borderRadius: 100, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Create Free Earner Account
             </button>

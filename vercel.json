@@ -1,12 +1,44 @@
 {
   "rewrites": [
     {
-      "source": "/sitemap.xml",
-      "destination": "https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/sitemap"
+      "source": "/about",
+      "destination": "/about.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/disclaimer",
+      "destination": "/disclaimer.html"
+    },
+    {
+      "source": "/delete-account",
+      "destination": "/delete-account.html"
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog.html"
+    },
+    {
+      "source": "/paid-surveys",
+      "destination": "/paid-surveys.html"
+    },
+    {
+      "source": "/microtasks",
+      "destination": "/microtasks.html"
+    },
+    {
+      "source": "/article-:slug",
+      "destination": "/article-:slug.html"
     },
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/app.html"
     }
   ],
   "headers": [

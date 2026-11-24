@@ -17,6 +17,7 @@ import Offerwalls from "./pages/Offerwalls.jsx"; // 🔥 NEW: Offerwalls Importe
 
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
+import { CampaignRequest, EarningMarketplace } from "./pages/CampaignRequest.jsx";
 import CreatorTasks from "./pages/CreatorTasks.jsx";
 import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
 import CreatorApprovals from "./pages/CreatorApprovals.jsx";
@@ -24,6 +25,7 @@ import CreatorApprovals from "./pages/CreatorApprovals.jsx";
 // Static & Admin Pages
 import { About, Terms, Privacy, Disclaimer, DeleteAccount } from "./pages/StaticPages.jsx";
 import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
+import { EarningGuide, earningGuides } from "./pages/EarningGuides.jsx";
 import {
   AdminOverview,
   AdminUsers as AdminUsersComp,
@@ -95,7 +97,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
           {theme === 'dark' ? IconSun : IconMoon}
         </button>
 
-        <span style={{ color: "var(--slate)", cursor: "pointer", fontSize: 14, fontWeight: 600 }} onClick={function() { navigate("blog"); }}>Blog</span>
+        <a href="/blog" style={{ color: "var(--slate)", fontSize: 14, fontWeight: 600 }} onClick={function(e) { if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate("blog"); }}>Blog</a>
         
         {!user ? (
           <div style={{ display: "flex", gap: 8 }}>
@@ -104,7 +106,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
           </div>
         ) : user.role === 'earner' ? (
           <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease' }}>
-            {user.points.toLocaleString()} PTS
+            {Number(user.points || 0).toLocaleString()} PTS
           </div>
         ) : (
           <div 
@@ -143,7 +145,7 @@ export default function App() {
 
   // 🔥 ROUTING LOGIC
   var rawPath = window.location.pathname.replace(/^\/+/, "");
-  var cleanPath = rawPath.split("?")[0] || "landing";
+  var cleanPath = rawPath.replace(/\/+$/, "") || "landing";
   
   var [view, setView] = useState(cleanPath);
   var [authMode, setAuthMode] = useState("login");
@@ -276,7 +278,7 @@ export default function App() {
   // Listen for back/forward browser buttons
   useEffect(function() {
     function handlePopState() {
-      var path = window.location.pathname.replace(/^\/+/, "") || "landing";
+      var path = window.location.pathname.replace(/^\/+|\/+$/g, "") || "landing";
       if (path.includes("?")) {
           path = path.split("?")[0];
       }
@@ -301,16 +303,19 @@ export default function App() {
   function toggleTheme() { setTheme(theme === "dark" ? "light" : "dark"); }
 
   useEffect(function () {
-    supabase.auth.getSession().then(function (result) {
-      var session = result.data.session;
-      if (session) { loadProfile(session.user); } else { setLoading(false); }
+    let active=true;
+    let timer;
+    const load=(session)=>{
+      if(!active) return;
+      if(session?.user) loadProfile(session.user).catch(()=>{if(active)setLoading(false);});
+      else {setUser(null);setLoading(false);}
+    };
+    supabase.auth.getSession().then(({data})=>load(data?.session)).catch(()=>{if(active)setLoading(false);});
+    const listener=supabase.auth.onAuthStateChange((event,session)=>{
+      if(event==="SIGNED_OUT"){sessionStorage.removeItem("taskivo_return_to");setUser(null);navigate("landing");setLoading(false);}
+      if(event==="SIGNED_IN"){clearTimeout(timer);timer=setTimeout(()=>load(session),0);}
     });
-
-    var listener = supabase.auth.onAuthStateChange(function (event, session) {
-      if (event === "SIGNED_OUT") { setUser(null); navigate("landing"); setLoading(false); }
-    });
-
-    return function () { listener.data.subscription.unsubscribe(); };
+    return ()=>{active=false;clearTimeout(timer);listener.data.subscription.unsubscribe();};
   }, []);
 
   // --- 🔥 UPDATED LOAD PROFILE WITH SECURE UPSERT 🔥 ---
@@ -319,7 +324,7 @@ export default function App() {
     var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
     
     // Check path for correct routing after auth
-    var currentPath = window.location.pathname.replace(/^\/+/, "") || "landing";
+    var currentPath = window.location.pathname.replace(/^\/+|\/+$/g, "") || "landing";
     if (currentPath.includes("?")) currentPath = currentPath.split("?")[0];
 
     if (result.data) {
@@ -340,7 +345,7 @@ export default function App() {
       }
     } else {
       // User does not exist yet (First time logging in after registration OR ghost account recovery)
-      var intendedRole = localStorage.getItem('taskivo_role') || "earner";
+      var intendedRole = localStorage.getItem('taskivo_role') === 'creator' ? 'creator' : 'earner';
       var grantRequested = localStorage.getItem('taskivo_grant') === 'true';
       
       var newProfile = {
@@ -349,12 +354,12 @@ export default function App() {
         full_name: authUser.user_metadata ? authUser.user_metadata.full_name || "" : "",
         role: intendedRole, 
         points: 0,
-        pilot_claimed: grantRequested,
+        pilot_claimed: false,
         local_currency: 'NGN' // Ensuring default currency to prevent crash
       };
       
       // 🔥 FIX: Replaced .insert() with .upsert() to resurrect deleted ghost accounts safely
-      const { error: upsertErr } = await supabase.from("profiles").upsert(newProfile);
+      const { error: upsertErr } = await supabase.from("profiles").insert(newProfile);
       
       if (upsertErr) {
         console.error("Upsert failed:", upsertErr);
@@ -374,6 +379,10 @@ export default function App() {
   }
 
   function routeByRole(role) {
+    const next = sessionStorage.getItem("taskivo_return_to");
+    sessionStorage.removeItem("taskivo_return_to");
+    if (["offerwalls","wallet","tasks","history"].includes(next) && ["admin","earner"].includes(role)) {navigate(next);return;}
+    if (role !== "admin" && localStorage.getItem("taskivo_requested_service")) { navigate("create-task"); return; }
     if (role === "admin") navigate("admin-dashboard");
     else if (role === "creator") navigate("creator-dashboard");
     else navigate("user-dashboard");
@@ -384,7 +393,37 @@ export default function App() {
     showToast("Logged out successfully.", "info");
   }
 
-  if (loading) {
+  const publicView = ["landing", "about", "terms", "privacy", "disclaimer", "delete-account", "blog", ...Object.keys(earningGuides)].includes(view) || /^article-[a-z0-9-]+$/.test(view);
+
+  useEffect(() => {
+    if (!loading && !user && !publicView && !["auth","create-task"].includes(view)) {
+      if (["offerwalls","wallet","tasks","history"].includes(view)) sessionStorage.setItem("taskivo_return_to",view);
+      setAuthMode("login");
+      navigate("auth");
+    }
+  }, [loading,user,view,publicView]);
+
+  useEffect(() => {
+    const origin = "https://www.taskivo.online";
+    const path = view === "landing" ? "/" : "/" + view;
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (publicView) {
+      if (!canonical) { canonical = document.createElement("link"); canonical.rel = "canonical"; document.head.appendChild(canonical); }
+      canonical.href = origin + path;
+    } else if (canonical) canonical.remove();
+    let robots = document.querySelector('meta[name="robots"]');
+    if (!robots) { robots = document.createElement("meta"); robots.name = "robots"; document.head.appendChild(robots); }
+    robots.content = publicView ? "index, follow" : "noindex, follow";
+    if (view === "blog") {
+      document.title = "Taskivo Blog | Microtasks, App Testing & Digital Work";
+      document.querySelector('meta[name="description"]').content = "Practical guides to online microtasks, app testing, user research and digital work.";
+    } else if (!publicView) {
+      document.title = "Taskivo | Account";
+      document.querySelector('meta[name="description"]').content = "Manage your Taskivo account.";
+    }
+  }, [view, publicView]);
+
+  if (loading && !publicView) {
     return (
       <>
         <style>{CSS}</style>
@@ -429,11 +468,12 @@ export default function App() {
             {view === "delete-account" && <DeleteAccount />}
             
             {view === "blog" && <BlogIndex navigate={navigate} />}
+            {Object.hasOwn(earningGuides, view) && <EarningGuide slug={view} />}
             {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} user={user} setAuthMode={setAuthMode} />}
 
             {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
-            {view === "tasks" && user && <Tasks session={{user}} navigate={navigate} />}
-            {view.startsWith("player/") && user && <TaskPlayer session={{user}} navigate={navigate} taskId={view.split('/')[1]} />}
+            {view === "tasks" && user && <EarningMarketplace navigate={navigate} />}
+            {view.startsWith("player/") && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Earning opportunities</h1><p style={{lineHeight:1.7,color:'var(--slate)'}}>Legacy tasks are temporarily paused while reward verification is upgraded. Partner-funded surveys will open after settlement and safety checks.</p><button onClick={()=>navigate('offerwalls')} style={{background:'var(--lime)',color:'#000',border:0,borderRadius:12,padding:'12px 20px',fontWeight:700}}>Explore Offerwalls & Surveys</button></div>}
             {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
             {view === "history" && user && <History session={{user}} />}
             
@@ -441,17 +481,17 @@ export default function App() {
             {view === "offerwalls" && user && <Offerwalls session={{user}} navigate={navigate} />}
 
             {view === "creator-dashboard" && user && <CreatorDashboard user={user} navigate={navigate} showToast={showToast} />}
-            {view === "create-task" && user && <CreateTask session={{user}} navigate={navigate} />}
+            {view === "create-task" && <CampaignRequest user={user} navigate={navigate} setAuthMode={setAuthMode} />}
             {view === "creator-tasks" && user && <CreatorTasks user={user} navigate={navigate} showToast={showToast} />}
             {view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
-            {view === "creator-approvals" && user && <CreatorApprovals user={user} navigate={navigate} showToast={showToast} />}
+            {view === "creator-approvals" && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Campaigns temporarily paused</h1><p style={{color:'var(--slate)',lineHeight:1.7}}>We are upgrading payment verification. Do not make a campaign payment during maintenance. Existing records remain available.</p></div>}
 
-            {view === "admin-dashboard" && user && <AdminOverview navigate={navigate} showToast={showToast} />}
-            {view === "admin-users" && user && <AdminUsersComp showToast={showToast} currentUser={user} />}
-            {view === "admin-tasks" && user && <AdminTasksComp showToast={showToast} />}
-            {view === "admin-withdrawals" && user && <AdminWithdrawalsComp showToast={showToast} />}
-            {view === "admin-notifications" && user && <AdminNotificationsComp showToast={showToast} />}
-            {view === "admin-blog" && user && <AdminBlogComp showToast={showToast} />}
+            {view === "admin-dashboard" && user?.role === "admin" && <><div style={{padding:"16px 5%"}}><button style={{background:"var(--lime)",color:"#111",padding:"12px 20px",border:0,borderRadius:8,fontWeight:700}} onClick={()=>navigate("offerwalls")}>Test Offerwall.GG</button></div><AdminOverview navigate={navigate} showToast={showToast} /></>}
+            {view === "admin-users" && user?.role === "admin" && <AdminUsersComp showToast={showToast} currentUser={user} />}
+            {view === "admin-tasks" && user?.role === "admin" && <AdminTasksComp showToast={showToast} />}
+            {view === "admin-withdrawals" && user?.role === "admin" && <AdminWithdrawalsComp showToast={showToast} />}
+            {view === "admin-notifications" && user?.role === "admin" && <AdminNotificationsComp showToast={showToast} />}
+            {view === "admin-blog" && user?.role === "admin" && <AdminBlogComp showToast={showToast} />}
           </div>
         </div>
 

@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabase';
 export default function Wallet({ user, navigate, showToast }) {
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [partnerPending, setPartnerPending] = useState(null);
+  const [partnerSettled, setPartnerSettled] = useState(null);
+  const [partnerAvailable, setPartnerAvailable] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [amount, setAmount] = useState('');
   
@@ -50,6 +53,12 @@ export default function Wallet({ user, navigate, showToast }) {
         
       if (txError) throw txError;
       setWithdrawals(txData || []);
+      // A separate read-only balance; never add unsettled conversions to profiles.points.
+      const { data: balances, error: balanceError } = await supabase.rpc('offerwall_gg_balances');
+      const rewardBalance = !balanceError && balances?.[0];
+      setPartnerPending(rewardBalance ? Number(rewardBalance.pending_pts) : null);
+      setPartnerSettled(rewardBalance ? Number(rewardBalance.settled_pts) : null);
+      setPartnerAvailable(rewardBalance ? Number(rewardBalance.available_pts) : null);
       
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -72,58 +81,7 @@ export default function Wallet({ user, navigate, showToast }) {
 
   async function handleWithdrawal(e) {
     e.preventDefault();
-    const amountNum = parseInt(amount, 10);
-    
-    if (!amountNum || amountNum < minWithdrawal) {
-      if (showToast) showToast(`Minimum withdrawal is ${minWithdrawal.toLocaleString()} PTS.`, 'error');
-      return;
-    }
-    if (amountNum > user.points) {
-      if (showToast) showToast('Insufficient liquidity.', 'error');
-      return;
-    }
-    if (!lockedDestination) {
-      if (showToast) showToast('Payout identity missing. Please update your profile.', 'error');
-      return;
-    }
-
-    // 🔥 INJECTED INTERSTITIAL TRIGGER 🔥
-    // Fires only when the user passes all checks and legitimately requests a withdrawal
-    if (typeof window !== 'undefined' && window.ReactNativeWebView) {
-       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
-    }
-
-    try {
-      setSubmitting(true);
-      
-      const { error: insertError } = await supabase.from('withdrawals').insert({
-        user_id: user.id, 
-        amount: amountNum, 
-        bank_name: lockedDestination.payout_bank_name, 
-        account_name: lockedDestination.payout_account_name,
-        account_number: lockedDestination.payout_account, 
-        status: 'pending'
-      });
-      
-      if (insertError) throw insertError;
-
-      const { error: updateError } = await supabase.from('profiles').update({ points: user.points - amountNum }).eq('id', user.id);
-      if (updateError) throw updateError;
-
-      window.dispatchEvent(new Event('taskivo_points_updated'));
-
-      if (showToast) showToast('Transfer initiated. Funds will arrive within 24 hours.', 'success');
-      setAmount('');
-      
-      fetchLedger();
-      
-    } catch (err) {
-      console.error("Withdrawal Error:", err);
-      alert("DATABASE REJECTED IT! Reason: " + JSON.stringify(err, null, 2));
-      if (showToast) showToast(err.message || 'Transaction failed.', 'error');
-    } finally {
-      setSubmitting(false);
-    }
+    if (showToast) showToast('Withdrawals are temporarily paused during security and funding checks.', 'error');
   }
 
   if (loading) {
@@ -136,7 +94,7 @@ export default function Wallet({ user, navigate, showToast }) {
   }
 
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
-  const isEligible = user.points >= minWithdrawal;
+  const isEligible = false;
 
   const S = {
     pageWrapper: {
@@ -190,7 +148,7 @@ export default function Wallet({ user, navigate, showToast }) {
           
           <div style={{ ...S.glassCard, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <span style={S.label}>Total Liquid Points</span>
+              <span style={S.label}>Existing wallet points</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                 <div style={S.valueGlow}>{user.points.toLocaleString()}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
@@ -212,8 +170,8 @@ export default function Wallet({ user, navigate, showToast }) {
 
             <div style={{ marginTop: 48 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', fontWeight: 600, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>
-                <span>Payout Eligibility Status</span>
-                <span style={{ color: isEligible ? 'var(--lime)' : 'var(--ink)' }}>{isEligible ? 'ELIGIBLE' : `${user.points} / ${minWithdrawal}`}</span>
+                <span>Payout availability</span>
+                <span style={{ color: isEligible ? 'var(--lime)' : 'var(--ink)' }}>{'Temporarily paused'}</span>
               </div>
               <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.02)' }}>
                 <div style={{ width: `${progressPercent}%`, height: '100%', background: isEligible ? 'var(--lime)' : 'var(--slate)', borderRadius: 10 }}></div>
@@ -229,7 +187,7 @@ export default function Wallet({ user, navigate, showToast }) {
             {lockedDestination ? (
                <div style={{ background: 'rgba(168,255,62,0.05)', border: '1px solid rgba(168,255,62,0.2)', padding: 16, borderRadius: 12, marginBottom: 24 }}>
                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                   <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--lime)', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" }}>✓ Verified Destination</span>
+                   <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--lime)', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" }}>Saved payout destination</span>
                    <span style={{ fontSize: 16 }}>💳</span>
                  </div>
                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{lockedDestination.payout_bank_name}</div>
@@ -259,17 +217,27 @@ export default function Wallet({ user, navigate, showToast }) {
               </div>
 
               <button type="submit" disabled={!isEligible || submitting || !lockedDestination} style={isEligible && lockedDestination ? S.btnLime : S.btnDisabled}>
-                {submitting ? 'Processing...' : isEligible && lockedDestination ? 'Initiate Transfer' : 'Transfer Locked'}
+                {submitting ? 'Processing...' : isEligible && lockedDestination ? 'Initiate Transfer' : 'Withdrawals paused'}
               </button>
 
               <div style={{ fontSize: 12, color: 'var(--slate)', textAlign: 'center', marginTop: 14, fontWeight: 500 }}>
-                ⏱️ Approved payouts are processed and disbursed within 24 hours.
+                Withdrawals are paused while balances and funding are verified. Existing balances remain recorded.
               </div>
               
             </form>
           </div>
         </div>
 
+        <div style={{...S.glassCard, marginBottom:32}}>
+          <span style={S.label}>Pending survey &amp; offer rewards</span>
+          <div style={{fontSize:32,fontWeight:800,color:'var(--ink)',margin:'10px 0'}}>{partnerPending === null ? 'Unavailable' : partnerPending.toLocaleString(undefined,{maximumFractionDigits:2}) + ' PTS'}</div>
+          <p style={{color:'var(--slate)',fontSize:14,lineHeight:1.6,margin:0}}>Provider-recorded rewards are separate from your existing wallet. They are not withdrawable until funding is received and reconciled. Reversed offers can reduce this balance.</p>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:16,marginTop:24}}>
+            <div><span style={S.label}>Settled partner rewards</span><strong style={{color:'var(--ink)',fontSize:24}}>{partnerSettled===null?'Unavailable':partnerSettled.toLocaleString(undefined,{maximumFractionDigits:2})+' PTS'}</strong></div>
+            <div><span style={S.label}>Funded, unreserved points</span><strong style={{color:'var(--ink)',fontSize:24}}>{partnerAvailable===null?'Unavailable':partnerAvailable.toLocaleString()+' PTS'}</strong></div>
+          </div>
+          <p style={{color:'var(--slate)',fontSize:13}}>Withdrawals remain paused during verification. Funded points are not an instant payout promise.</p>
+        </div>
         <div>
           <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: '0 0 24px 0', letterSpacing: '-0.5px' }}>Transaction Ledger</h2>
           
