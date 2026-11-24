@@ -7,232 +7,326 @@ export const services = [
   { id:'ugc', label:'UGC Videos', title:'Original UGC videos', icon:'🤳', desc:'Commission original product demos or creative videos with agreed usage rights, honest disclosures and no fabricated testimonials.', deliverables:['Original video deliverables','Agreed commercial usage rights','Manual quality review'], task:'Content creation' }
 ];
 
-// Indicative USD prices for reviewed quotes, not automatic checkout amounts.
+// Indicative USD starting prices based on the original Taskivo price tiers.
+// Scope, participant pay and availability must be agreed before funding; no automatic checkout.
 export const servicePackages = {
   "social": [
     {
-      "id": "starter",
-      "name": "Starter",
-      "amount": 15,
-      "scope": "5 short video feedback submissions",
+      "id": "pilot",
+      "name": "Pilot",
+      "amount": 2,
+      "scope": "1 short creative feedback response",
       "features": [
-        "Feedback on one video or creative",
-        "5 structured responses",
-        "Summary of improvements"
+        "One short clip or creative",
+        "One structured response"
       ],
       "isPopular": false
     },
     {
-      "id": "professional",
-      "name": "Professional",
-      "amount": 35,
-      "scope": "12 short video feedback submissions",
+      "id": "basic",
+      "name": "Basic",
+      "amount": 5,
+      "scope": "2 short feedback responses",
       "features": [
-        "Up to 2 creative variations",
-        "12 structured responses",
-        "Comparative feedback summary"
+        "One creative",
+        "Two independent responses"
+      ],
+      "isPopular": false
+    },
+    {
+      "id": "starter",
+      "name": "Starter",
+      "amount": 12,
+      "scope": "5 short feedback responses",
+      "features": [
+        "One creative",
+        "Five structured responses"
+      ],
+      "isPopular": false
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "amount": 25,
+      "scope": "10 short feedback responses",
+      "features": [
+        "Up to two creatives",
+        "Consolidated feedback"
       ],
       "isPopular": true
     },
     {
-      "id": "business",
-      "name": "Business",
-      "amount": 75,
-      "scope": "25 short video feedback submissions",
+      "id": "scale",
+      "name": "Scale",
+      "amount": 50,
+      "scope": "20 short feedback responses",
       "features": [
-        "Up to 3 creative variations",
-        "25 structured responses",
-        "Creative testing report"
+        "Up to three creatives",
+        "Comparison summary"
       ],
       "isPopular": false
     }
   ],
   "growth": [
     {
-      "id": "starter",
-      "name": "Starter",
-      "amount": 20,
-      "scope": "5 audience research responses",
+      "id": "pilot",
+      "name": "Pilot",
+      "amount": 3,
+      "scope": "1 audience feedback response",
       "features": [
-        "One target audience",
-        "5 structured responses",
-        "Messaging recommendations"
+        "One short messaging question",
+        "One response from an eligible participant"
       ],
       "isPopular": false
     },
     {
-      "id": "professional",
-      "name": "Professional",
-      "amount": 50,
-      "scope": "15 audience research responses",
+      "id": "basic",
+      "name": "Basic",
+      "amount": 7,
+      "scope": "3 short audience responses",
       "features": [
-        "Up to 2 audience segments",
-        "15 structured responses",
-        "Audience insights summary"
+        "One audience segment",
+        "Three structured responses"
+      ],
+      "isPopular": false
+    },
+    {
+      "id": "starter",
+      "name": "Starter",
+      "amount": 15,
+      "scope": "6 short audience responses",
+      "features": [
+        "One audience segment",
+        "Messaging feedback"
+      ],
+      "isPopular": false
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "amount": 30,
+      "scope": "12 short audience responses",
+      "features": [
+        "Up to two audience segments",
+        "Findings summary"
       ],
       "isPopular": true
     },
     {
-      "id": "business",
-      "name": "Business",
-      "amount": 100,
-      "scope": "30 audience research responses",
+      "id": "scale",
+      "name": "Scale",
+      "amount": 60,
+      "scope": "25 short audience responses",
       "features": [
-        "Up to 3 audience segments",
-        "30 structured responses",
-        "Growth strategy recommendations"
+        "Up to three audience segments",
+        "Audience insights summary"
       ],
       "isPopular": false
     }
   ],
   "seo": [
     {
-      "id": "starter",
-      "name": "Starter",
-      "amount": 25,
-      "scope": "1-page SEO audit",
+      "id": "pilot",
+      "name": "Pilot",
+      "amount": 2.5,
+      "scope": "Quick automated check of 1 URL",
       "features": [
-        "One public webpage",
-        "Indexing and on-page checks",
-        "Prioritized recommendations"
+        "Public page title and metadata checks",
+        "Basic crawlability indicators"
       ],
       "isPopular": false
     },
     {
-      "id": "professional",
-      "name": "Professional",
-      "amount": 65,
-      "scope": "Up to 5 pages",
+      "id": "basic",
+      "name": "Basic",
+      "amount": 6,
+      "scope": "Basic review of 1 URL",
       "features": [
-        "Technical and on-page audit",
-        "Keyword and content opportunities",
-        "Prioritized action plan"
+        "Metadata and heading checks",
+        "Brief recommendations"
+      ],
+      "isPopular": false
+    },
+    {
+      "id": "starter",
+      "name": "Starter",
+      "amount": 14,
+      "scope": "Focused audit of 1 page",
+      "features": [
+        "On-page and indexing checks",
+        "Prioritized fixes"
+      ],
+      "isPopular": false
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "amount": 28,
+      "scope": "Focused audit of up to 3 pages",
+      "features": [
+        "Technical and content checks",
+        "Action checklist"
       ],
       "isPopular": true
     },
     {
-      "id": "business",
-      "name": "Business",
-      "amount": 150,
-      "scope": "Up to 15 pages",
+      "id": "scale",
+      "name": "Scale",
+      "amount": 55,
+      "scope": "Focused audit of up to 6 pages",
       "features": [
-        "Site structure and indexing review",
-        "Content and keyword analysis",
-        "Detailed optimization roadmap"
+        "Technical and on-page findings",
+        "Optimization recommendations"
       ],
       "isPopular": false
     }
   ],
   "adsense": [
     {
-      "id": "starter",
-      "name": "Starter",
-      "amount": 25,
-      "scope": "1-page monetization review",
+      "id": "pilot",
+      "name": "Pilot",
+      "amount": 3.5,
+      "scope": "Quick publisher readiness checklist",
       "features": [
-        "One public webpage",
-        "Policy and placement review",
-        "Readiness recommendations"
+        "Basic public page checks",
+        "No paid ad traffic or clicks"
       ],
       "isPopular": false
     },
     {
-      "id": "professional",
-      "name": "Professional",
-      "amount": 60,
-      "scope": "Up to 5 pages",
+      "id": "basic",
+      "name": "Basic",
+      "amount": 8,
+      "scope": "Basic review of 1 page",
       "features": [
-        "Page experience review",
-        "Ad placement recommendations",
-        "Policy risk checklist"
+        "Visible layout and policy risk checks",
+        "Brief recommendations"
+      ],
+      "isPopular": false
+    },
+    {
+      "id": "starter",
+      "name": "Starter",
+      "amount": 18,
+      "scope": "Focused review of 1 page",
+      "features": [
+        "Monetization readiness",
+        "Ad placement and usability feedback"
+      ],
+      "isPopular": false
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "amount": 38,
+      "scope": "Review of up to 3 pages",
+      "features": [
+        "Page experience and policy risk checks",
+        "Prioritized recommendations"
       ],
       "isPopular": true
     },
     {
-      "id": "business",
-      "name": "Business",
-      "amount": 120,
-      "scope": "Up to 15 pages",
+      "id": "scale",
+      "name": "Scale",
+      "amount": 75,
+      "scope": "Review of up to 6 pages",
       "features": [
-        "Monetization and usability audit",
-        "Technical improvement roadmap",
-        "Policy risk review"
+        "Publisher usability review",
+        "Optimization action plan"
       ],
       "isPopular": false
     }
   ],
   "qa": [
     {
-      "id": "starter",
-      "name": "Starter",
-      "amount": 20,
-      "scope": "5 basic app test submissions",
+      "id": "pilot",
+      "name": "Pilot",
+      "amount": 5,
+      "scope": "1 short app smoke-test submission",
       "features": [
-        "One short test scenario",
-        "5 genuine tester submissions",
-        "Issue and feedback summary"
+        "One brief test scenario",
+        "One tester's findings"
       ],
       "isPopular": false
     },
     {
-      "id": "professional",
-      "name": "Professional",
-      "amount": 50,
-      "scope": "12 basic app test submissions",
+      "id": "starter",
+      "name": "Starter",
+      "amount": 12,
+      "scope": "3 short app test submissions",
       "features": [
-        "Up to 2 short test scenarios",
-        "12 tester submissions",
-        "Reproducible bug reports where found"
+        "One short scenario",
+        "Screenshots where relevant"
+      ],
+      "isPopular": false
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "amount": 28,
+      "scope": "6 short app test submissions",
+      "features": [
+        "Up to two short scenarios",
+        "Issue summary"
       ],
       "isPopular": true
     },
     {
-      "id": "business",
-      "name": "Business",
-      "amount": 100,
-      "scope": "25 basic app test submissions",
+      "id": "scale",
+      "name": "Scale",
+      "amount": 60,
+      "scope": "12 short app test submissions",
       "features": [
-        "Up to 3 short test scenarios",
-        "25 tester submissions",
-        "Consolidated QA report"
+        "Up to three short scenarios",
+        "Consolidated findings"
       ],
       "isPopular": false
     }
   ],
   "ugc": [
     {
-      "id": "starter",
-      "name": "Starter",
-      "amount": 50,
-      "scope": "1 short UGC video",
+      "id": "pilot",
+      "name": "Pilot",
+      "amount": 15,
+      "scope": "1 simple raw UGC clip",
       "features": [
-        "One 15–30 second video",
-        "Agreed brief and usage rights",
-        "Manual quality review"
+        "One brief 10–15 second clip",
+        "No editing or product purchases",
+        "Usage rights agreed before work"
       ],
       "isPopular": false
     },
     {
-      "id": "professional",
-      "name": "Professional",
-      "amount": 135,
-      "scope": "3 short UGC videos",
+      "id": "starter",
+      "name": "Starter",
+      "amount": 28,
+      "scope": "1 short UGC video",
       "features": [
-        "Three 15–30 second videos",
-        "Agreed briefs and usage rights",
-        "Manual quality review"
+        "One 15–30 second video",
+        "Simple brief and agreed rights"
+      ],
+      "isPopular": false
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "amount": 65,
+      "scope": "2 short UGC videos",
+      "features": [
+        "Two simple 15–30 second videos",
+        "Agreed usage rights and review"
       ],
       "isPopular": true
     },
     {
-      "id": "business",
-      "name": "Business",
-      "amount": 220,
-      "scope": "5 short UGC videos",
+      "id": "scale",
+      "name": "Scale",
+      "amount": 120,
+      "scope": "4 short UGC videos",
       "features": [
-        "Five 15–30 second videos",
-        "Agreed briefs and usage rights",
-        "Manual quality review"
+        "Four simple 15–30 second videos",
+        "Agreed rights and quality review"
       ],
       "isPopular": false
     }

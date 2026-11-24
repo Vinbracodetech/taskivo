@@ -213,7 +213,7 @@ export default function Landing({ navigate, setAuthMode }) {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Business Services</div>
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Business services and campaign packages.</h2>
-          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Compare starting prices in USD across six business services. Final scope, funding and fees are confirmed before payment. Advertising spend, where applicable, is separate.</p>
+          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Start small with affordable pilot packages, or scale as your business grows. Prices are starting quotes in USD; final scope, fair contributor compensation and funding are confirmed before payment. Advertising spend, where applicable, is separate.</p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, background: C.off, padding: 6, borderRadius: 24, border: `1px solid ${C.line}`, marginBottom: 32, maxWidth: 800, margin: '0 auto 32px' }}>
             {services.map(service => (
@@ -232,7 +232,7 @@ export default function Landing({ navigate, setAuthMode }) {
 
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24, maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 24, maxWidth: 1200, margin: '0 auto', alignItems: 'center' }}>
           {activePricing.map(function(plan, i) {
             return (
               <div key={i} style={{ background: plan.isPopular ? C.ink : C.white, color: plan.isPopular ? C.white : C.ink, border: `1px solid ${plan.isPopular ? C.ink : C.line}`, borderRadius: 16, padding: plan.isPopular ? '48px 24px' : '32px 24px', boxShadow: plan.isPopular ? '0 20px 40px rgba(0,0,0,0.1)' : 'none', position: 'relative', display: 'flex', flexDirection: 'column' }}>
