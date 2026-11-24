@@ -1,4 +1,4 @@
-import { services } from '../lib/serviceCatalog.js';
+import { services, servicePackages } from '../lib/serviceCatalog.js';
 import { useEffect, useState } from 'react';
 
 export const landingStyles = `
@@ -94,8 +94,7 @@ export default function Landing({ navigate, setAuthMode }) {
   // 🔥 UPDATED: Removed Explicit Timers - Focused on "High Retention" 🔥
   const serviceDetails = Object.fromEntries(services.map(s=>[s.id,s]));
   const selectedService = serviceDetails[pricingMode] || services[0];
-  const activePricing = [{name:'Custom campaign',price:'Get a quote',slots:null,features:selectedService.deliverables,isPopular:false}];
-  const unitLabel = 'Agreed deliverables';
+  const activePricing = servicePackages[selectedService.id];
 
   const faqs = [
     { q: 'What is Taskivo?', a: 'Taskivo connects contributors with digital microtasks and businesses seeking app testing, usability feedback and original content.' },
@@ -115,6 +114,7 @@ export default function Landing({ navigate, setAuthMode }) {
   }
 
   function goRegisterCreator() {
+    localStorage.removeItem("taskivo_requested_package");
     navigate("create-task");
   }
 
@@ -213,7 +213,7 @@ export default function Landing({ navigate, setAuthMode }) {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Business Services</div>
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Business services and campaign packages.</h2>
-          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Choose from six business services. Request a tailored quote before any payment; campaign activation depends on funding and review.</p>
+          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Compare starting prices in USD across six business services. Final scope, funding and fees are confirmed before payment. Advertising spend, where applicable, is separate.</p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, background: C.off, padding: 6, borderRadius: 24, border: `1px solid ${C.line}`, marginBottom: 32, maxWidth: 800, margin: '0 auto 32px' }}>
             {services.map(service => (
@@ -238,14 +238,14 @@ export default function Landing({ navigate, setAuthMode }) {
               <div key={i} style={{ background: plan.isPopular ? C.ink : C.white, color: plan.isPopular ? C.white : C.ink, border: `1px solid ${plan.isPopular ? C.ink : C.line}`, borderRadius: 16, padding: plan.isPopular ? '48px 24px' : '32px 24px', boxShadow: plan.isPopular ? '0 20px 40px rgba(0,0,0,0.1)' : 'none', position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 {plan.isPopular && <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: C.lime, color: C.ink, fontSize: 11, fontWeight: 700, padding: '6px 16px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap' }}>Best Value</div>}
                 <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{plan.name}</div>
-                <div className="heading" style={{ fontSize: 30, color: plan.isPopular ? C.lime : C.ink, marginBottom: 8 }}>{plan.price}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>{unitLabel}</div>
+                <div className="heading" style={{ fontSize: 30, color: plan.isPopular ? C.lime : C.ink, marginBottom: 8 }}>From ${plan.amount}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>{plan.scope}</div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 14, flexGrow: 1 }}>
                   {plan.features.map(function(feat, idx) {
                     return <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: plan.isPopular ? 'rgba(255,255,255,0.7)' : C.slate, fontWeight: 500 }}><span style={{ color: plan.isPopular ? C.lime : C.ink, fontWeight: 'bold' }}>✓</span> {feat}</li>;
                   })}
                 </ul>
-                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }} onClick={() => { localStorage.setItem("taskivo_requested_service", selectedService.id); navigate("create-task"); }}>Request a quote</button>
+                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }} onClick={() => { localStorage.setItem("taskivo_requested_service", selectedService.id); localStorage.setItem("taskivo_requested_package", plan.id); navigate("create-task"); }}>Choose {plan.name}</button>
               </div>
             );
           })}
@@ -255,7 +255,7 @@ export default function Landing({ navigate, setAuthMode }) {
       <section className="lp-section-pad" style={{background:C.off}}>
         <h2 className="lp-section-title heading" style={{textAlign:'center',marginBottom:32}}>Explore all Taskivo services</h2>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:20,maxWidth:1100,margin:'0 auto'}}>
-          {services.map(service=><div key={service.id} style={{background:C.white,border:'1px solid '+C.line,borderRadius:16,padding:24}}><div style={{fontSize:24}}>{service.icon}</div><h3 style={{fontSize:18,margin:'12px 0'}}>{service.title}</h3><p style={{fontSize:14,color:C.slate,lineHeight:1.6}}>{service.desc}</p><button onClick={()=>{localStorage.setItem('taskivo_requested_service',service.id);navigate('create-task');}} style={{background:C.ink,color:C.white,border:0,borderRadius:8,padding:'10px 16px',cursor:'pointer'}}>Request a quote</button></div>)}
+          {services.map(service=><div key={service.id} style={{background:C.white,border:'1px solid '+C.line,borderRadius:16,padding:24}}><div style={{fontSize:24}}>{service.icon}</div><h3 style={{fontSize:18,margin:'12px 0'}}>{service.title}</h3><p style={{fontSize:14,color:C.slate,lineHeight:1.6}}>{service.desc}</p><p style={{fontSize:15,fontWeight:700,color:C.ink}}>From ${servicePackages[service.id][0].amount}</p><button onClick={()=>{localStorage.setItem('taskivo_requested_service',service.id);localStorage.removeItem('taskivo_requested_package');navigate('create-task');}} style={{background:C.ink,color:C.white,border:0,borderRadius:8,padding:'10px 16px',cursor:'pointer'}}>Request a quote</button></div>)}
         </div>
       </section>
 
