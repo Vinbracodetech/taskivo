@@ -18,6 +18,7 @@ import Offerwalls from "./pages/Offerwalls.jsx"; // 🔥 NEW: Offerwalls Importe
 import CreatorDashboard from "./pages/CreatorDashboard.jsx";
 import CreateTask from "./pages/CreateTask.jsx";
 import { CampaignRequest, EarningMarketplace } from "./pages/CampaignRequest.jsx";
+import { OfficialTaskAdmin } from "./pages/TaskNetwork.jsx";
 import CreatorTasks from "./pages/CreatorTasks.jsx";
 import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
 import CreatorApprovals from "./pages/CreatorApprovals.jsx";
@@ -491,7 +492,7 @@ export default function App() {
 
             {view === "admin-dashboard" && user?.role === "admin" && <><div style={{padding:"16px 5%"}}><button style={{background:"var(--lime)",color:"#111",padding:"12px 20px",border:0,borderRadius:8,fontWeight:700}} onClick={()=>navigate("offerwalls")}>Test Offerwall.GG</button></div><AdminOverview navigate={navigate} showToast={showToast} /></>}
             {view === "admin-users" && user?.role === "admin" && <AdminUsersComp showToast={showToast} currentUser={user} />}
-            {view === "admin-tasks" && user?.role === "admin" && <AdminTasksComp showToast={showToast} />}
+            {view === "admin-tasks" && user?.role === "admin" && <OfficialTaskAdmin />}
             {view === "admin-withdrawals" && user?.role === "admin" && <AdminWithdrawalsComp showToast={showToast} />}
             {view === "admin-notifications" && user?.role === "admin" && <AdminNotificationsComp showToast={showToast} />}
             {view === "admin-blog" && user?.role === "admin" && <AdminBlogComp showToast={showToast} />}

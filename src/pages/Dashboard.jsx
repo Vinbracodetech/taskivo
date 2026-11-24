@@ -224,7 +224,7 @@ export default function Dashboard({ user, navigate, showToast }) {
         </div>
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{...S.glassCard,marginBottom:24}}><h2 style={{fontSize:23,marginTop:0}}>Your task network</h2><p style={{color:'var(--slate)',lineHeight:1.6}}>Explore internal learning tasks and the Offerwall.GG pilot. Rewarded videos are coming soon.</p><div style={{display:'flex',flexWrap:'wrap',gap:12}}><button style={S.btnPrimary} onClick={()=>navigate('tasks')}>Explore tasks</button><button style={S.btnSecondary} onClick={()=>navigate('offerwalls')}>Offerwalls</button></div></div>
+          <div style={{...S.glassCard,marginBottom:24}}><h2 style={{fontSize:23,marginTop:0}}>Your task network</h2><p style={{color:'var(--slate)',lineHeight:1.6}}>Explore Offerwall.GG, two-minute internal blog reading tasks, and assignments published by the administrator.</p><div style={{display:'flex',flexWrap:'wrap',gap:12}}><button style={S.btnPrimary} onClick={()=>navigate('tasks')}>Explore tasks</button><button style={S.btnSecondary} onClick={()=>navigate('offerwalls')}>Offerwalls</button></div></div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
