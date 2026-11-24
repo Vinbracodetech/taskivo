@@ -106,7 +106,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
           </div>
         ) : user.role === 'earner' ? (
           <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease' }}>
-            {user.points.toLocaleString()} PTS
+            {Number(user.points || 0).toLocaleString()} PTS
           </div>
         ) : (
           <div 
@@ -303,16 +303,19 @@ export default function App() {
   function toggleTheme() { setTheme(theme === "dark" ? "light" : "dark"); }
 
   useEffect(function () {
-    supabase.auth.getSession().then(function (result) {
-      var session = result.data?.session;
-      if (session) { loadProfile(session.user).catch(() => setLoading(false)); } else { setLoading(false); }
-    }).catch(() => setLoading(false));
-
-    var listener = supabase.auth.onAuthStateChange(function (event, session) {
-      if (event === "SIGNED_OUT") { setUser(null); navigate("landing"); setLoading(false); }
+    let active=true;
+    let timer;
+    const load=(session)=>{
+      if(!active) return;
+      if(session?.user) loadProfile(session.user).catch(()=>{if(active)setLoading(false);});
+      else {setUser(null);setLoading(false);}
+    };
+    supabase.auth.getSession().then(({data})=>load(data?.session)).catch(()=>{if(active)setLoading(false);});
+    const listener=supabase.auth.onAuthStateChange((event,session)=>{
+      if(event==="SIGNED_OUT"){sessionStorage.removeItem("taskivo_return_to");setUser(null);navigate("landing");setLoading(false);}
+      if(event==="SIGNED_IN"){clearTimeout(timer);timer=setTimeout(()=>load(session),0);}
     });
-
-    return function () { listener.data.subscription.unsubscribe(); };
+    return ()=>{active=false;clearTimeout(timer);listener.data.subscription.unsubscribe();};
   }, []);
 
   // --- 🔥 UPDATED LOAD PROFILE WITH SECURE UPSERT 🔥 ---
@@ -321,7 +324,7 @@ export default function App() {
     var result = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
     
     // Check path for correct routing after auth
-    var currentPath = window.location.pathname.replace(/^\/+/, "") || "landing";
+    var currentPath = window.location.pathname.replace(/^\/+|\/+$/g, "") || "landing";
     if (currentPath.includes("?")) currentPath = currentPath.split("?")[0];
 
     if (result.data) {
@@ -376,6 +379,9 @@ export default function App() {
   }
 
   function routeByRole(role) {
+    const next = sessionStorage.getItem("taskivo_return_to");
+    sessionStorage.removeItem("taskivo_return_to");
+    if (["offerwalls","wallet","tasks","history"].includes(next) && ["admin","earner"].includes(role)) {navigate(next);return;}
     if (role !== "admin" && localStorage.getItem("taskivo_requested_service")) { navigate("create-task"); return; }
     if (role === "admin") navigate("admin-dashboard");
     else if (role === "creator") navigate("creator-dashboard");
@@ -388,6 +394,14 @@ export default function App() {
   }
 
   const publicView = ["landing", "about", "terms", "privacy", "disclaimer", "delete-account", "blog", ...Object.keys(earningGuides)].includes(view) || /^article-[a-z0-9-]+$/.test(view);
+
+  useEffect(() => {
+    if (!loading && !user && !publicView && !["auth","create-task"].includes(view)) {
+      if (["offerwalls","wallet","tasks","history"].includes(view)) sessionStorage.setItem("taskivo_return_to",view);
+      setAuthMode("login");
+      navigate("auth");
+    }
+  }, [loading,user,view,publicView]);
 
   useEffect(() => {
     const origin = "https://www.taskivo.online";
@@ -472,7 +486,7 @@ export default function App() {
             {view === "creator-analytics" && user && <CreatorAnalytics user={user} navigate={navigate} showToast={showToast} />}
             {view === "creator-approvals" && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Campaigns temporarily paused</h1><p style={{color:'var(--slate)',lineHeight:1.7}}>We are upgrading payment verification. Do not make a campaign payment during maintenance. Existing records remain available.</p></div>}
 
-            {view === "admin-dashboard" && user?.role === "admin" && <AdminOverview navigate={navigate} showToast={showToast} />}
+            {view === "admin-dashboard" && user?.role === "admin" && <><div style={{padding:"16px 5%"}}><button style={{background:"var(--lime)",color:"#111",padding:"12px 20px",border:0,borderRadius:8,fontWeight:700}} onClick={()=>navigate("offerwalls")}>Test Offerwall.GG</button></div><AdminOverview navigate={navigate} showToast={showToast} /></>}
             {view === "admin-users" && user?.role === "admin" && <AdminUsersComp showToast={showToast} currentUser={user} />}
             {view === "admin-tasks" && user?.role === "admin" && <AdminTasksComp showToast={showToast} />}
             {view === "admin-withdrawals" && user?.role === "admin" && <AdminWithdrawalsComp showToast={showToast} />}
