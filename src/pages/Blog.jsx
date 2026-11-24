@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { safeArticleHtml } from '../lib/safeArticleHtml.js';
 
 // ── ELITE ARTICLE TYPOGRAPHY ENGINE ──
 const proseStyles = `
@@ -136,9 +137,9 @@ export function TaskivoSecureNode({ slug }) {
 }
 
 // ── THE BLOG INDEX ──
-export function BlogIndex({ navigate }) {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+export function BlogIndex({ navigate, initialPosts = null }) {
+  const [posts, setPosts] = useState(initialPosts || []);
+  const [loading, setLoading] = useState(initialPosts === null);
 
   useEffect(() => {
     async function fetchPosts() {
@@ -217,9 +218,9 @@ export function BlogIndex({ navigate }) {
 }
 
 // ── THE ELITE ARTICLE VIEW ──
-export function ArticleView({ navigate, id, user, setAuthMode }) {
-  const [post, setPost] = useState(null);
-  const [postState, setPostState] = useState('loading');
+export function ArticleView({ navigate, id, user, setAuthMode, initialPost = null }) {
+  const [post, setPost] = useState(initialPost);
+  const [postState, setPostState] = useState(initialPost ? 'ready' : 'loading');
   const [localUser, setLocalUser] = useState(user);
   
   const [timeLeft, setTimeLeft] = useState(120); 
@@ -232,7 +233,7 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
   const [quizError, setQuizError] = useState(false);
 
   const slug = id.replace('article-', ''); 
-  const isActiveMission = localStorage.getItem('taskivo_active_mission') === slug;
+  const isActiveMission = typeof window !== 'undefined' && localStorage.getItem('taskivo_active_mission') === slug;
 
   useEffect(() => {
     if (!localUser) {
@@ -528,14 +529,14 @@ export function ArticleView({ navigate, id, user, setAuthMode }) {
           </div>
         </div>
         
-        <div className="article-prose" dangerouslySetInnerHTML={{ __html: post.content }} />
+        <div className="article-prose" dangerouslySetInnerHTML={{ __html: safeArticleHtml(post.content) }} />
 
         {isActiveMission && localUser && <TaskivoSecureNode slug={slug} />}
 
         {!localUser && (
           <div style={{ background: 'linear-gradient(135deg, rgba(168,255,62,0.1) 0%, transparent 100%)', border: '1px solid var(--lime)', borderRadius: 24, padding: 40, textAlign: 'center', marginTop: 80, backdropFilter: 'blur(10px)' }}>
             <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif", marginBottom: 12, letterSpacing: '-0.5px' }}>Monetize Your Attention.</div>
-            <p style={{ color: 'var(--slate)', fontSize: 16, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px', lineHeight: 1.6 }}>Taskivo earners get paid fiat currency for reading intelligence briefings just like this one.</p>
+            <p style={{ color: 'var(--slate)', fontSize: 16, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px', lineHeight: 1.6 }}>Explore eligible earning opportunities. Rewards depend on task availability, verification and funding.</p>
             <button onClick={() => { if(setAuthMode) setAuthMode('register'); navigate('auth'); }} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '16px 32px', borderRadius: 100, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Create Free Earner Account
             </button>
