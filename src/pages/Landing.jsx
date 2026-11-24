@@ -494,15 +494,15 @@ export default function Landing({ navigate, setAuthMode }) {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>Company</div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("about"); }}>About Us</span></li>
-              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("blog"); }}>Intelligence Blog</span></li>
+              <li><a href="/about" style={{ color: C.slate, fontSize: 14 }} onClick={function(e) { if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate("about"); }}>About Us</a></li>
+              <li><a href="/blog" style={{ color: C.slate, fontSize: 14 }} onClick={function(e) { if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate("blog"); }}>Intelligence Blog</a></li>
             </ul>
           </div><div>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 20 }}>Legal</div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("terms"); }}>Terms of Service</span></li>
-              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("privacy"); }}>Privacy Policy</span></li>
-              <li><span style={{ color: C.slate, cursor: "pointer", fontSize: 14 }} onClick={function() { navigate("disclaimer"); }}>Legal Disclaimer</span></li>
+              <li><a href="/terms" style={{ color: C.slate, fontSize: 14 }} onClick={function(e) { if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate("terms"); }}>Terms of Service</a></li>
+              <li><a href="/privacy" style={{ color: C.slate, fontSize: 14 }} onClick={function(e) { if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate("privacy"); }}>Privacy Policy</a></li>
+              <li><a href="/disclaimer" style={{ color: C.slate, fontSize: 14 }} onClick={function(e) { if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate("disclaimer"); }}>Legal Disclaimer</a></li>
             </ul>
           </div>
         </div>
