@@ -231,7 +231,7 @@ export default function Landing({ navigate, setAuthMode }) {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Campaign Pricing</div>
           <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>App testing and content packages.</h2>
-          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Explore proposed app testing and original content packages. Campaigns are subject to availability and funding.</p>
+          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Explore proposed app testing and original content packages. New campaign payments are temporarily paused while we upgrade verification.</p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, background: C.off, padding: 6, borderRadius: 24, border: `1px solid ${C.line}`, marginBottom: 32, maxWidth: 800, margin: '0 auto 32px' }}>
             <button onClick={() => setPricingMode('qa')} style={{ background: pricingMode === 'qa' ? C.ink : 'transparent', color: pricingMode === 'qa' ? C.white : C.slate, border: 'none', padding: '10px 18px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>QA Testing</button>
@@ -262,7 +262,7 @@ export default function Landing({ navigate, setAuthMode }) {
                     return <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: plan.isPopular ? 'rgba(255,255,255,0.7)' : C.slate, fontWeight: 500 }}><span style={{ color: plan.isPopular ? C.lime : C.ink, fontWeight: 'bold' }}>✓</span> {feat}</li>;
                   })}
                 </ul>
-                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>Deploy Campaign</button>
+                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>View campaign availability</button>
               </div>
             );
           })}
