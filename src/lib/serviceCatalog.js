@@ -332,3 +332,15 @@ export const servicePackages = {
     }
   ]
 };
+
+export const youtubeGrowthPlans=[
+ {name:'Channel Audit',amount:15,scope:'Monetization readiness and channel review',features:['Review channel content and eligibility','Identify content and policy gaps','Written growth action plan']},
+ {name:'Starter Growth',amount:45,scope:'14 days of organic growth support',features:['Channel audit and action plan','Optimize up to 3 existing videos','Organic content strategy and progress check']},
+ {name:'Professional Growth',amount:90,scope:'30 days of channel management support',features:['Optimize up to 6 existing videos','Content planning and audience research','Weekly analytics review']},
+ {name:'Monetization Support',amount:null,scope:'Personalized scope and quotation',features:['Review current eligible watch hours and subscribers','Agree realistic organic growth goals','Help prepare for YouTube Partner Program application']}
+];
+export function privateInquiry(service,detail=''){
+ const subject='Taskivo private enquiry: '+service;
+ const body=['Hello Taskivo,','I would like to discuss: '+service,detail?'Package: '+detail:'','Website or public channel URL: ','Project or channel goals: ','Budget and timeline: ','Please confirm scope and availability before payment.'].filter(Boolean).join('\n');
+ return 'mailto:support@taskivo.online?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+}
