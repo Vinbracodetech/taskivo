@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 export default function Wallet({ user, navigate, showToast }) {
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [partnerPending, setPartnerPending] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [amount, setAmount] = useState('');
   
@@ -50,6 +51,9 @@ export default function Wallet({ user, navigate, showToast }) {
         
       if (txError) throw txError;
       setWithdrawals(txData || []);
+      // A separate read-only balance; never add unsettled conversions to profiles.points.
+      const { data: pending, error: pendingError } = await supabase.rpc('offerwall_gg_pending_balance');
+      setPartnerPending(pendingError ? null : Number(pending));
       
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -112,7 +116,7 @@ export default function Wallet({ user, navigate, showToast }) {
 
       window.dispatchEvent(new Event('taskivo_points_updated'));
 
-      if (showToast) showToast('Transfer initiated. Funds will arrive within 24 hours.', 'success');
+      if (showToast) showToast('Withdrawal requested. Processing depends on verification and available funding.', 'success');
       setAmount('');
       
       fetchLedger();
@@ -190,7 +194,7 @@ export default function Wallet({ user, navigate, showToast }) {
           
           <div style={{ ...S.glassCard, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <span style={S.label}>Total Liquid Points</span>
+              <span style={S.label}>Existing wallet points</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                 <div style={S.valueGlow}>{user.points.toLocaleString()}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
@@ -263,13 +267,18 @@ export default function Wallet({ user, navigate, showToast }) {
               </button>
 
               <div style={{ fontSize: 12, color: 'var(--slate)', textAlign: 'center', marginTop: 14, fontWeight: 500 }}>
-                ⏱️ Approved payouts are processed and disbursed within 24 hours.
+                Payouts are subject to verification and available funding.
               </div>
               
             </form>
           </div>
         </div>
 
+        <div style={{...S.glassCard, marginBottom:32}}>
+          <span style={S.label}>Pending survey &amp; offer rewards</span>
+          <div style={{fontSize:32,fontWeight:800,color:'var(--ink)',margin:'10px 0'}}>{partnerPending === null ? 'Unavailable' : partnerPending.toLocaleString(undefined,{maximumFractionDigits:2}) + ' PTS'}</div>
+          <p style={{color:'var(--slate)',fontSize:14,lineHeight:1.6,margin:0}}>Provider-recorded rewards are separate from your existing wallet. They are not withdrawable until funding is received and reconciled. Reversed offers can reduce this balance.</p>
+        </div>
         <div>
           <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 700, color: 'var(--ink)', margin: '0 0 24px 0', letterSpacing: '-0.5px' }}>Transaction Ledger</h2>
           
