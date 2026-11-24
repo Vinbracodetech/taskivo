@@ -344,3 +344,11 @@ export function privateInquiry(service,detail=''){
  const body=['Hello Taskivo,','I would like to discuss: '+service,detail?'Package: '+detail:'','Website or public channel URL: ','Project or channel goals: ','Budget and timeline: ','Please confirm scope and availability before payment.'].filter(Boolean).join('\n');
  return 'mailto:support@taskivo.online?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
 }
+
+export const youtubeNigeriaPlans=[
+ {id:'audit',name:'Channel Audit',amount:5000,scope:'One-time channel review',features:['Review channel and current eligibility','Identify content and discovery gaps','Written next-step recommendations']},
+ {id:'starter',name:'Starter Growth',amount:15000,scope:'7 days of optimization support',features:['Channel audit','Optimize titles and descriptions for up to 3 videos','Practical content and retention recommendations']},
+ {id:'growth',name:'Growth Support',amount:30000,scope:'14 days of organic channel support',features:['Optimize up to 6 existing videos','Content and audience growth plan','Analytics check and progress report']},
+ {id:'pro',name:'Monetization Pro',amount:60000,scope:'30 days of channel management support',features:['Optimize up to 12 existing videos','Content planning and weekly analytics review','Monetization readiness and application guidance']}
+];
+export const formatNaira=amount=>'₦'+Number(amount).toLocaleString('en-NG');

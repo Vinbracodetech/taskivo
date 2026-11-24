@@ -26,6 +26,7 @@ import CreatorApprovals from "./pages/CreatorApprovals.jsx";
 import { About, Terms, Privacy, Disclaimer, DeleteAccount } from "./pages/StaticPages.jsx";
 import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
 import { EarningGuide, earningGuides } from "./pages/EarningGuides.jsx";
+import YoutubeMonetization from "./pages/YoutubeMonetization.jsx";
 import {
   AdminOverview,
   AdminUsers as AdminUsersComp,
@@ -394,7 +395,7 @@ export default function App() {
     showToast("Logged out successfully.", "info");
   }
 
-  const publicView = ["landing", "about", "terms", "privacy", "disclaimer", "delete-account", "blog", ...Object.keys(earningGuides)].includes(view) || /^article-[a-z0-9-]+$/.test(view);
+  const publicView = ["landing", "about", "terms", "privacy", "disclaimer", "delete-account", "blog", "youtube-monetization", ...Object.keys(earningGuides)].includes(view) || /^article-[a-z0-9-]+$/.test(view);
 
   useEffect(() => {
     if (!loading && !user && !publicView && !["auth","create-task"].includes(view)) {
@@ -470,6 +471,7 @@ export default function App() {
             
             {view === "blog" && <BlogIndex navigate={navigate} />}
             {Object.hasOwn(earningGuides, view) && <EarningGuide slug={view} />}
+            {view === "youtube-monetization" && <YoutubeMonetization />}
             {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} user={user} setAuthMode={setAuthMode} />}
 
             {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}

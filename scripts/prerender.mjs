@@ -13,6 +13,7 @@ const manifest = [];
 try {
   const {default:Landing,landingStyles} = await server.ssrLoadModule('/src/pages/Landing.jsx');
   const legal = await server.ssrLoadModule('/src/pages/StaticPages.jsx');
+  const { default:YoutubeMonetization, youtubePageTitle, youtubePageDescription } = await server.ssrLoadModule('/src/pages/YoutubeMonetization.jsx');
   const { EarningGuide, earningGuides } = await server.ssrLoadModule('/src/pages/EarningGuides.jsx');
   const { BlogIndex, ArticleView } = await server.ssrLoadModule('/src/pages/Blog.jsx');
   const {default:css} = await server.ssrLoadModule('/src/styles/global.js');
@@ -45,6 +46,7 @@ try {
   const privateTemplate = template.replace('</head>','<meta name="robots" content="noindex, follow"></head>');
   await writeFile('dist/app.html',privateTemplate);
   await writePage('/','Taskivo | Online Tasks, Paid Surveys & Rewards','Explore online microtasks, partner-funded surveys and learning activities on Taskivo. Rewarded videos and business campaigns are planned; availability varies.',h(Landing,{navigate}));
+  await writePage('/youtube-monetization',youtubePageTitle,youtubePageDescription,h(YoutubeMonetization));
   for(const [slug,Component,title,desc] of [
     ['about',legal.About,'About Taskivo','Learn about Taskivo and its contributor network.'],
     ['terms',legal.Terms,'Terms of Service | Taskivo','Read Taskivo terms of service and user obligations.'],

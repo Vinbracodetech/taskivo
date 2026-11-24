@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/youtube-monetization",
+      "destination": "/youtube-monetization.html"
+    },
+    {
       "source": "/about",
       "destination": "/about.html"
     },
