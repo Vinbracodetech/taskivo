@@ -1,3 +1,4 @@
+import { services } from '../lib/serviceCatalog.js';
 import { useEffect, useState } from 'react';
 
 export const landingStyles = `
@@ -91,34 +92,17 @@ export default function Landing({ navigate, setAuthMode }) {
   }, []);
 
   // 🔥 UPDATED: Removed Explicit Timers - Focused on "High Retention" 🔥
-  const qaPricing = [
-    { name: 'Pilot QA', price: '$5', slots: 10, features: ['Real Human Testers', 'Manual Bug Reports'] },
-    { name: 'Starter QA', price: '$12', slots: 25, features: ['Real Human Testers', 'Verified Screenshots'] },
-    { name: 'Pro QA', price: '$28', slots: 60, features: ['Real Human Testers', 'Verified Screenshots', 'Priority Routing'], isPopular: true },
-    { name: 'Scale QA', price: '$60', slots: 135, features: ['Volume Discount', 'Manual Bug Reports', 'Maximum Velocity'] },
-  ];
-
-  const ugcPricing = [
-    { name: 'Pilot UGC', price: '$15', slots: 5, features: ['Authentic Creator Videos', 'Full Usage Rights'] },
-    { name: 'Starter UGC', price: '$28', slots: 10, features: ['Authentic Creator Videos', 'Manual Verification Escrow'] },
-    { name: 'Pro UGC', price: '$65', slots: 25, features: ['Authentic Creator Videos', 'Full Usage Rights', 'Priority Routing'], isPopular: true },
-    { name: 'Scale UGC', price: '$120', slots: 50, features: ['Volume Discount', 'Full Usage Rights', 'Maximum Velocity'] },
-  ];
-
-  const activePricing = pricingMode === 'qa' ? qaPricing : ugcPricing;
-  const unitLabel = 'Submissions';
-
-  const serviceDetails = {
-    qa: { title: 'App QA Testing', icon: '🐛', desc: 'Crowdsourced bug hunting. Deploy real users to download your app, test features, and upload manual feedback screenshots before your official launch.' },
-    ugc: { title: 'Authentic UGC Videos', icon: '🤳', desc: 'Commission real people to record authentic, selfie-style video testimonials or product demos. You get full commercial rights to use them in your ad campaigns.' }
-  };
+  const serviceDetails = Object.fromEntries(services.map(s=>[s.id,s]));
+  const selectedService = serviceDetails[pricingMode] || services[0];
+  const activePricing = [{name:'Custom campaign',price:'Get a quote',slots:null,features:selectedService.deliverables,isPopular:false}];
+  const unitLabel = 'Agreed deliverables';
 
   const faqs = [
     { q: 'What is Taskivo?', a: 'Taskivo connects contributors with digital microtasks and businesses seeking app testing, usability feedback and original content.' },
     { q: 'Can I earn from paid surveys?', a: 'We are preparing partner-funded surveys and sponsored offers. Availability depends on partner approval, location and eligibility. There is no guaranteed income.' },
     { q: 'When can I withdraw my rewards?', a: 'Rewards are subject to verification and funding. Survey rewards will remain pending until the relevant provider settles them. Check your wallet for available balances.' },
     { q: 'Do I have to pay to earn?', a: 'Taskivo does not require a deposit to access earning opportunities. Some third-party offers may have their own requirements; read them before accepting.' },
-    { q: 'What work can businesses request?', a: 'Businesses can request genuine app testing, usability feedback and original content, subject to campaign approval and funding.' },
+    { q: 'What work can businesses request?', a: 'Businesses can request video feedback, audience research, SEO audits, publisher optimization, app testing and original content, subject to scope, approval and funding.' },
     { q: 'How do I get support?', a: 'Contact support@taskivo.online with your account or task reference. Never send passwords or verification codes.' }
   ];
 
@@ -229,21 +213,22 @@ export default function Landing({ navigate, setAuthMode }) {
       {/* ── DYNAMIC PRICING TOGGLE ── */}
       <section className="lp-section-pad" style={{ background: C.white }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Campaign Pricing</div>
-          <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>App testing and content packages.</h2>
-          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Explore proposed app testing and original content packages. New campaign payments are temporarily paused while we upgrade verification.</p>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.slate, marginBottom: 12 }}>Business Services</div>
+          <h2 className="lp-section-title heading" style={{ color: C.ink, marginBottom: 16 }}>Business services and campaign packages.</h2>
+          <p style={{ color: C.slate, maxWidth: 500, margin: '0 auto', lineHeight: 1.6, marginBottom: 32 }}>Choose from six business services. Request a tailored quote before any payment; campaign activation depends on funding and review.</p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, background: C.off, padding: 6, borderRadius: 24, border: `1px solid ${C.line}`, marginBottom: 32, maxWidth: 800, margin: '0 auto 32px' }}>
-            <button onClick={() => setPricingMode('qa')} style={{ background: pricingMode === 'qa' ? C.ink : 'transparent', color: pricingMode === 'qa' ? C.white : C.slate, border: 'none', padding: '10px 18px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>QA Testing</button>
-            <button onClick={() => setPricingMode('ugc')} style={{ background: pricingMode === 'ugc' ? C.ink : 'transparent', color: pricingMode === 'ugc' ? C.white : C.slate, border: 'none', padding: '10px 18px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>UGC Videos</button>
+            {services.map(service => (
+            <button key={service.id} onClick={() => setPricingMode(service.id)} style={{ background: pricingMode === service.id ? C.ink : 'transparent', color: pricingMode === service.id ? C.white : C.slate, border: 'none', padding: '10px 18px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', fontFamily: "'DM Sans', sans-serif" }}>{service.label}</button>
+            ))}
           </div>
 
           {/* DYNAMIC SERVICE EXPLAINER BOX */}
           <div style={{ maxWidth: 800, margin: '0 auto 40px', padding: 24, background: C.ink, borderRadius: 16, border: `1px solid ${C.darkLine}`, color: C.white, textAlign: 'left', display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            <div style={{ fontSize: 24 }}>{serviceDetails[pricingMode].icon}</div>
+            <div style={{ fontSize: 24 }}>{selectedService.icon}</div>
             <div>
-               <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, color: C.lime }}>{serviceDetails[pricingMode].title}</div>
-               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>{serviceDetails[pricingMode].desc}</div>
+               <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, color: C.lime }}>{selectedService.title}</div>
+               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>{selectedService.desc}</div>
             </div>
           </div>
 
@@ -256,16 +241,23 @@ export default function Landing({ navigate, setAuthMode }) {
                 {plan.isPopular && <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: C.lime, color: C.ink, fontSize: 11, fontWeight: 700, padding: '6px 16px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap' }}>Best Value</div>}
                 <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>{plan.name}</div>
                 <div className="heading" style={{ fontSize: 36, color: plan.isPopular ? C.lime : C.ink, marginBottom: 8 }}>{plan.price}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>{plan.slots.toLocaleString()} {unitLabel}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, paddingBottom: 24, borderBottom: `1px solid ${plan.isPopular ? C.darkLine : C.line}`, marginBottom: 24 }}>{unitLabel}</div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 14, flexGrow: 1 }}>
                   {plan.features.map(function(feat, idx) {
                     return <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: plan.isPopular ? 'rgba(255,255,255,0.7)' : C.slate, fontWeight: 500 }}><span style={{ color: plan.isPopular ? C.lime : C.ink, fontWeight: 'bold' }}>✓</span> {feat}</li>;
                   })}
                 </ul>
-                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }} onClick={goRegisterCreator}>View campaign availability</button>
+                <button style={{ background: plan.isPopular ? C.lime : C.ink, color: plan.isPopular ? C.ink : C.white, border: 'none', borderRadius: 6, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', fontFamily: "'DM Sans', sans-serif" }} onClick={() => { localStorage.setItem("taskivo_requested_service", selectedService.id); navigate("create-task"); }}>Request a quote</button>
               </div>
             );
           })}
+        </div>
+      </section>
+
+      <section className="lp-section-pad" style={{background:C.off}}>
+        <h2 className="lp-section-title heading" style={{textAlign:'center',marginBottom:32}}>Explore all Taskivo services</h2>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:20,maxWidth:1100,margin:'0 auto'}}>
+          {services.map(service=><div key={service.id} style={{background:C.white,border:'1px solid '+C.line,borderRadius:16,padding:24}}><div style={{fontSize:24}}>{service.icon}</div><h3 style={{fontSize:18,margin:'12px 0'}}>{service.title}</h3><p style={{fontSize:14,color:C.slate,lineHeight:1.6}}>{service.desc}</p><button onClick={()=>{localStorage.setItem('taskivo_requested_service',service.id);navigate('create-task');}} style={{background:C.ink,color:C.white,border:0,borderRadius:8,padding:'10px 16px',cursor:'pointer'}}>Request a quote</button></div>)}
         </div>
       </section>
 
