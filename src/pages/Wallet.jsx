@@ -76,58 +76,7 @@ export default function Wallet({ user, navigate, showToast }) {
 
   async function handleWithdrawal(e) {
     e.preventDefault();
-    const amountNum = parseInt(amount, 10);
-    
-    if (!amountNum || amountNum < minWithdrawal) {
-      if (showToast) showToast(`Minimum withdrawal is ${minWithdrawal.toLocaleString()} PTS.`, 'error');
-      return;
-    }
-    if (amountNum > user.points) {
-      if (showToast) showToast('Insufficient liquidity.', 'error');
-      return;
-    }
-    if (!lockedDestination) {
-      if (showToast) showToast('Payout identity missing. Please update your profile.', 'error');
-      return;
-    }
-
-    // 🔥 INJECTED INTERSTITIAL TRIGGER 🔥
-    // Fires only when the user passes all checks and legitimately requests a withdrawal
-    if (typeof window !== 'undefined' && window.ReactNativeWebView) {
-       window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
-    }
-
-    try {
-      setSubmitting(true);
-      
-      const { error: insertError } = await supabase.from('withdrawals').insert({
-        user_id: user.id, 
-        amount: amountNum, 
-        bank_name: lockedDestination.payout_bank_name, 
-        account_name: lockedDestination.payout_account_name,
-        account_number: lockedDestination.payout_account, 
-        status: 'pending'
-      });
-      
-      if (insertError) throw insertError;
-
-      const { error: updateError } = await supabase.from('profiles').update({ points: user.points - amountNum }).eq('id', user.id);
-      if (updateError) throw updateError;
-
-      window.dispatchEvent(new Event('taskivo_points_updated'));
-
-      if (showToast) showToast('Withdrawal requested. Processing depends on verification and available funding.', 'success');
-      setAmount('');
-      
-      fetchLedger();
-      
-    } catch (err) {
-      console.error("Withdrawal Error:", err);
-      alert("DATABASE REJECTED IT! Reason: " + JSON.stringify(err, null, 2));
-      if (showToast) showToast(err.message || 'Transaction failed.', 'error');
-    } finally {
-      setSubmitting(false);
-    }
+    if (showToast) showToast('Withdrawals are temporarily paused during security and funding checks.', 'error');
   }
 
   if (loading) {
@@ -140,7 +89,7 @@ export default function Wallet({ user, navigate, showToast }) {
   }
 
   const progressPercent = Math.min((user.points / minWithdrawal) * 100, 100);
-  const isEligible = user.points >= minWithdrawal;
+  const isEligible = false;
 
   const S = {
     pageWrapper: {
@@ -216,8 +165,8 @@ export default function Wallet({ user, navigate, showToast }) {
 
             <div style={{ marginTop: 48 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', fontWeight: 600, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>
-                <span>Payout Eligibility Status</span>
-                <span style={{ color: isEligible ? 'var(--lime)' : 'var(--ink)' }}>{isEligible ? 'ELIGIBLE' : `${user.points} / ${minWithdrawal}`}</span>
+                <span>Payout availability</span>
+                <span style={{ color: isEligible ? 'var(--lime)' : 'var(--ink)' }}>{'Temporarily paused'}</span>
               </div>
               <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.02)' }}>
                 <div style={{ width: `${progressPercent}%`, height: '100%', background: isEligible ? 'var(--lime)' : 'var(--slate)', borderRadius: 10 }}></div>
@@ -233,7 +182,7 @@ export default function Wallet({ user, navigate, showToast }) {
             {lockedDestination ? (
                <div style={{ background: 'rgba(168,255,62,0.05)', border: '1px solid rgba(168,255,62,0.2)', padding: 16, borderRadius: 12, marginBottom: 24 }}>
                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                   <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--lime)', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" }}>✓ Verified Destination</span>
+                   <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--lime)', textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" }}>Saved payout destination</span>
                    <span style={{ fontSize: 16 }}>💳</span>
                  </div>
                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{lockedDestination.payout_bank_name}</div>
@@ -263,11 +212,11 @@ export default function Wallet({ user, navigate, showToast }) {
               </div>
 
               <button type="submit" disabled={!isEligible || submitting || !lockedDestination} style={isEligible && lockedDestination ? S.btnLime : S.btnDisabled}>
-                {submitting ? 'Processing...' : isEligible && lockedDestination ? 'Initiate Transfer' : 'Transfer Locked'}
+                {submitting ? 'Processing...' : isEligible && lockedDestination ? 'Initiate Transfer' : 'Withdrawals paused'}
               </button>
 
               <div style={{ fontSize: 12, color: 'var(--slate)', textAlign: 'center', marginTop: 14, fontWeight: 500 }}>
-                Payouts are subject to verification and available funding.
+                Withdrawals are paused while balances and funding are verified. Existing balances remain recorded.
               </div>
               
             </form>
