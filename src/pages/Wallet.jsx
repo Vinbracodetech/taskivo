@@ -1,7 +1,9 @@
+import { useReadingBalance } from '../lib/useReadingBalance.js';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function Wallet({ user, navigate, showToast }) {
+  const readingPending = useReadingBalance(user?.id);
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState([]);
   const [partnerPending, setPartnerPending] = useState(null);
@@ -144,27 +146,20 @@ export default function Wallet({ user, navigate, showToast }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, marginBottom: 48 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,340px), 1fr))', gap: 24, marginBottom: 48 }}>
           
           <div style={{ ...S.glassCard, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <span style={S.label}>Existing wallet points</span>
+              <span style={S.label}>Recorded wallet points</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                <div style={S.valueGlow}>{user.points.toLocaleString()}</div>
+                <div style={S.valueGlow}>{readingPending===null?"—":(Number(user.points||0)+readingPending).toLocaleString()}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
               </div>
               
-              <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--slate)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)' }}>
-                  ≈ {localSymbol}{fiatBalanceLocal}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.3)', padding: '6px 12px' }}>
-                  (${fiatBalanceUSD})
-                </div>
-              </div>
-
-              <div style={{ fontSize: 13, color: 'var(--slate)', fontWeight: 500 }}>
-                Minimum withdrawal threshold: {minWithdrawal.toLocaleString()} PTS ({localSymbol}{thresholdLocal})
+              <div style={{display:'grid',gap:8,fontSize:14,lineHeight:1.6,color:'var(--slate)',margin:'12px 0'}}>
+                <div>Existing recorded points: <strong style={{color:'var(--ink)'}}>{Number(user.points||0).toLocaleString()} PTS</strong></div>
+                <div>Blog rewards pending funding: <strong style={{color:'var(--ink)'}}>{readingPending===null?'Unavailable':readingPending.toLocaleString()+' PTS'}</strong></div>
+                <p>Each eligible reading completion adds 3 PTS to this recorded total. Pending blog rewards are not yet funded or withdrawable. Partner rewards are shown below. This total is not an available cash balance.</p>
               </div>
             </div>
 
@@ -174,7 +169,7 @@ export default function Wallet({ user, navigate, showToast }) {
                 <span style={{ color: isEligible ? 'var(--lime)' : 'var(--ink)' }}>{'Temporarily paused'}</span>
               </div>
               <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.02)' }}>
-                <div style={{ width: `${progressPercent}%`, height: '100%', background: isEligible ? 'var(--lime)' : 'var(--slate)', borderRadius: 10 }}></div>
+                <div style={{ width: '0%', height: '100%', background: isEligible ? 'var(--lime)' : 'var(--slate)', borderRadius: 10 }}></div>
               </div>
             </div>
           </div>
@@ -207,7 +202,7 @@ export default function Wallet({ user, navigate, showToast }) {
                 <input 
                   style={S.input} 
                   type="number" 
-                  placeholder={`Available: ${user.points}`} 
+                  placeholder="Withdrawals paused" 
                   value={amount} 
                   onChange={e => setAmount(e.target.value)} 
                   max={user.points} 
