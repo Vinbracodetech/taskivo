@@ -29,46 +29,15 @@ Deno.serve(async (req) => {
   const pilot = profile.role==="admin";
   const publicEnabled = profile.role==="earner" && Deno.env.get("OFFERWALL_GG_ENABLED")==="true";
   if(!pilot&&!publicEnabled) return reply({enabled:false});
-  const ts=String(Math.floor(Date.now()/1000)), userId=data.user.id;
-  const params=new URLSearchParams({appId,ts,userId});
+  // This placement accepts the provider's non-expiring signed entry format.
+  // Sign only the verified account identity and placement; never log the URL.
+  const userId=data.user.id;
+  const params=new URLSearchParams({appId,userId});
   params.sort();
   const key=await crypto.subtle.importKey("raw",enc.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
   const digest=await crypto.subtle.sign("HMAC",key,enc.encode(params.toString()));
   const signature=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
   const wall=new URL("https://offerwall.gg/wall/"+appId);
-  wall.search=new URLSearchParams({userId,ts,signature}).toString();
-  // During the administrator pilot, check the provider's actual response before
-  // rendering the iframe. Never log the signed URL, identity or secret.
-  if(pilot) {
-    try {
-      const probe=async (link: URL)=>{
-        const r=await fetch(link,{headers:{"accept":"text/html","referer":origin+"/"},redirect:"manual",signal:AbortSignal.timeout(5000)});
-        const html=await r.text();
-        return {status:r.status,invalid:r.status===403&&/invalid signature/i.test(html)};
-      };
-      const first=await probe(wall);
-      console.info("offerwall entry pilot: documented form",JSON.stringify(first));
-      if(first.invalid) {
-        // appId is already part of the signed payload; sending it explicitly
-        // keeps exactly the same authenticated parameters and expiry.
-        const explicit=new URL(wall);
-        explicit.searchParams.set("appId",appId);
-        const second=await probe(explicit);
-        console.info("offerwall entry pilot: explicit placement parameter",JSON.stringify(second));
-        if(second.status===200) return reply({enabled:true,pilot,url:explicit.toString()});
-        // Check whether the dashboard actually expects non-expiring signed links.
-        // This diagnostic never returns a non-expiring link to the browser.
-        const noTsParams=new URLSearchParams({appId,userId});
-        noTsParams.sort();
-        const noTsDigest=await crypto.subtle.sign("HMAC",key,enc.encode(noTsParams.toString()));
-        const noTsSignature=Array.from(new Uint8Array(noTsDigest),b=>b.toString(16).padStart(2,"0")).join("");
-        const noTs=new URL("https://offerwall.gg/wall/"+appId);
-        noTs.search=new URLSearchParams({userId,signature:noTsSignature}).toString();
-        const third=await probe(noTs);
-        console.info("offerwall entry pilot: expiry configuration diagnostic",JSON.stringify(third));
-        return reply({enabled:false,reason:third.status===200?"expiry_setting_mismatch":"signature_rejected"});
-      }
-    } catch { console.info("offerwall entry pilot: provider probe unavailable"); }
-  }
+  wall.search=new URLSearchParams({userId,signature}).toString();
   return reply({enabled:true,pilot,url:wall.toString()});
 });
