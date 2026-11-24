@@ -1,5 +1,5 @@
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Inter:wght@500;600;700;800&display=swap');
+/* Montserrat is loaded once from index.html for every public and account route. */
 
 /* ── DEFAULT LIGHT THEME (Stripe / Vercel Vibe) ── */
 /* We set Light Mode as the absolute base root to prevent missing variables */
@@ -14,8 +14,8 @@ const CSS = `
   --slate: #6B7280;          /* Professional slate gray for muted text */
   --glass: rgba(255, 255, 255, 0.85);
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --font-body: 'DM Sans', sans-serif;
-  --font-display: 'Inter', sans-serif;
+  --font-body: 'Montserrat', system-ui, sans-serif;
+  --font-display: 'Montserrat', system-ui, sans-serif;
 }
 
 /* ── PREMIUM DARK THEME (Obsidian SaaS) ── */
@@ -47,6 +47,11 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Unify existing inline component fonts while leaving code, icons and external iframes intact. */
+body, #root, #root :where(*):not(pre):not(code):not(kbd):not(samp):not(pre *):not(code *):not([class*="icon-font"]) {
+  font-family: var(--font-body) !important;
+}
+#root :where(button,input,textarea,select,option) { font-family: var(--font-body) !important; }
 /* Theme Toggle Button */
 .theme-toggle {
   position: fixed;
