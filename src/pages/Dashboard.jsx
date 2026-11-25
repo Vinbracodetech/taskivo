@@ -215,7 +215,7 @@ export default function Dashboard({ user, navigate, showToast }) {
                 {user.full_name || 'Earner'}
               </h1>
               <div style={{ ...S.badge, ...(isVerified ? S.verified : S.unverified) }}>
-                {isVerified ? '✓ Verified Network' : '⚠ Action Required'}
+                {isVerified ? '✓ Payout details saved' : '⚠ Payout details missing'}
               </div>
             </div>
           </div>
@@ -225,13 +225,10 @@ export default function Dashboard({ user, navigate, showToast }) {
           </div>
         </div>
 
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{...S.glassCard,marginBottom:24}}><h2 style={{fontSize:23,marginTop:0}}>Your task network</h2><p style={{color:'var(--slate)',lineHeight:1.6}}>Explore Offerwall.GG, two-minute internal blog reading tasks, and assignments published by the administrator.</p><div style={{display:'flex',flexWrap:'wrap',gap:12}}><button style={S.btnPrimary} onClick={()=>navigate('tasks')}>Explore tasks</button><button style={S.btnSecondary} onClick={()=>navigate('offerwalls')}>Offerwalls</button></div></div>
-        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 48, position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,320px), 1fr))', gap: 24, marginBottom: 24, position: 'relative', zIndex: 1 }}>
           <div style={S.glassCard}>
-            <span style={S.label}>Recorded wallet points</span>
+            <span style={S.label}>Wallet Balance · Recorded PTS</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
               <div style={S.valueGlow}>{readingPending===null?"—":(Number(localPoints||0)+readingPending).toLocaleString()}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
@@ -246,16 +243,16 @@ export default function Dashboard({ user, navigate, showToast }) {
 
           <div style={S.glassCard}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <span style={{ ...S.label, marginBottom: 0 }}>Existing account activity</span>
+              <span style={{ ...S.label, marginBottom: 0 }}>Task Progress</span>
               <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--ink)', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 100, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" }}>
-                {stats.completions} TASKS COMPLETED
+                {readingPending===null?'—':Math.floor(readingPending/3)} ARTICLES READ
               </div>
             </div>
             
             <div style={{ marginTop: 24, marginBottom: 32 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', fontWeight: 600, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>
-                <span>Legacy point balance</span>
-                <span style={{ color: 'var(--ink)' }}>{Number(localPoints||0).toLocaleString()} PTS</span>
+                <span>Blog rewards recorded</span>
+                <span style={{ color: 'var(--ink)' }}>{readingPending===null?'—':readingPending.toLocaleString()} PTS</span>
               </div>
               <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.02)' }}>
                 <div style={{ width: '0%', height: '100%', background: 'var(--lime)', borderRadius: 10, transition: 'width 0.5s ease-out' }}></div>
@@ -263,13 +260,13 @@ export default function Dashboard({ user, navigate, showToast }) {
             </div>
 
             <div style={{ marginTop: 'auto' }}>
-              <button onClick={() => navigate('tasks')} style={{ ...S.btnPrimary, width: '100%', display: 'block' }}>Explore Tasks</button>
+              <button onClick={() => navigate('tasks')} style={{ ...S.btnPrimary, width: '100%', display: 'block' }}>Acquire More Tasks</button>
             </div>
           </div>
         </div>
 
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <p style={{color:'var(--slate)',fontSize:14}}>Daily spin and community cash bonuses remain paused until funding is available.</p>
+          <div style={{...S.premiumCard,border:'1px solid var(--lime)',marginBottom:28,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:20,padding:'clamp(20px,4vw,32px)'}}><div style={{flex:'1 1 230px'}}><span style={{...S.label,color:'var(--lime)',marginBottom:8}}>TASK NETWORK</span><h2 style={{fontSize:24,margin:'0 0 8px'}}>Offerwalls &amp; Internal Intel</h2><p style={{color:'var(--slate)',lineHeight:1.6,fontSize:14,margin:0}}>Explore partner surveys, two-minute blog tasks and official assignments.</p></div><div style={{display:'flex',gap:10,flexWrap:'wrap'}}><button style={S.btnPrimary} onClick={()=>navigate('tasks')}>Explore Tasks</button><button style={S.btnSecondary} onClick={()=>navigate('offerwalls')}>Offerwalls</button></div></div>
         </div>
 
         <div 

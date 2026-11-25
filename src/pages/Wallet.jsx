@@ -115,7 +115,7 @@ export default function Wallet({ user, navigate, showToast }) {
       background: 'var(--surface-card)', 
       border: '1px solid rgba(255,255,255,0.05)', 
       borderRadius: 24, 
-      padding: 32, 
+      padding: 'clamp(20px,4vw,32px)', 
       boxShadow: '0 8px 32px rgba(0,0,0,0.2)', 
       backdropFilter: 'blur(10px)',
       WebkitBackdropFilter: 'blur(10px)'
@@ -142,7 +142,7 @@ export default function Wallet({ user, navigate, showToast }) {
         <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: 32, color: 'var(--ink)', marginBottom: 8, fontWeight: 800, letterSpacing: '-0.5px' }}>Portfolio & Withdrawals</h1>
-            <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400, margin: 0 }}>Manage your liquidity and request payouts directly to your local account.</p>
+            <p style={{ color: 'var(--slate)', fontSize: 15, fontWeight: 400, margin: 0 }}>View recorded rewards, payout details and transaction history. Withdrawals are temporarily paused.</p>
           </div>
         </div>
 
@@ -150,12 +150,13 @@ export default function Wallet({ user, navigate, showToast }) {
           
           <div style={{ ...S.glassCard, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <span style={S.label}>Recorded wallet points</span>
+              <span style={S.label}>Wallet Balance · Recorded PTS</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                 <div style={S.valueGlow}>{readingPending===null?"—":(Number(user.points||0)+readingPending).toLocaleString()}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
               </div>
               
+              <div style={{display:'flex',flexWrap:'wrap',gap:12,marginBottom:16}}><div style={{fontSize:14,fontWeight:700,color:'var(--slate)',background:'var(--surface)',padding:'6px 12px',borderRadius:100,border:'1px solid var(--line)'}}>{readingPending===null?'Value unavailable':'Nominal value $'+((Number(user.points||0)+readingPending)*conversionRateUSD).toFixed(2)+' USD'}</div></div>
               <div style={{display:'grid',gap:8,fontSize:14,lineHeight:1.6,color:'var(--slate)',margin:'12px 0'}}>
                 <div>Existing recorded points: <strong style={{color:'var(--ink)'}}>{Number(user.points||0).toLocaleString()} PTS</strong></div>
                 <div>Blog rewards pending funding: <strong style={{color:'var(--ink)'}}>{readingPending===null?'Unavailable':readingPending.toLocaleString()+' PTS'}</strong></div>
