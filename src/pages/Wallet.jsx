@@ -158,7 +158,7 @@ export default function Wallet({ user, navigate, showToast }) {
                 <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
               </div>
               
-              <div style={{display:'flex',flexWrap:'wrap',gap:12,marginBottom:16}}><div style={{fontSize:14,fontWeight:700,color:'var(--slate)',background:'var(--surface)',padding:'6px 12px',borderRadius:100,border:'1px solid var(--line)'}}>{readingPending===null||spinPending===null?'Value unavailable':'Nominal value .toFixed(2)+' USD'}</div></div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:12,marginBottom:16}}><div style={{fontSize:14,fontWeight:700,color:'var(--slate)',background:'var(--surface)',padding:'6px 12px',borderRadius:100,border:'1px solid var(--line)'}}>{readingPending===null||spinPending===null?'Value unavailable':'Nominal value USD '+((Number(user.points||0)+readingPending+spinPending)*conversionRateUSD).toFixed(2)}</div></div>
               <div style={{display:'grid',gap:8,fontSize:14,lineHeight:1.6,color:'var(--slate)',margin:'12px 0'}}>
                 <div>Existing recorded points: <strong style={{color:'var(--ink)'}}>{Number(user.points||0).toLocaleString()} PTS</strong></div>
                 <div>Blog rewards pending funding: <strong style={{color:'var(--ink)'}}>{readingPending===null?'Unavailable':readingPending.toLocaleString()+' PTS'}</strong></div>
