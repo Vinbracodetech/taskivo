@@ -135,7 +135,6 @@ export default function Dashboard({ user, navigate, showToast, inboxCount, walle
 
         <button type="button" onClick={()=>window.dispatchEvent(new Event('taskivo_open_inbox'))} style={{...S.glassCard,display:'flex',width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,padding:'18px 20px',marginBottom:24,textAlign:'left',cursor:'pointer',border:'1px solid '+(unreadCount>0?'var(--lime)':'var(--line)'),color:'var(--ink)'}}><span style={{display:'flex',alignItems:'center',gap:12}}><span aria-hidden="true" style={{fontSize:24}}>🔔</span><span><strong style={{display:'block',fontSize:16}}>Inbox &amp; Alerts</strong><span style={{fontSize:12,color:'var(--slate)'}}>Official announcements and direct messages</span></span></span><span style={{color:unreadCount?'var(--lime)':'var(--slate)',fontWeight:800,fontSize:12,whiteSpace:'nowrap'}}>{inboxCount===null?'Open inbox':unreadCount+' unread'} →</span></button>
         <button type="button" onClick={()=>navigate('support')} style={{...S.glassCard,width:'100%',flexDirection:'row',justifyContent:'space-between',alignItems:'center',padding:'18px 20px',marginBottom:24,textAlign:'left',color:'var(--ink)',cursor:'pointer'}}><span><strong style={{display:'block',fontSize:16}}>🎧 Help &amp; Support</strong><span style={{fontSize:12,color:'var(--slate)'}}>FAQs, tickets and replies</span></span><strong style={{color:'var(--lime)'}}>Open →</strong></button>
-        <DailyLoginStreak session={{user}}/>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,320px), 1fr))', gap: 24, marginBottom: 24, position: 'relative', zIndex: 1 }}>
           <div style={S.glassCard}>
             <span style={S.label}>Wallet Balance</span>
@@ -165,6 +164,7 @@ export default function Dashboard({ user, navigate, showToast, inboxCount, walle
           </div>
         </div>
 
+        <DailyLoginStreak session={{user}}/>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{...S.premiumCard,border:'1px solid var(--lime)',marginBottom:28,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:20,padding:'clamp(20px,4vw,32px)'}}><div style={{flex:'1 1 230px'}}><span style={{...S.label,color:'var(--lime)',marginBottom:8}}>TASK NETWORK</span><h2 style={{fontSize:24,margin:'0 0 8px'}}>Offerwalls &amp; Internal Intel</h2><p style={{color:'var(--slate)',lineHeight:1.6,fontSize:14,margin:0}}>Explore partner surveys, two-minute blog tasks and official assignments.</p></div><div style={{display:'flex',gap:10,flexWrap:'wrap'}}><button style={S.btnPrimary} onClick={()=>navigate('tasks')}>Explore Tasks</button><button style={S.btnSecondary} onClick={()=>navigate('offerwalls')}>Offerwalls</button></div></div>
         </div>
