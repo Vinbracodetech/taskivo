@@ -45,7 +45,7 @@ export default function History({ session, navigate }) {
             supabase.from('telegram_claims').select(`id, created_at`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
             supabase.from('daily_login_rewards').select('id,created_at:claimed_at,points,cycle_day').eq('user_id',user.id).order('claimed_at',{ascending:false}).limit(limit),
             supabase.from('reading_task_completions').select('post_slug,points,completed_at').eq('user_id',user.id).order('completed_at',{ascending:false}).limit(limit),
-            supabase.from('official_task_submissions').select('id,task_id,status,created_at,official_tasks(title)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(limit),
+            supabase.from('official_task_submissions').select('id,task_id,status,created_at,reward_points,reviewed_at,official_tasks(title,category)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(limit),
             supabase.from('offerwall_gg_events').select('transaction_id,event_type,amount_pts,received_at').eq('user_id',user.id).order('received_at',{ascending:false}).limit(limit)
           ]);
 
@@ -127,7 +127,7 @@ export default function History({ session, navigate }) {
             mergedTimeline.push(...readingRes.value.data.map(d=>({id:'reading:'+d.post_slug,created_at:d.completed_at,_recordType:'official_blog',_title:'Internal Intel: '+d.post_slug.replace(/-/g,' '),_pts:Number(d.points),_icon:'📖',_status:'Credited'})));
           }
           if(officialRes.status==='fulfilled'&&officialRes.value.data){
-            mergedTimeline.push(...officialRes.value.data.map(d=>({id:d.id,created_at:d.created_at,_recordType:'official_assignment',_title:d.official_tasks?.title||'Admin assignment',_pts:null,_icon:'📋',_status:d.status,_tagText:'Official task'})));
+            mergedTimeline.push(...officialRes.value.data.map(d=>({id:d.id,created_at:d.reviewed_at||d.created_at,_recordType:'official_assignment',_title:d.official_tasks?.title||'Admin assignment',_pts:d.status==='approved'?Number(d.reward_points):null,_icon:'📋',_status:d.status,_tagText:'Official task'})));
           }
           if(offerRes.status==='fulfilled'&&offerRes.value.data){
             mergedTimeline.push(...offerRes.value.data.map(d=>({id:'offer:'+d.transaction_id+':'+d.event_type,created_at:d.received_at,_recordType:'offerwall_event',_title:d.event_type==='reversed'?'Offerwall reward reversal':'Survey / offer reward reported',_pts:Number(d.amount_pts),_icon:'🧾',_status:d.event_type==='reversed'?'Reversed':'Awaiting settlement',_tagText:'Offerwall.GG'})));

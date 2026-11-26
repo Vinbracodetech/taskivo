@@ -6,7 +6,6 @@ export default function Offerwalls({ session, navigate }) {
   const [activeWall, setActiveWall] = useState(null);
   const [opening, setOpening] = useState(false);
   const [notice, setNotice] = useState('');
-  const previewUrl = 'https://offerwall.gg/wall/8542a96e28f4b8ade0318ce71a324144';
 
   if (!user) {
     return (
@@ -16,7 +15,7 @@ export default function Offerwalls({ session, navigate }) {
     );
   }
 
-  const partners = [{ id: 'offerwall-gg', name: 'Offerwall.GG — Surveys & Paid Offers', badge: 'Partner-funded rewards', description: 'Explore available surveys, sponsored offers and eligible game tasks. Availability varies by location. Rewards remain pending until verified and settled.', rewardEstimate: 'Rewards vary by offer', color: '#a8ff3e' }];
+  const partners = [{ id: 'offerwall-gg', name: 'Offerwall.GG — Surveys & Paid Offers', badge: 'Partner-funded rewards', description: 'Explore available surveys, sponsored offers and eligible game tasks. Availability varies by location. Rewards are recorded after provider verification. Redemption requires settlement.', rewardEstimate: 'Rewards vary by offer', color: '#a8ff3e' }];
 
   async function openWall(partner) {
     if (opening) return;
@@ -25,7 +24,7 @@ export default function Offerwalls({ session, navigate }) {
     try {
       const { data, error } = await supabase.functions.invoke('offerwall-gg-link', { body: {} });
       if (error) throw error;
-      if (!data?.enabled) { setNotice('Live earning is not open yet. You can explore the read-only provider preview below.'); return; }
+      if (!data?.enabled) { setNotice('Offerwall access is not available for this account.'); return; }
       const link = new URL(data.url);
       if (link.origin !== 'https://offerwall.gg' || !link.pathname.startsWith('/wall/')) throw new Error('Invalid wall URL');
       setActiveWall({ ...partner, url: link.href });
@@ -75,7 +74,7 @@ export default function Offerwalls({ session, navigate }) {
     },
     grid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%,300px), 1fr))',
       gap: 16,
       marginTop: 20
     },
@@ -176,11 +175,6 @@ export default function Offerwalls({ session, navigate }) {
           </button>
         </div>
 
-        <div style={{...styles.card,cursor:'default',marginBottom:20}}>
-          <h2 style={{fontSize:18,margin:'0 0 8px'}}>Preview available offers</h2>
-          <p style={styles.cardDesc}>Explore the provider catalogue without a linked earning account. Preview mode does not award points. Live earning opens only after approval and integration testing.</p>
-          <a href={previewUrl} target="_blank" rel="noopener noreferrer" style={{...styles.backBtn,display:'inline-block',textDecoration:'none'}}>Open read-only offerwall preview ↗</a>
-        </div>
         {notice && <p role="status" style={{ color: "var(--slate)", marginTop: 16 }}>{notice}</p>}
         <div style={styles.grid}>
           {partners.map((partner) => (
