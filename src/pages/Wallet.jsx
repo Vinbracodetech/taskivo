@@ -1,11 +1,11 @@
-import { useSpinBalance } from '../lib/useSpinBalance.js';
+import { useLoginStreakBalance } from '../lib/useSpinBalance.js';
 import { useReadingBalance } from '../lib/useReadingBalance.js';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function Wallet({ user, navigate, showToast }) {
   const readingPending = useReadingBalance(user?.id);
-  const spinPending = useSpinBalance(user?.id);
+  const loginCredits = useLoginStreakBalance(user?.id);
   const [loading, setLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState([]);
   const [partnerPending, setPartnerPending] = useState(null);
@@ -162,7 +162,7 @@ export default function Wallet({ user, navigate, showToast }) {
               <div style={{display:'grid',gap:8,fontSize:14,lineHeight:1.6,color:'var(--slate)',margin:'12px 0'}}>
                 <div>Main points balance: <strong style={{color:'var(--ink)'}}>{Number(user.points||0).toLocaleString()} PTS</strong></div>
                 <div>Blog rewards pending funding: <strong style={{color:'var(--ink)'}}>{readingPending===null?'Unavailable':readingPending.toLocaleString()+' PTS'}</strong></div>
-                <div>Daily spin credits (included in main balance): <strong style={{color:'var(--ink)'}}>{spinPending===null?'Unavailable':spinPending.toLocaleString()+' PTS'}</strong></div><p>Daily spin rewards are credited directly to the main points balance, and reading rewards are included in the recorded total pending funding. Partner rewards are shown below. Withdrawals remain paused; this is not an available cash balance.</p>
+                <div>Daily login streak credits (included in main balance): <strong style={{color:'var(--ink)'}}>{loginCredits===null?'Unavailable':loginCredits.toLocaleString()+' PTS'}</strong></div><p>Daily login rewards and historical spin credits are credited directly to the main points balance, and reading rewards are included in the recorded total pending funding. Partner rewards are shown below. Withdrawals remain paused; this is not an available cash balance.</p>
               </div>
             </div>
 

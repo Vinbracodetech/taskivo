@@ -33,13 +33,14 @@ export default function History({ session, navigate }) {
         } else {
           // ── EARNER LOGIC: UNIFIED TIMELINE MERGE ──
           
-          const [compRes, blogRes, spinRes, bonusRes] = await Promise.allSettled([
+          const [compRes, blogRes, spinRes, bonusRes, loginRes] = await Promise.allSettled([
             supabase.from('completions').select(`id, created_at, platform, status, tasks ( title, reward_points )`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
             supabase.from('blog_reads').select(`id, created_at, post_slug`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
             supabase.from('daily_spin_rewards').select('id,created_at:claimed_at,reward_points:points').eq('user_id', user.id).eq('credited_to_main',true).order('claimed_at', { ascending: false }).limit(50),
             
             // 🔥 FIXED: Pulling directly from the telegram_claims table which is guaranteed to exist
-            supabase.from('telegram_claims').select(`id, created_at`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1)
+            supabase.from('telegram_claims').select(`id, created_at`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
+            supabase.from('daily_login_rewards').select('id,created_at:claimed_at,points,cycle_day').eq('user_id',user.id).order('claimed_at',{ascending:false}).limit(50)
           ]);
 
           let mergedTimeline = [];
@@ -110,6 +111,9 @@ export default function History({ session, navigate }) {
             })));
           }
 
+          if(loginRes.status==='fulfilled'&&loginRes.value.data){
+            mergedTimeline.push(...loginRes.value.data.map(d=>({id:d.id,created_at:d.created_at,_recordType:'daily_login',_title:'Daily Login Streak · Day '+d.cycle_day,_pts:d.points,_icon:'🔥'})));
+          }
           // Sort the entire merged array by exact date & time
           mergedTimeline.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -255,7 +259,7 @@ export default function History({ session, navigate }) {
                     bgColor = 'var(--lime-dim)';
                     tagText = 'Official Article';
                     tagColor = 'var(--lime)';
-                  } else if (item._recordType === 'daily_spin') {
+                  } else if (item._recordType === 'daily_spin' || item._recordType === 'daily_login') {
                     typeColor = '#D4AF37'; // Gold
                     bgColor = 'rgba(212,175,55,0.1)';
                     tagText = 'Daily Reward';

@@ -1,10 +1,10 @@
 import {useEffect,useState} from 'react';
 import {supabase} from './supabase';
-export function useSpinBalance(userId){
+export function useLoginStreakBalance(userId){
  const [balance,setBalance]=useState(null);
- useEffect(()=>{let active=true;setBalance(null);if(!userId)return;
- async function load(){try{const {data,error}=await supabase.rpc('daily_spin_status');if(active)setBalance(error||!data?null:Number(data.credited_points||0));}catch{if(active)setBalance(null);}}
- load();window.addEventListener('taskivo_spin_balance_updated',load);return()=>{active=false;window.removeEventListener('taskivo_spin_balance_updated',load);};
- },[userId]);
- return balance;
+ useEffect(()=>{let active=true;let revision=0;setBalance(null);if(!userId)return;
+ async function load(){const n=++revision;try{const {data,error}=await supabase.rpc('daily_login_status');if(active&&n===revision)setBalance(error||!data?null:Number(data.credited_points||0));}catch{if(active&&n===revision)setBalance(null);}}
+ function update(e){++revision;if(active)setBalance(Number(e.detail?.credited_points||0));}
+ load();window.addEventListener('taskivo_login_streak_updated',update);return()=>{active=false;window.removeEventListener('taskivo_login_streak_updated',update);};
+ },[userId]);return balance;
 }

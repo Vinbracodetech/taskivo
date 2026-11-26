@@ -1,3 +1,4 @@
+import { claimLoginReward } from './lib/loginStreak.js';
 import { useReadingBalance } from './lib/useReadingBalance.js';
 import { useState, useEffect } from "react";
 import { supabase } from "./lib/supabase.js";
@@ -224,6 +225,21 @@ export default function App() {
     window.addEventListener("taskivo_points_updated", syncPoints);
     return function() { window.removeEventListener("taskivo_points_updated", syncPoints); };
   }, [user]);
+
+  // A visible, signed-in visit qualifies for today's login streak reward.
+  useEffect(function(){
+    if(!user?.id||user.role!=='earner')return;
+    let active=true,inFlight=false;
+    async function checkLogin(){
+      if(!active||inFlight||document.hidden)return;
+      inFlight=true;
+      try{await claimLoginReward();}catch{/* dashboard offers a retry; never fabricate credits */}finally{inFlight=false;}
+    }
+    checkLogin();
+    window.addEventListener('focus',checkLogin);
+    document.addEventListener('visibilitychange',checkLogin);
+    return()=>{active=false;window.removeEventListener('focus',checkLogin);document.removeEventListener('visibilitychange',checkLogin);};
+  },[user?.id,user?.role,view]);
 
   // --- 🔥 ROOT-LEVEL REFERRAL AIR-TRAFFIC CONTROLLER 🔥 ---
   useEffect(function() {
