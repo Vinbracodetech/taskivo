@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 
 export default function Offerwalls({ session, navigate }) {
@@ -6,6 +7,26 @@ export default function Offerwalls({ session, navigate }) {
   const [activeWall, setActiveWall] = useState(null);
   const [opening, setOpening] = useState(false);
   const [notice, setNotice] = useState('');
+  const [frameAttempt,setFrameAttempt]=useState(0);
+  const [frameState,setFrameState]=useState('idle');
+  const frameTimer=useRef(null);
+  const requestLock=useRef(false);
+  const wallOpen=!!activeWall;
+  useEffect(()=>{
+    if(!wallOpen)return;
+    const previous=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    return()=>{document.body.style.overflow=previous;};
+  },[wallOpen]);
+  useEffect(()=>{
+    if(!activeWall)return;
+    setFrameState('loading');
+    frameTimer.current=setTimeout(()=>setFrameState(s=>s==='loading'?'slow':s),12000);
+    return()=>clearTimeout(frameTimer.current);
+  },[activeWall?.url,frameAttempt]);
+  function frameLoaded(){clearTimeout(frameTimer.current);setFrameState('loaded');}
+  function closeWall(){clearTimeout(frameTimer.current);setActiveWall(null);setFrameState('idle');}
+
 
   if (!user) {
     return (
@@ -18,7 +39,8 @@ export default function Offerwalls({ session, navigate }) {
   const partners = [{ id: 'offerwall-gg', name: 'Offerwall.GG — Surveys & Paid Offers', badge: 'Partner-funded rewards', description: 'Explore available surveys, sponsored offers and eligible game tasks. Availability varies by location. Rewards are recorded after provider verification. Redemption requires settlement.', rewardEstimate: 'Rewards vary by offer', color: '#a8ff3e' }];
 
   async function openWall(partner) {
-    if (opening) return;
+    if (requestLock.current) return;
+    requestLock.current=true;
     setOpening(true);
     setNotice('');
     try {
@@ -28,8 +50,9 @@ export default function Offerwalls({ session, navigate }) {
       const link = new URL(data.url);
       if (link.origin !== 'https://offerwall.gg' || !link.pathname.startsWith('/wall/')) throw new Error('Invalid wall URL');
       setActiveWall({ ...partner, url: link.href });
+      setFrameAttempt(n=>n+1);
     } catch { setNotice('The offerwall is temporarily unavailable. Please try again later.'); }
-    finally { setOpening(false); }
+    finally { requestLock.current=false;setOpening(false); }
   }
 
   const styles = {
@@ -110,17 +133,21 @@ export default function Offerwalls({ session, navigate }) {
       position: 'fixed',
       inset: 0,
       background: 'var(--surface)',
-      zIndex: 9999,
+      zIndex: 1000002,
+      height: '100dvh',
+      overflow:'hidden',
       display: 'flex',
       flexDirection: 'column'
     },
     modalBar: {
-      padding: '12px 20px',
+      flexShrink:0,
+      padding: '10px 14px',
       background: 'var(--surface-card)',
       borderBottom: '1px solid var(--line)',
       display: 'flex',
       justifyContent: 'space-between',
-      alignItems: 'center'
+      alignItems: 'center',
+      gap:10
     },
     closeBtn: {
       background: '#ef4444',
@@ -130,12 +157,15 @@ export default function Offerwalls({ session, navigate }) {
       borderRadius: 12,
       fontSize: 12,
       fontWeight: 700,
-      cursor: 'pointer'
+      cursor: 'pointer',
+      whiteSpace:'nowrap',flexShrink:0
     },
     iframe: {
-      flex: 1,
+      flex: '1 1 0',
       width: '100%',
       height: '100%',
+      minHeight:0,
+      display:'block',
       border: 'none',
       background: '#fff'
     }
@@ -143,25 +173,34 @@ export default function Offerwalls({ session, navigate }) {
 
   return (
     <div style={styles.wrap}>
-      {activeWall && (
-        <div style={styles.modalOverlay}>
+      {activeWall && createPortal(
+        <div style={styles.modalOverlay} role="dialog" aria-modal="true" aria-label="Offerwall portal">
           <div style={styles.modalBar}>
-            <div>
-              <div style={{ fontSize: 11, color: 'var(--lime)', fontWeight: 700 }}>OFFERWALL PORTAL</div>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>{activeWall.name}</div>
+            <div style={{minWidth:0}}>
+              <div style={{fontSize:10,color:'var(--lime)',fontWeight:800}}>OFFERWALL PORTAL</div>
+              <div style={{fontSize:14,fontWeight:800}}>Offerwall.GG</div>
             </div>
-            <button style={styles.closeBtn} onClick={() => setActiveWall(null)}>
-              Close Portal
-            </button>
+            <button style={styles.closeBtn} onClick={closeWall}>Close</button>
+          </div>
+          <div style={{flexShrink:0,background:'var(--surface-card)',borderBottom:'1px solid var(--line)',padding:'9px 14px',color:'var(--slate)',fontSize:12,lineHeight:1.5}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
+              <span role="status">{opening?'Reconnecting…':frameState==='loading'?'Connecting to offer provider…':frameState==='slow'||frameState==='error'?'Offerwall is taking longer than expected.':'Blank page? Try reloading.'}</span>
+              <button type="button" disabled={opening} onClick={()=>openWall(activeWall)} style={{...styles.backBtn,padding:'6px 12px'}}>Reload</button>
+            </div>
+            {notice&&<p role="alert" style={{margin:'6px 0 0'}}>{notice}</p>}
+            <details style={{marginTop:6}}><summary style={{cursor:'pointer',color:'var(--ink)',fontWeight:700}}>Having trouble loading?</summary><p style={{margin:'8px 0'}}>If this stays blank, reopen Taskivo in your usual browser, then retry. Your connection or the offer provider may be blocking the embedded page.</p><a href={activeWall.url} target="_blank" rel="noopener" referrerPolicy="strict-origin-when-cross-origin" style={{color:'var(--lime)',fontWeight:700}}>Try opening the provider in a new tab ↗</a><p style={{margin:'6px 0 0'}}>The provider may require the embedded portal. If it still fails, close this window and contact <button onClick={()=>{closeWall();navigate('support');}} style={{padding:0,border:0,background:'transparent',color:'var(--lime)',textDecoration:'underline',cursor:'pointer'}}>Help &amp; Support</button>.</p></details>
           </div>
           <iframe
+            key={frameAttempt}
             src={activeWall.url}
             style={styles.iframe}
             allow="clipboard-write"
             referrerPolicy="strict-origin-when-cross-origin"
             title={activeWall.name}
+            onLoad={frameLoaded}
+            onError={()=>{clearTimeout(frameTimer.current);setFrameState('error');}}
           />
-        </div>
+        </div>,document.body
       )}
 
       <div style={styles.container}>
