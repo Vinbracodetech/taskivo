@@ -1312,7 +1312,7 @@ export function AdminNotifications({ showToast }) {
 }
 // ── 6. ADMIN BLOG (CONTENT ENGINE) MODULE ──
 export function AdminBlog({ showToast }) {
-  const [form, setForm] = useState({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
+  const [form, setForm] = useState({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft', image_url: '', image_alt: '', image_credit: '' });
   const [loading, setLoading] = useState(false);
   const [posts, setPosts] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -1351,11 +1351,11 @@ export function AdminBlog({ showToast }) {
     setLoading(true);
     try {
       if (editingId) {
-        const { error } = await supabase.from('posts').update(form).eq('id', editingId);
+        const { error } = await supabase.from('posts').update({...form,updated_at:new Date().toISOString()}).eq('id', editingId);
         if (error) throw error;
         if (showToast) showToast('Article successfully updated.', 'success');
       } else {
-        const { error } = await supabase.from('posts').insert([form]);
+        const { error } = await supabase.from('posts').insert([{...form,updated_at:new Date().toISOString()}]);
         if (error) throw error;
         if (showToast) showToast(`Article saved as ${form.status}.`, 'success');
       }
@@ -1370,13 +1370,13 @@ export function AdminBlog({ showToast }) {
 
   function startEdit(post) {
     setEditingId(post.id);
-    setForm({ title: post.title, slug: post.slug, meta_desc: post.meta_desc, content: post.content, category: post.category, status: post.status });
+    setForm({ title: post.title, slug: post.slug, meta_desc: post.meta_desc, content: post.content, category: post.category, status: post.status, image_url: post.image_url||'', image_alt: post.image_alt||'', image_credit: post.image_credit||'' });
     window.scrollTo(0, 0); 
   }
 
   function resetForm() {
     setEditingId(null);
-    setForm({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft' });
+    setForm({ title: '', slug: '', meta_desc: '', content: '', category: 'earner', status: 'draft', image_url: '', image_alt: '', image_credit: '' });
   }
 
   async function deletePost(id) {
@@ -1410,6 +1410,7 @@ export function AdminBlog({ showToast }) {
 
           <input style={{ ...S.input, marginBottom: 16 }} placeholder="Meta Description (max 160 chars)" value={form.meta_desc} onChange={e => setForm({...form, meta_desc: e.target.value})} maxLength={160} />
           
+          <input type="url" style={{...S.input,marginBottom:12}} placeholder="Featured image HTTPS URL" value={form.image_url} onChange={e=>setForm({...form,image_url:e.target.value})}/><input style={{...S.input,marginBottom:12}} placeholder="Image alternative text" value={form.image_alt} onChange={e=>setForm({...form,image_alt:e.target.value})}/><input style={{...S.input,marginBottom:12}} placeholder="Photo credit / source" value={form.image_credit} onChange={e=>setForm({...form,image_credit:e.target.value})}/><p style={{fontSize:13,color:'#d1d5db',marginBottom:14}}>Article word count: {String(form.content||'').replace(/<[^>]*>/g,' ').trim().split(/\s+/).filter(Boolean).length.toLocaleString()} / 2,000 target</p>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12, overflowX: 'auto' }}>
             <button onClick={() => wrapText('h2')} style={S.btnAction}>+ Header</button>
             <button onClick={() => wrapText('p')} style={S.btnAction}>+ Paragraph</button>

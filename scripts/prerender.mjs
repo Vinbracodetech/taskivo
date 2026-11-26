@@ -19,11 +19,11 @@ try {
   const {default:css} = await server.ssrLoadModule('/src/styles/global.js');
   const {supabaseUrl,supabaseAnonKey} = await server.ssrLoadModule('/src/lib/supabase.js');
   const navigate = () => {};
-  const fields = 'slug,title,meta_desc,category,created_at,content';
+  const fields = 'slug,title,meta_desc,category,created_at,updated_at,content,image_url,image_alt,image_credit';
   const posts = [];
   for(let offset=0;;offset+=100) {
     const url = new URL('/rest/v1/posts',supabaseUrl);
-    url.search = new URLSearchParams({select:fields,status:'eq.published',order:'created_at.desc,slug.asc',limit:'100',offset:String(offset)});
+    url.search = new URLSearchParams({select:fields,status:'eq.published',order:'updated_at.desc.nullslast,created_at.desc,slug.asc',limit:'100',offset:String(offset)});
     const response = await fetch(url,{headers:{apikey:supabaseAnonKey,Authorization:'Bearer '+supabaseAnonKey},signal:AbortSignal.timeout(15000)});
     if (!response.ok) { const error = await response.json().catch(()=>({})); throw new Error('Public post fetch failed: HTTP '+response.status+' '+String(error.code||'')+' '+String(error.message||'').slice(0,200)); }
     const batch = await response.json();
@@ -36,12 +36,13 @@ try {
     const canonical = origin + path;
     let html = template.replace(/<title>[\s\S]*?<\/title>/,()=> '<title>'+escape(title)+'</title>');
     for(const [k,v] of Object.entries({'title':title,'description':description,'og:title':title,'og:description':description,'og:url':canonical,'og:type':article?'article':'website','twitter:title':title,'twitter:description':description,'twitter:url':canonical})) html=setMeta(html,k,v);
-    const schema = article ? {'@context':'https://schema.org','@type':'BlogPosting',headline:article.title,description,datePublished:article.created_at,mainEntityOfPage:canonical,author:{'@type':'Organization',name:'Taskivo'},publisher:{'@type':'Organization',name:'Taskivo'}} : null;
+    if(article?.image_url){html=setMeta(html,'og:image',article.image_url);html=setMeta(html,'twitter:image',article.image_url);if(!html.includes('property="og:image"'))html=html.replace('</head>','<meta property="og:image" content="'+escape(article.image_url)+'"></head>');if(!html.includes('name="twitter:image"'))html=html.replace('</head>','<meta name="twitter:image" content="'+escape(article.image_url)+'"></head>');}
+    const schema = article ? {'@context':'https://schema.org','@type':'BlogPosting',headline:article.title,description,datePublished:article.created_at,dateModified:article.updated_at||article.created_at,image:article.image_url||undefined,mainEntityOfPage:canonical,author:{'@type':'Organization',name:'Taskivo'},publisher:{'@type':'Organization',name:'Taskivo'}} : null;
     html=html.replace('</head>','<link rel="canonical" href="'+escape(canonical)+'"><meta name="robots" content="index, follow">'+(schema?'<script type="application/ld+json">'+JSON.stringify(schema).replace(/</g,'\\u003c')+'</script>':'')+'</head>');
     const body = renderToStaticMarkup(h('div',null,h('style',null,css),h('style',null,landingStyles),nav(),component,h('footer',{style:{padding:'24px 5%',color:'var(--slate)'}},h('a',{href:'/about'},'About'), ' · ',h('a',{href:'/privacy'},'Privacy'), ' · ',h('a',{href:'/terms'},'Terms'), ' · ',h('a',{href:'/paid-surveys'},'Paid surveys'), ' · ',h('a',{href:'/microtasks'},'Microtasks'))));
     html=html.replace('<body>','<body class="theme-dark">').replace('<div id="root"></div>',()=>'<div id="root">'+body+'</div>');
     await writeFile('dist/'+(path==='/'?'index':path.slice(1))+'.html',html);
-    manifest.push(canonical);
+    manifest.push({url:canonical,lastmod:article?.updated_at||article?.created_at||null});
   };
   const privateTemplate = template.replace('</head>','<meta name="robots" content="noindex, follow"></head>');
   await writeFile('dist/app.html',privateTemplate);
@@ -55,8 +56,8 @@ try {
     ['delete-account',legal.DeleteAccount,'Account Deletion | Taskivo','Find Taskivo account and data deletion instructions.']
   ]) await writePage('/'+slug,title,desc,h(Component));
   for(const [slug,guide] of Object.entries(earningGuides)) await writePage('/'+slug,guide.title,guide.description,h(EarningGuide,{slug}));
-  await writePage('/blog','Taskivo Blog | Microtasks, App Testing & Digital Work','Practical guides to online microtasks, app testing, user research and digital work.',h(BlogIndex,{navigate,initialPosts:posts}));
-  for(const post of posts) await writePage('/article-'+post.slug,post.title+' | Taskivo',post.meta_desc || post.title,h(ArticleView,{navigate,id:'article-'+post.slug,user:null,initialPost:post}),post);
-  await writeFile('dist/sitemap.xml','<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+manifest.map(url=>'<url><loc>'+escape(url)+'</loc></url>').join('')+'</urlset>');
+  await writePage('/blog','Taskivo Blog | Online Work, Paid Surveys & Creator Guides','Practical guides to paid surveys, online work, usability testing, safety and organic YouTube growth.',h(BlogIndex,{navigate,initialPosts:posts}));
+  for(const post of posts) await writePage('/article-'+post.slug,post.title+' | Taskivo',post.meta_desc || post.title,h(ArticleView,{navigate,id:'article-'+post.slug,user:null,initialPost:post,initialRelated:posts.filter(p=>p.slug!==post.slug&&p.category===post.category).slice(0,4)}),post);
+  await writeFile('dist/sitemap.xml','<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+manifest.map(item=>'<url><loc>'+escape(item.url)+'</loc>'+(item.lastmod?'<lastmod>'+escape(new Date(item.lastmod).toISOString().slice(0,10))+'</lastmod>':'')+'</url>').join('')+'</urlset>');
   console.log('Prerendered '+manifest.length+' public URLs, including '+posts.length+' published posts.');
 } finally { await server.close(); }

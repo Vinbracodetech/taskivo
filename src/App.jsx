@@ -420,8 +420,8 @@ export default function App() {
     if (!robots) { robots = document.createElement("meta"); robots.name = "robots"; document.head.appendChild(robots); }
     robots.content = publicView ? "index, follow" : "noindex, follow";
     if (view === "blog") {
-      document.title = "Taskivo Blog | Microtasks, App Testing & Digital Work";
-      document.querySelector('meta[name="description"]').content = "Practical guides to online microtasks, app testing, user research and digital work.";
+      document.title = "Taskivo Blog | Online Work, Paid Surveys & Creator Guides";
+      document.querySelector('meta[name="description"]').content = "Practical guides to paid surveys, online work, usability testing, safety and organic YouTube growth.";
     } else if (!publicView) {
       document.title = "Taskivo | Account";
       document.querySelector('meta[name="description"]').content = "Manage your Taskivo account.";

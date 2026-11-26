@@ -1,548 +1,69 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { safeArticleHtml } from '../lib/safeArticleHtml.js';
-
-// ── ELITE ARTICLE TYPOGRAPHY ENGINE ──
-const proseStyles = `
-  .article-prose { color: var(--slate); font-size: 17px; line-height: 1.8; font-family: 'DM Sans', sans-serif; }
-  .article-prose h2 { color: var(--ink); font-size: 24px; font-weight: 800; margin: 48px 0 16px 0; font-family: 'Inter', sans-serif; letter-spacing: -0.5px; }
-  .article-prose h3 { color: var(--ink); font-size: 20px; font-weight: 700; margin: 32px 0 12px 0; font-family: 'Inter', sans-serif; }
-  .article-prose p { margin-bottom: 24px; }
-  .article-prose blockquote { border-left: 4px solid var(--lime); padding-left: 20px; font-style: italic; color: var(--slate); background: rgba(168,255,62,0.05); padding: 16px 20px; border-radius: 0 12px 12px 0; margin: 32px 0; }
-  .article-prose ul { padding-left: 20px; margin-bottom: 24px; }
-  .article-prose li { margin-bottom: 12px; }
-  .article-prose strong { color: var(--ink); font-weight: 700; }
-  .article-prose a { color: var(--lime); text-decoration: none; border-bottom: 1px solid rgba(168,255,62,0.3); transition: border-color 0.2s; }
+import {useEffect,useState} from 'react';
+import {supabase} from '../lib/supabase';
+import {safeArticleHtml} from '../lib/safeArticleHtml.js';
+const fields='slug,title,meta_desc,category,created_at,updated_at,image_url,image_alt,image_credit';
+const categoryLabel=c=>c==='creator'?'Creator & Business':'Online Work';
+const wordCount=s=>String(s||'').replace(/<[^>]*>/g,' ').trim().split(/\s+/).filter(Boolean).length;
+const imageUrl=u=>typeof u==='string'&&/^https:\/\/(?![^/]*@)/i.test(u)?u:'';
+const styles=`
+.ed-shell{max-width:1180px;margin:auto;padding:44px 5% 88px;color:var(--ink)}
+.ed-shell a{color:inherit;text-decoration:none}
+.ed-heading{font-size:clamp(32px,5vw,50px);line-height:1.14;letter-spacing:-1.5px;margin:12px 0 16px;font-weight:800}
+.ed-copy{font-size:16px;line-height:1.75;color:var(--slate);max-width:760px}
+.ed-kicker{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--slate)}
+.ed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:24px}
+.ed-card{display:flex;flex-direction:column;border:1px solid var(--line);background:var(--surface-card);border-radius:14px;overflow:hidden;min-width:0}
+.ed-card:hover{border-color:var(--lime)}
+.ed-card img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block}
+.ed-card-text{padding:20px;flex:1}
+.ed-card-text h2{font-size:19px;line-height:1.35;margin:10px 0;overflow-wrap:anywhere}
+.ed-card-text p{font-size:13px;line-height:1.65;color:var(--slate);margin:0 0 16px}
+.ed-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:28px 0}
+.ed-tab{padding:10px 16px;border:1px solid var(--line);background:var(--surface-card);color:var(--ink);border-radius:100px;font-weight:700;cursor:pointer}
+.ed-tab[aria-pressed=true]{background:var(--lime);color:#111}
+.ed-article{max-width:830px;margin:auto;padding:40px 5% 100px;color:var(--ink)}
+.ed-breadcrumb{font-size:13px;color:var(--slate);margin-bottom:28px}
+.ed-breadcrumb a{color:var(--ink)}
+.ed-feature{margin:26px 0 32px}
+.ed-feature img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;display:block}
+.ed-feature figcaption{font-size:12px;color:var(--slate);margin-top:8px}
+.ed-prose{font-size:16px;line-height:1.9;color:var(--ink);overflow-wrap:anywhere}
+.ed-prose h2{font-size:clamp(22px,3vw,28px);line-height:1.3;margin:42px 0 16px;letter-spacing:-.5px}
+.ed-prose h3{font-size:19px;line-height:1.45;margin:26px 0 12px}
+.ed-prose p,.ed-prose ul,.ed-prose ol{margin:0 0 20px}
+.ed-prose ul,.ed-prose ol{padding-left:24px}
+.ed-prose li{margin-bottom:10px}
+.ed-prose a{color:var(--ink);text-decoration:underline;text-decoration-color:#80b52e;text-underline-offset:3px;font-weight:600}
+.ed-prose table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;margin:24px 0}
+.ed-prose th,.ed-prose td{padding:10px 14px;border:1px solid var(--line);text-align:left;vertical-align:top}
+.ed-prose th{background:var(--surface-card)}
+.ed-related{padding:24px;background:var(--surface-card);border:1px solid var(--line);border-radius:14px;margin-top:42px}
+.ed-related a{display:block;color:var(--ink);padding:12px 0;border-bottom:1px solid var(--line);line-height:1.5}
+@media(max-width:650px){.ed-shell,.ed-article{padding-top:28px}.ed-grid{gap:16px}.ed-card-text{padding:16px}.ed-prose{font-size:15px}.ed-related{padding:16px}}
 `;
-
-// ── SHARED BACKGROUND STYLES ──
-const S = {
-  pageWrapper: {
-    minHeight: '100vh',
-    backgroundColor: 'var(--surface)',
-    backgroundImage: `
-      radial-gradient(circle at top center, rgba(168,255,62,0.15) 0%, transparent 60%),
-      url("data:image/svg+xml,%3Csvg width='80' height='138.6' viewBox='0 0 80 138.6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 138.6L0 115.5V69.3l40-23.1 40 23.1v46.2zM40 46.2L0 23.1V-23.1l40-23.1 40 23.1v46.2z' fill='none' stroke='%23A8FF3E' stroke-width='2' stroke-opacity='0.1'/%3E%3C/svg%3E")
-    `,
-    backgroundSize: '100%, 80px 138.6px',
-    backgroundAttachment: 'fixed',
-  }
-};
-
-// 🔥 PRODUCTION SECURE NODE COMPONENT 🔥
-export function TaskivoSecureNode({ slug }) {
-  const [status, setStatus] = useState("Taskivo Secure Node active. Establishing connection...");
-  const [timeLeft, setTimeLeft] = useState(null);
-  const [token, setToken] = useState(null);
-  const [isActive, setIsActive] = useState(false);
-
-  useEffect(() => {
-    let countdownInterval;
-
-    async function initializeNode() {
-      try {
-        const cleanTargetUrl = `https://www.taskivo.online/article-${slug}`;
-
-        const initRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target_url: cleanTargetUrl })
-        });
-        
-        const initData = await initRes.json();
-
-        if (!initData.session_id) {
-          const fallbackUrl = `https://www.taskivo.online/article-${slug}`;
-          const retryRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/init', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ target_url: fallbackUrl })
-          });
-          const retryData = await retryRes.json();
-          if (!retryData.session_id) return;
-          initData.session_id = retryData.session_id;
-        }
-
-        setIsActive(true);
-        setStatus("Tracking Organic Dwell Time...");
-        
-        setTimeLeft(120);
-        let currentTime = 120;
-
-        countdownInterval = setInterval(async () => {
-          if (document.hidden) return; 
-          
-          currentTime--;
-          setTimeLeft(currentTime);
-
-          if (currentTime <= 0) {
-            clearInterval(countdownInterval);
-            setStatus("Verifying telemetry with server...");
-            setTimeLeft(null);
-
-            const claimRes = await fetch('https://eartsscxtqxaelopmjmq.supabase.co/functions/v1/taskivo-verify/claim', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ session_id: initData.session_id })
-            });
-            
-            const claimData = await claimRes.json();
-            
-            if (claimData.secret_code) {
-              setToken(claimData.secret_code);
-              setStatus("Verification Complete!");
-            } else {
-              setStatus(`SERVER ERROR: ${claimData.error || JSON.stringify(claimData)}`);
-            }
-          }
-        }, 1000);
-
-      } catch (err) {
-        console.error("Node error:", err);
-      }
-    }
-
-    if (slug) initializeNode();
-
-    return () => {
-      if (countdownInterval) clearInterval(countdownInterval);
-    };
-  }, [slug]);
-
-  if (!isActive) return null;
-
-  return (
-    <div style={{ padding: '24px', textAlign: 'center', border: '1px dashed rgba(168,255,62,0.3)', borderRadius: '12px', marginTop: '48px', marginBottom: '24px', background: 'var(--surface-card)', clear: 'both' }}>
-      {token ? (
-        <strong style={{ color: 'var(--lime)', fontFamily: "'Inter', sans-serif" }}>
-          Verification Complete! Your Single-Use Code is:<br/><br/>
-          <span style={{ background: 'var(--surface)', border: '1px solid var(--line)', padding: '12px 16px', borderRadius: '8px', letterSpacing: '2px', color: 'var(--ink)', wordBreak: 'break-all', display: 'inline-block', fontSize: '16px' }}>
-            {token}
-          </span>
-        </strong>
-      ) : (
-        <>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: status.includes('SERVER ERROR') ? '#ef4444' : 'var(--slate)' }}>
-            {status}
-          </span>
-          {timeLeft !== null && (
-            <div style={{ fontSize: '28px', fontWeight: '800', color: '#ef4444', marginTop: '12px', fontFamily: 'monospace' }}>
-              {timeLeft}s
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+function Photo({post,article=false}){
+ const url=imageUrl(post.image_url);
+ if(!url)return null;
+ const image=<img src={url} alt={post.image_alt||post.title} width="1200" height={article?675:750} loading={article?'eager':'lazy'} decoding="async"/>;
+ return article?<figure className="ed-feature">{image}{post.image_credit&&<figcaption>Illustrative photograph · {post.image_credit}</figcaption>}</figure>:image;
 }
-
-// ── THE BLOG INDEX ──
-export function BlogIndex({ navigate, initialPosts = null }) {
-  const [posts, setPosts] = useState(initialPosts || []);
-  const [loading, setLoading] = useState(initialPosts === null);
-
-  useEffect(() => {
-    async function fetchPosts() {
-      try {
-        const { data, error } = await supabase
-          .from('posts')
-          .select('title, slug, meta_desc, category, created_at')
-          .eq('status', 'published')
-          .order('created_at', { ascending: false });
-          
-        if (error) console.error("Error fetching posts:", error);
-        setPosts(data || []);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchPosts();
-  }, []);
-
-  if (loading) return (
-    <div style={S.pageWrapper}>
-      <div style={{ padding: 100, textAlign: 'center', color: 'var(--slate)' }}>
-        <div style={{ width: 32, height: 32, border: '2px solid var(--line)', borderTopColor: 'var(--lime)', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
-        Loading Intelligence...
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={S.pageWrapper}>
-      <div style={{ padding: '80px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif" }}>
-        <h1 style={{ fontSize: 48, fontFamily: "'Inter', sans-serif", fontWeight: 800, color: 'var(--ink)', marginBottom: 16, letterSpacing: '-1.5px' }}>Taskivo Intelligence</h1>
-        <p style={{ fontSize: 18, color: 'var(--slate)', marginBottom: 56, maxWidth: 600 }}>Insights on digital engagement, algorithmic growth, and maximizing yield.</p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
-          {posts.length === 0 ? (
-            <div style={{ color: 'var(--slate)' }}>No records decrypted yet.</div>
-          ) : (
-            posts.map(post => {
-              const imgUrl = post.category === 'creator' 
-                ? 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2070&auto=format&fit=crop'
-                : 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2070&auto=format&fit=crop';
-
-              return (
-                <a href={`/article-${post.slug}`} key={post.slug} onClick={(e) => {
-                  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-                  e.preventDefault();
-                  if (typeof window !== 'undefined' && window.ReactNativeWebView) {
-                    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
-                  }
-                  navigate(`article-${post.slug}`);
-                }} style={{ background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', backdropFilter: 'blur(10px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', textDecoration: 'none' }}>
-                  
-                  <div style={{ height: 180, backgroundImage: `url(${imgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 0%, var(--surface-card) 100%)' }} />
-                    <div style={{ position: 'absolute', bottom: 16, left: 24, display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.9)' : 'rgba(168,255,62,0.9)', color: '#000', fontSize: 10, fontWeight: 800, padding: '6px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                      {post.category}
-                    </div>
-                  </div>
-
-                  <div style={{ padding: '8px 24px 32px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>{new Date(post.created_at).toLocaleDateString()}</div>
-                    </div>
-                    <h2 style={{ fontSize: 22, color: 'var(--ink)', fontWeight: 800, marginBottom: 12, lineHeight: 1.3, fontFamily: "'Inter', sans-serif", letterSpacing: '-0.5px' }}>{post.title}</h2>
-                    <p style={{ color: 'var(--slate)', fontSize: 15, lineHeight: 1.6, margin: 0 }}>{post.meta_desc}</p>
-                  </div>
-                </a>
-              );
-            })
-          )}
-        </div>
-      </div>
-    </div>
-  );
+export function BlogIndex({initialPosts=null}){
+ const [posts,setPosts]=useState(initialPosts||[]),[loading,setLoading]=useState(initialPosts===null),[category,setCategory]=useState('all'),[error,setError]=useState('');
+ useEffect(()=>{let live=true;async function load(){try{const {data,error}=await supabase.from('posts').select(fields).eq('status','published').order('updated_at',{ascending:false,nullsFirst:false}).order('created_at',{ascending:false});if(error)throw error;if(live)setPosts(data||[]);}catch{if(live)setError('Unable to load the latest articles. Please refresh.');}finally{if(live)setLoading(false);}}load();return()=>{live=false};},[]);
+ const visible=posts.filter(p=>category==='all'||p.category===category);
+ return <main className="ed-shell"><style>{styles}</style><div className="ed-kicker">TASKIVO RESOURCE LIBRARY</div><h1 className="ed-heading">Practical guides for digital work</h1><p className="ed-copy">Explore online work, paid research, safe earning habits, app testing and organic creator growth. Public articles are free to read, without an account or reward requirement.</p>
+ <div className="ed-tabs">{[['all','All articles'],['earner','Online work'],['creator','Creators & business']].map(([id,label])=><button className="ed-tab" key={id} aria-pressed={category===id} onClick={()=>setCategory(id)}>{label}</button>)}</div>
+ {error&&<p role="alert">{error}</p>}{loading?<p>Loading articles…</p>:<div className="ed-grid">{visible.map(p=><a className="ed-card" href={'/article-'+p.slug} key={p.slug}><Photo post={p}/><div className="ed-card-text"><span className="ed-kicker">{categoryLabel(p.category)}</span><h2>{p.title}</h2><p>{p.meta_desc}</p><span style={{fontSize:13,fontWeight:800}}>Read guide →</span></div></a>)}</div>}{!loading&&!visible.length&&!error&&<p>No articles in this category yet.</p>}
+ <div className="ed-related"><h2 style={{fontSize:20}}>Start with these resources</h2><a href="/paid-surveys">Paid survey guide</a><a href="/microtasks">Online microtasks and app testing</a><a href="/youtube-monetization">YouTube monetization support</a></div></main>;
 }
-
-// ── THE ELITE ARTICLE VIEW ──
-export function ArticleView({ navigate, id, user, setAuthMode, initialPost = null }) {
-  const [post, setPost] = useState(initialPost);
-  const [postState, setPostState] = useState(initialPost ? 'ready' : 'loading');
-  const [localUser, setLocalUser] = useState(user);
-  
-  const [timeLeft, setTimeLeft] = useState(120); 
-  const [claiming, setClaiming] = useState(false);
-  const [claimed, setClaimed] = useState(false);
-  
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [quizQuestion, setQuizQuestion] = useState(null);
-  const [selectedAnswer, setSelectedAnswer] = useState('');
-  const [quizError, setQuizError] = useState(false);
-
-  const slug = id.replace('article-', ''); 
-  const isActiveMission = false; // Public articles are not incentivized; learning activities live in /tasks.
-
-  useEffect(() => {
-    if (!localUser) {
-      supabase.auth.getUser().then(({ data }) => {
-        if (data?.user) setLocalUser(data.user);
-      });
-    }
-  }, [localUser]);
-
-  useEffect(() => {
-    async function fetchPost() {
-      try {
-        const { data, error } = await supabase.from('posts').select('*').eq('slug', slug).eq('status', 'published').maybeSingle();
-        if (error) throw error;
-        if (data) { setPost(data); setPostState('ready'); }
-        else { setPostState('missing'); }
-      } catch { setPostState('error'); }
-    }
-    fetchPost();
-  }, [slug]);
-
-  useEffect(() => {
-    if (postState !== 'missing') return;
-    const robots = document.querySelector('meta[name="robots"]');
-    if (robots) robots.content = 'noindex, follow';
-    document.title = 'Article not found | Taskivo';
-  }, [postState]);
-
-  useEffect(() => {
-    if (!post) return;
-
-    document.title = `${post.title} | Taskivo`;
-    
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement('meta');
-      metaDesc.name = 'description';
-      document.head.appendChild(metaDesc);
-    }
-    metaDesc.content = post.meta_desc || 'Read the latest intelligence briefing from Taskivo.';
-
-    const articleSchema = {
-      "@context": "https://schema.org",
-      "@type": "BlogPosting",
-      "mainEntityOfPage": {
-        "@type": "WebPage",
-        "@id": `https://www.taskivo.online/article-${post.slug}`
-      },
-      "headline": post.title,
-      "description": post.meta_desc,
-      "datePublished": post.created_at,
-      "dateModified": post.created_at,
-      "author": {
-        "@type": "Organization",
-        "name": "Taskivo Intelligence",
-        "url": "https://www.taskivo.online"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "name": "Taskivo",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://www.taskivo.online/logo.png"
-        }
-      }
-    };
-
-    const existingScript = document.getElementById('taskivo-article-schema');
-    if (existingScript) existingScript.remove();
-
-    const script = document.createElement('script');
-    script.id = 'taskivo-article-schema';
-    script.type = 'application/ld+json';
-    script.text = JSON.stringify(articleSchema);
-    document.head.appendChild(script);
-
-    return () => {
-      const scriptToRemove = document.getElementById('taskivo-article-schema');
-      if (scriptToRemove) scriptToRemove.remove();
-      if (metaDesc) metaDesc.content = 'The world\'s most secure omnichannel engagement infrastructure.';
-    };
-  }, [post]);
-
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (isActiveMission && !claimed && timeLeft > 0) {
-        e.preventDefault();
-        e.returnValue = "Warning: Leaving now forfeits your reward.";
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isActiveMission, claimed, timeLeft]);
-
-  useEffect(() => {
-    if (!post || !isActiveMission) return;
-    
-    const interval = setInterval(() => {
-      if (!document.hidden && !claimed && !claiming && !showQuiz) {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            triggerVerification();
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [post, claimed, claiming, showQuiz, isActiveMission]);
-
-  function triggerVerification() {
-    if (post.quiz_data && Array.isArray(post.quiz_data) && post.quiz_data.length > 0) {
-      const randomQ = post.quiz_data[Math.floor(Math.random() * post.quiz_data.length)];
-      setQuizQuestion(randomQ);
-      setShowQuiz(true);
-    } else {
-      handleAutoClaim();
-    }
-  }
-
-  function submitQuiz() {
-    if (!selectedAnswer) return;
-    if (selectedAnswer === quizQuestion.answer) {
-      setQuizError(false);
-      setShowQuiz(false);
-      handleAutoClaim();
-    } else {
-      setQuizError(true);
-    }
-  }
-
-  async function handleAutoClaim() {
-    if (!localUser) return; 
-    setClaiming(true);
-    
-    try {
-      const { error: readErr } = await supabase.from('blog_reads').insert({ user_id: localUser.id, post_slug: slug });
-      if (readErr) throw new Error("Blog Reads Table Error: " + readErr.message);
-      
-      const { data: profile, error: profErr } = await supabase.from('profiles').select('points').eq('id', localUser.id).single();
-      if (profErr) throw new Error("Profile Fetch Error: " + profErr.message);
-      
-      const { error: updateErr } = await supabase.from('profiles').update({ points: (profile.points || 0) + 3 }).eq('id', localUser.id);
-      if (updateErr) throw new Error("Profile Update Error: " + updateErr.message);
-      
-      window.dispatchEvent(new Event('taskivo_points_updated'));
-      setClaimed(true);
-      localStorage.removeItem('taskivo_active_mission');
-      
-    } catch(err) {
-      console.error(err);
-    } finally {
-      setClaiming(false); 
-    }
-  }
-
-  function handleBackClick() {
-    if (isActiveMission && !claimed && timeLeft > 0) {
-      const confirmLeave = window.confirm("WARNING: You have not completed the required dwell time. Leaving now will forfeit your 3 PTS reward.\n\nAre you sure you want to exit?");
-      if (!confirmLeave) return;
-    }
-    
-    if (typeof window !== 'undefined' && window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
-    }
-    navigate(localUser ? 'tasks' : 'blog');
-  }
-
-  if (postState === 'missing' || postState === 'error') return (
-    <main style={{padding: '80px 5%', color: 'var(--ink)'}}>
-      <h1>{postState === 'missing' ? 'Article not found' : 'Article temporarily unavailable'}</h1>
-      <p>{postState === 'missing' ? 'This article is not published or no longer exists.' : 'Please try again later.'}</p>
-      <a href="/blog" style={{color: 'var(--ink)'}}>Browse the blog</a>
-    </main>
-  );
-
-  if (!post) return (
-    <div style={S.pageWrapper}>
-      <div style={{ padding: 100, textAlign: 'center', color: 'var(--slate)' }}>Decrypting briefing...</div>
-    </div>
-  );
-
-  const heroImage = post.image_url || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop';
-
-  return (
-    <div style={{ ...S.pageWrapper, backgroundAttachment: 'scroll' }}>
-      <style>{proseStyles}</style>
-
-      {showQuiz && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: 'var(--surface-card)', border: '1px solid var(--lime)', borderRadius: 24, padding: 32, width: '100%', maxWidth: 400, boxShadow: '0 24px 48px rgba(168,255,62,0.1)' }}>
-            <div style={{ fontSize: 10, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Human Verification</div>
-            <h3 style={{ fontSize: 20, color: 'var(--ink)', fontFamily: "'Inter', sans-serif", fontWeight: 800, marginBottom: 24, lineHeight: 1.3 }}>{quizQuestion.question}</h3>
-            
-            {quizError && <div style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', padding: '12px', borderRadius: 8, fontSize: 12, fontWeight: 700, marginBottom: 16 }}>Incorrect analysis. Review the briefing and try again.</div>}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-              {quizQuestion.options.map((opt, i) => (
-                <label key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px', background: 'var(--surface)', border: selectedAnswer === opt ? '1px solid var(--lime)' : '1px solid var(--line)', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s' }}>
-                  <input type="radio" name="quiz" value={opt} onChange={() => setSelectedAnswer(opt)} checked={selectedAnswer === opt} style={{ accentColor: 'var(--lime)' }} />
-                  <span style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 600 }}>{opt}</span>
-                </label>
-              ))}
-            </div>
-
-            <button onClick={submitQuiz} disabled={!selectedAnswer} style={{ width: '100%', background: selectedAnswer ? 'var(--lime)' : 'var(--surface)', color: selectedAnswer ? '#000' : 'var(--slate)', border: 'none', padding: '16px', borderRadius: 100, fontSize: 14, fontWeight: 800, cursor: selectedAnswer ? 'pointer' : 'not-allowed', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Verify & Secure Yield
-            </button>
-          </div>
-        </div>
-      )}
-
-      {isActiveMission && !showQuiz && (
-        <div style={{
-          position: 'fixed', bottom: 110, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(20,20,25,0.95)', backdropFilter: 'blur(20px)',
-          border: claimed ? '1px solid var(--lime)' : '1px solid rgba(255,255,255,0.1)', 
-          borderRadius: 100, padding: claimed ? '8px 8px 8px 24px' : '16px 24px', 
-          display: 'flex', alignItems: 'center', gap: 16,
-          boxShadow: '0 16px 40px rgba(0,0,0,0.5)', zIndex: 9999, width: 'max-content'
-        }}>
-          {claimed ? (
-            <>
-              <div>
-                <div style={{ fontSize: 10, color: 'var(--lime)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Mission Complete</div>
-                <div style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>+3 PTS Secured</div>
-              </div>
-              <button onClick={() => {
-                if (typeof window !== 'undefined' && window.ReactNativeWebView) {
-                  window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SHOW_INTERSTITIAL' }));
-                }
-                navigate('tasks');
-              }} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>Return</button>
-            </>
-          ) : claiming ? (
-            <>
-              <div style={{ width: 18, height: 18, border: '2px solid var(--slate)', borderTopColor: 'var(--lime)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--lime)', textTransform: 'uppercase', letterSpacing: '1px' }}>Securing Yield...</div>
-            </>
-          ) : (
-            <>
-              <div style={{ width: 12, height: 12, background: '#ef4444', borderRadius: '50%', animation: 'pulse 2s infinite' }} />
-              <div>
-                <div style={{ fontSize: 10, color: 'var(--slate)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Verifying Presence</div>
-                <div style={{ color: '#fff', fontSize: 15, fontWeight: 700, fontFamily: "'Inter', sans-serif" }}>Dwell Time: <span style={{ color: '#ef4444' }}>{timeLeft}s</span></div>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      <div style={{ 
-        position: 'relative', 
-        width: '100%', 
-        height: '45vh', 
-        minHeight: 350, 
-        backgroundImage: `url(${heroImage})`, 
-        backgroundSize: 'cover', 
-        backgroundPosition: 'center',
-        borderBottom: '1px solid rgba(255,255,255,0.05)'
-      }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(13,13,20,0.3) 0%, rgba(13,13,20,0.8) 60%, var(--surface) 100%)' }} />
-        
-        <div style={{ position: 'absolute', top: 32, left: '5%', zIndex: 20 }}>
-          <button onClick={handleBackClick} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 20px', borderRadius: 100, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-            ← Back to Network
-          </button>
-        </div>
-      </div>
-
-      <div style={{ padding: '0 5% 120px', maxWidth: 720, margin: '0 auto', position: 'relative', zIndex: 10 }}>
-        
-        <div style={{ marginTop: -100, marginBottom: 48, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 48 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-            <span style={{ display: 'inline-block', background: post.category === 'creator' ? 'rgba(212,175,55,0.9)' : 'rgba(168,255,62,0.9)', color: '#000', fontSize: 11, fontWeight: 800, padding: '6px 12px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px' }}>
-              {post.category}
-            </span>
-            <span style={{ color: 'var(--slate)', fontSize: 13, fontWeight: 600 }}>5 Min Read</span>
-          </div>
-          
-          <h1 style={{ fontSize: 42, fontFamily: "'Inter', sans-serif", fontWeight: 800, color: 'var(--ink)', marginBottom: 24, lineHeight: 1.1, letterSpacing: '-1.5px' }}>{post.title}</h1>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-              👁️‍🗨️
-            </div>
-            <div>
-              <div style={{ fontSize: 14, color: 'var(--ink)', fontWeight: 700 }}>Taskivo Central Intelligence</div>
-              <div style={{ fontSize: 12, color: 'var(--slate)' }}>{new Date(post.created_at).toLocaleDateString()}</div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="article-prose" dangerouslySetInnerHTML={{ __html: safeArticleHtml(post.content) }} />
-
-        {isActiveMission && localUser && <TaskivoSecureNode slug={slug} />}
-
-        {!localUser && (
-          <div style={{ background: 'linear-gradient(135deg, rgba(168,255,62,0.1) 0%, transparent 100%)', border: '1px solid var(--lime)', borderRadius: 24, padding: 40, textAlign: 'center', marginTop: 80, backdropFilter: 'blur(10px)' }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif", marginBottom: 12, letterSpacing: '-0.5px' }}>Monetize Your Attention.</div>
-            <p style={{ color: 'var(--slate)', fontSize: 16, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px', lineHeight: 1.6 }}>Explore eligible earning opportunities. Rewards depend on task availability, verification and funding.</p>
-            <button onClick={() => { if(setAuthMode) setAuthMode('register'); navigate('auth'); }} style={{ background: 'var(--lime)', color: '#000', border: 'none', padding: '16px 32px', borderRadius: 100, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Create Free Earner Account
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+export function ArticleView({id,initialPost=null,initialRelated=[]}){
+ const slug=id.replace('article-','');
+ const [post,setPost]=useState(initialPost),[status,setStatus]=useState(initialPost?'ready':'loading'),[related,setRelated]=useState(initialRelated);
+ useEffect(()=>{let live=true;async function load(){try{const {data,error}=await supabase.from('posts').select(fields+',content').eq('slug',slug).eq('status','published').maybeSingle();if(error)throw error;if(!live)return;if(!data){setPost(null);setStatus('missing');return;}setPost(data);setStatus('ready');const more=await supabase.from('posts').select('slug,title').eq('status','published').eq('category',data.category).neq('slug',slug).limit(4);if(live&&!more.error)setRelated(more.data||[]);}catch{if(live)setStatus('error');}}load();return()=>{live=false};},[slug]);
+ useEffect(()=>{if(!post){if(status==='missing'){document.title='Article not found | Taskivo';const r=document.querySelector('meta[name="robots"]');if(r)r.content='noindex, follow';}return;}document.title=post.title+' | Taskivo';const d=document.querySelector('meta[name="description"]');if(d)d.content=post.meta_desc;},[post,status]);
+ if(status==='missing'||status==='error')return <main className="ed-article"><style>{styles}</style><h1>{status==='missing'?'Article not found':'Article temporarily unavailable'}</h1><p><a href="/blog">Browse articles</a></p></main>;
+ if(!post)return <main className="ed-article"><style>{styles}</style><p>Loading article…</p></main>;
+ const date=new Date(post.updated_at||post.created_at);const dateText=Number.isNaN(date.getTime())?'':date.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'});
+ return <article className="ed-article"><style>{styles}</style><nav aria-label="Breadcrumb" className="ed-breadcrumb"><a href="/">Home</a> / <a href="/blog">Blog</a> / {categoryLabel(post.category)}</nav><div className="ed-kicker">{categoryLabel(post.category)}</div><h1 className="ed-heading">{post.title}</h1><p className="ed-copy">{post.meta_desc}</p><p style={{fontSize:13,color:'var(--slate)',marginTop:20}}>Taskivo Editorial · {dateText&&('Updated '+dateText+' · ')}{Math.max(1,Math.ceil(wordCount(post.content)/220))} min read</p><Photo post={post} article/><div className="ed-prose" dangerouslySetInnerHTML={{__html:safeArticleHtml(post.content)}}/><div className="ed-related"><h2 style={{fontSize:20}}>Related reading</h2>{related.filter(p=>p.slug!==slug).slice(0,4).map(p=><a href={'/article-'+p.slug} key={p.slug}>{p.title}</a>)}<a href={post.category==='creator'?'/youtube-monetization':'/paid-surveys'}>{post.category==='creator'?'YouTube monetization support':'Paid survey guide'}</a><a href="/microtasks">Online microtasks explained</a><a href="/blog">Browse all guides</a></div><p style={{color:'var(--slate)',fontSize:13,lineHeight:1.7,marginTop:24}}>Editorial information only. Task availability, payment conditions and platform policies may change. <a href="/disclaimer" style={{color:'var(--ink)'}}>Read our disclaimer.</a></p></article>;
 }
+export function TaskivoSecureNode(){return null;}
