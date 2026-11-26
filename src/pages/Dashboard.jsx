@@ -233,11 +233,11 @@ export default function Dashboard({ user, navigate, showToast }) {
           <div style={S.glassCard}>
             <span style={S.label}>Wallet Balance · Recorded PTS</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
-              <div style={S.valueGlow}>{readingPending===null||spinPending===null?"—":(Number(localPoints||0)+readingPending+spinPending).toLocaleString()}</div>
+              <div style={S.valueGlow}>{readingPending===null?"—":(Number(localPoints||0)+readingPending).toLocaleString()}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
             </div>
             
-            <p style={{fontSize:13,color:'var(--slate)',lineHeight:1.6,marginBottom:16}}>Includes {readingPending===null?'an unavailable amount of':readingPending.toLocaleString()+' PTS in'} blog rewards pending funding, plus {spinPending===null?'an unavailable amount of':spinPending.toLocaleString()+' PTS in'} daily spin rewards pending funding. Withdrawals remain paused.</p>
+            <p style={{fontSize:13,color:'var(--slate)',lineHeight:1.6,marginBottom:16}}>Includes {readingPending===null?'an unavailable amount of':readingPending.toLocaleString()+' PTS in'} blog rewards pending funding. Your main balance includes {spinPending===null?'daily spin rewards':spinPending.toLocaleString()+' PTS from daily spins'}. Withdrawals remain paused.</p>
             <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
               <button onClick={() => navigate('wallet')} style={{ ...S.btnPrimary, flex: 1 }}>View wallet</button>
               <button onClick={() => navigate('history')} style={{ ...S.btnSecondary, flex: 1 }}>Ledger</button>

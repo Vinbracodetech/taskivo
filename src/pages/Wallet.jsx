@@ -154,15 +154,15 @@ export default function Wallet({ user, navigate, showToast }) {
             <div>
               <span style={S.label}>Wallet Balance · Recorded PTS</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-                <div style={S.valueGlow}>{readingPending===null||spinPending===null?"—":(Number(user.points||0)+readingPending+spinPending).toLocaleString()}</div>
+                <div style={S.valueGlow}>{readingPending===null?"—":(Number(user.points||0)+readingPending).toLocaleString()}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
               </div>
               
-              <div style={{display:'flex',flexWrap:'wrap',gap:12,marginBottom:16}}><div style={{fontSize:14,fontWeight:700,color:'var(--slate)',background:'var(--surface)',padding:'6px 12px',borderRadius:100,border:'1px solid var(--line)'}}>{readingPending===null||spinPending===null?'Value unavailable':'Nominal value USD '+((Number(user.points||0)+readingPending+spinPending)*conversionRateUSD).toFixed(2)}</div></div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:12,marginBottom:16}}><div style={{fontSize:14,fontWeight:700,color:'var(--slate)',background:'var(--surface)',padding:'6px 12px',borderRadius:100,border:'1px solid var(--line)'}}>{readingPending===null?'Value unavailable':'Nominal value USD '+((Number(user.points||0)+readingPending)*conversionRateUSD).toFixed(2)}</div></div>
               <div style={{display:'grid',gap:8,fontSize:14,lineHeight:1.6,color:'var(--slate)',margin:'12px 0'}}>
-                <div>Existing recorded points: <strong style={{color:'var(--ink)'}}>{Number(user.points||0).toLocaleString()} PTS</strong></div>
+                <div>Main points balance: <strong style={{color:'var(--ink)'}}>{Number(user.points||0).toLocaleString()} PTS</strong></div>
                 <div>Blog rewards pending funding: <strong style={{color:'var(--ink)'}}>{readingPending===null?'Unavailable':readingPending.toLocaleString()+' PTS'}</strong></div>
-                <div>Daily spin rewards pending funding: <strong style={{color:'var(--ink)'}}>{spinPending===null?'Unavailable':spinPending.toLocaleString()+' PTS'}</strong></div><p>Eligible reading completions and daily spins add PTS to this recorded total. Pending blog and spin rewards are not yet funded or withdrawable. Partner rewards are shown below. This total is not an available cash balance.</p>
+                <div>Daily spin credits (included in main balance): <strong style={{color:'var(--ink)'}}>{spinPending===null?'Unavailable':spinPending.toLocaleString()+' PTS'}</strong></div><p>Daily spin rewards are credited directly to the main points balance, and reading rewards are included in the recorded total pending funding. Partner rewards are shown below. Withdrawals remain paused; this is not an available cash balance.</p>
               </div>
             </div>
 

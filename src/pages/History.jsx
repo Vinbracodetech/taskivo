@@ -36,7 +36,7 @@ export default function History({ session, navigate }) {
           const [compRes, blogRes, spinRes, bonusRes] = await Promise.allSettled([
             supabase.from('completions').select(`id, created_at, platform, status, tasks ( title, reward_points )`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
             supabase.from('blog_reads').select(`id, created_at, post_slug`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
-            supabase.from('daily_spins').select(`id, created_at, reward_points`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
+            supabase.from('daily_spin_rewards').select('id,created_at:claimed_at,reward_points:points').eq('user_id', user.id).eq('credited_to_main',true).order('claimed_at', { ascending: false }).limit(50),
             
             // 🔥 FIXED: Pulling directly from the telegram_claims table which is guaranteed to exist
             supabase.from('telegram_claims').select(`id, created_at`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1)
@@ -92,7 +92,7 @@ export default function History({ session, navigate }) {
               id: d.id,
               created_at: d.created_at,
               _recordType: 'daily_spin',
-              _title: 'Daily Wheel Spin Bonus',
+              _title: 'Daily Spin · Main Balance Credit',
               _pts: d.reward_points || d.points || d.amount || 0, 
               _icon: '🎡'
             })));
