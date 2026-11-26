@@ -1140,7 +1140,7 @@ export function AdminNotifications({ showToast }) {
     <div style={S.pageWrapper}>
       <div style={S.page}>
         <h1 style={S.header}>Communications Hub</h1>
-        <p style={S.subHeader}>Send in-app messages to everyone, a user group or an individual. Unread messages appear on sign-in and in the notification bell.</p>
+        <p style={S.subHeader}>Send in-app messages to existing accounts, a user group or an individual. Unread messages appear on sign-in and in the notification bell.</p>
 
         <div style={{ ...S.glassCard, maxWidth: 600 }}>
           <form onSubmit={handleSendPush} style={{ display: 'grid', gap: 16 }}>
@@ -1204,7 +1204,7 @@ export function AdminNotifications({ showToast }) {
           <div style={{ marginTop: 32, padding: 16, background: 'rgba(168, 255, 62, 0.05)', borderRadius: 12, border: '1px solid rgba(168, 255, 62, 0.2)' }}>
             <strong style={{ display: 'block', fontSize: 11, color: '#a8ff3e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>In-App Delivery Active</strong>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 1.5, margin: 0 }}>
-              Messages appear in the recipient’s inbox on their next signed-in visit, or on the next refresh while they are online. The notification bell shows unread messages across devices. Device-level push notifications are not enabled.
+              Messages are visible only to eligible accounts created before or at the time of sending. Newly created accounts do not receive earlier announcements. Existing recipients see messages on their next signed-in visit or refresh. The notification bell shows unread messages across devices. Device-level push notifications are not enabled.
             </p>
           </div>
         </div>
