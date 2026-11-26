@@ -169,6 +169,12 @@ export default function Dashboard({ user, navigate, showToast, inboxCount, walle
           <div style={{...S.premiumCard,border:'1px solid var(--lime)',marginBottom:28,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:20,padding:'clamp(20px,4vw,32px)'}}><div style={{flex:'1 1 230px'}}><span style={{...S.label,color:'var(--lime)',marginBottom:8}}>TASK NETWORK</span><h2 style={{fontSize:24,margin:'0 0 8px'}}>Offerwalls &amp; Internal Intel</h2><p style={{color:'var(--slate)',lineHeight:1.6,fontSize:14,margin:0}}>Explore partner surveys, two-minute blog tasks and official assignments.</p></div><div style={{display:'flex',gap:10,flexWrap:'wrap'}}><button style={S.btnPrimary} onClick={()=>navigate('tasks')}>Explore Tasks</button><button style={S.btnSecondary} onClick={()=>navigate('offerwalls')}>Offerwalls</button></div></div>
         </div>
 
+        <section aria-label="Referral program preview" style={{...S.premiumCard,padding:'14px 16px',borderRadius:16,marginBottom:24,display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',border:'1px solid var(--gold)'}}>
+          <span aria-hidden="true" style={{width:40,height:40,display:'grid',placeItems:'center',borderRadius:11,background:'rgba(212,175,55,.10)',color:'var(--gold)',flexShrink:0}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v2"/></svg></span>
+          <div style={{flex:'1 1 130px',minWidth:0}}><h2 style={{fontSize:16,fontWeight:800,margin:'0 0 4px',color:'var(--ink)'}}>Invite &amp; Earn</h2><p style={{fontSize:12,lineHeight:1.5,margin:0,color:'var(--slate)'}}>Invite friends and earn rewards when available.</p></div>
+          <span style={{fontSize:10,fontWeight:800,letterSpacing:'.3px',textTransform:'uppercase',color:'var(--gold)',background:'rgba(212,175,55,.10)',border:'1px solid rgba(212,175,55,.25)',borderRadius:100,padding:'6px 10px',whiteSpace:'nowrap'}}>Coming Soon</span>
+        </section>
+
         {/* PROFILE EDIT MODAL */}
         {showEditModal && (
           <div style={S.modalOverlay}>
