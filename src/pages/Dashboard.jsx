@@ -195,7 +195,7 @@ export default function Dashboard({ user, navigate, showToast, inboxCount }) {
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
             </div>
             
-            <p style={{fontSize:13,color:'var(--slate)',lineHeight:1.6,marginBottom:16}}>Includes {readingPending===null?'an unavailable amount of':readingPending.toLocaleString()+' PTS in'} blog rewards pending funding. Your main balance includes {loginCredits===null?'daily login rewards':loginCredits.toLocaleString()+' PTS from daily login rewards'}. Withdrawals remain paused.</p>
+            <p style={{fontSize:13,color:'var(--slate)',lineHeight:1.6,marginBottom:16}}>Includes {readingPending===null?'an unavailable amount of':readingPending.toLocaleString()+' PTS in'} reading rewards. Your main balance includes {loginCredits===null?'daily login rewards':loginCredits.toLocaleString()+' PTS from daily login rewards'}. Cash withdrawals are currently unavailable.</p>
             <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
               <button onClick={() => navigate('wallet')} style={{ ...S.btnPrimary, flex: 1 }}>View wallet</button>
               <button onClick={() => navigate('history')} style={{ ...S.btnSecondary, flex: 1 }}>Ledger</button>

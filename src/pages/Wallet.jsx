@@ -85,7 +85,7 @@ export default function Wallet({ user, navigate, showToast }) {
 
   async function handleWithdrawal(e) {
     e.preventDefault();
-    if (showToast) showToast('Withdrawals are temporarily paused during security and funding checks.', 'error');
+    if (showToast) showToast('Cash withdrawals are currently unavailable.', 'error');
   }
 
   if (loading) {
@@ -161,8 +161,8 @@ export default function Wallet({ user, navigate, showToast }) {
               <div style={{display:'flex',flexWrap:'wrap',gap:12,marginBottom:16}}><div style={{fontSize:14,fontWeight:700,color:'var(--slate)',background:'var(--surface)',padding:'6px 12px',borderRadius:100,border:'1px solid var(--line)'}}>{readingPending===null?'Value unavailable':'Nominal value USD '+((Number(user.points||0)+readingPending)*conversionRateUSD).toFixed(2)}</div></div>
               <div style={{display:'grid',gap:8,fontSize:14,lineHeight:1.6,color:'var(--slate)',margin:'12px 0'}}>
                 <div>Main points balance: <strong style={{color:'var(--ink)'}}>{Number(user.points||0).toLocaleString()} PTS</strong></div>
-                <div>Blog rewards pending funding: <strong style={{color:'var(--ink)'}}>{readingPending===null?'Unavailable':readingPending.toLocaleString()+' PTS'}</strong></div>
-                <div>Daily login streak credits (included in main balance): <strong style={{color:'var(--ink)'}}>{loginCredits===null?'Unavailable':loginCredits.toLocaleString()+' PTS'}</strong></div><p>Daily login rewards and historical spin credits are credited directly to the main points balance, and reading rewards are included in the recorded total pending funding. Partner rewards are shown below. Withdrawals remain paused; this is not an available cash balance.</p>
+                <div>Reading rewards: <strong style={{color:'var(--ink)'}}>{readingPending===null?'Unavailable':readingPending.toLocaleString()+' PTS'}</strong></div>
+                <div>Daily login streak credits (included in main balance): <strong style={{color:'var(--ink)'}}>{loginCredits===null?'Unavailable':loginCredits.toLocaleString()+' PTS'}</strong></div><p>Your total includes login, historical spin and reading points. Reading rewards are tracked separately and are not currently redeemable. Partner rewards are shown below. Cash withdrawals are currently unavailable.</p>
               </div>
             </div>
 
@@ -219,7 +219,7 @@ export default function Wallet({ user, navigate, showToast }) {
               </button>
 
               <div style={{ fontSize: 12, color: 'var(--slate)', textAlign: 'center', marginTop: 14, fontWeight: 500 }}>
-                Withdrawals are paused while balances and funding are verified. Existing balances remain recorded.
+                Cash withdrawals are currently unavailable. Your points remain in your account.
               </div>
               
             </form>
@@ -229,7 +229,7 @@ export default function Wallet({ user, navigate, showToast }) {
         <div style={{...S.glassCard, marginBottom:32}}>
           <span style={S.label}>Pending survey &amp; offer rewards</span>
           <div style={{fontSize:32,fontWeight:800,color:'var(--ink)',margin:'10px 0'}}>{partnerPending === null ? 'Unavailable' : partnerPending.toLocaleString(undefined,{maximumFractionDigits:2}) + ' PTS'}</div>
-          <p style={{color:'var(--slate)',fontSize:14,lineHeight:1.6,margin:0}}>Provider-recorded rewards are separate from your existing wallet. They are not withdrawable until funding is received and reconciled. Reversed offers can reduce this balance.</p>
+          <p style={{color:'var(--slate)',fontSize:14,lineHeight:1.6,margin:0}}>Provider-recorded rewards are separate from your existing wallet. Redemption requires provider settlement and verification. Reversed offers can reduce this balance.</p>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:16,marginTop:24}}>
             <div><span style={S.label}>Settled partner rewards</span><strong style={{color:'var(--ink)',fontSize:24}}>{partnerSettled===null?'Unavailable':partnerSettled.toLocaleString(undefined,{maximumFractionDigits:2})+' PTS'}</strong></div>
             <div><span style={S.label}>Funded, unreserved points</span><strong style={{color:'var(--ink)',fontSize:24}}>{partnerAvailable===null?'Unavailable':partnerAvailable.toLocaleString()+' PTS'}</strong></div>

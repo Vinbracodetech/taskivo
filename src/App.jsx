@@ -104,7 +104,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme, onInboxCount 
           </div>
         ) : user.role === 'earner' ? (
           <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease' }}>
-            {readingPending===null?'—':(Number(user.points||0)+readingPending).toLocaleString()} PTS recorded
+            {readingPending===null?'—':(Number(user.points||0)+readingPending).toLocaleString()} PTS
           </div>
         ) : (
           <div 
