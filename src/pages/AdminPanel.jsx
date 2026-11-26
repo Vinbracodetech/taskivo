@@ -60,10 +60,6 @@ export function AdminOverview({ navigate, showToast }) {
   const [stats, setStats] = useState({ users: 0, tasks: 0, pendingWithdrawals: 0, completions: 0 });
   const [loading, setLoading] = useState(true);
   
-  const [tickets, setTickets] = useState([]);
-  const [resolvingId, setResolvingId] = useState(null);
-  const [resolutionNotes, setResolutionNotes] = useState({});
-
   useEffect(() => {
     async function fetchSystemStats() {
       try {
@@ -80,13 +76,6 @@ export function AdminOverview({ navigate, showToast }) {
           completions: compReq.count || 0
         });
         
-        const { data: ticketData } = await supabase
-          .from('support_tickets')
-          .select('*, profiles(email, full_name, role)')
-          .order('created_at', { ascending: false });
-        
-        if (ticketData) setTickets(ticketData);
-
       } catch (err) {
         if (showToast) showToast('Failed to load system telemetry', 'error');
       } finally {
@@ -95,30 +84,6 @@ export function AdminOverview({ navigate, showToast }) {
     }
     fetchSystemStats();
   }, [showToast]);
-
-  async function resolveTicket(ticketId) {
-    const note = resolutionNotes[ticketId];
-    if (!note || !note.trim()) {
-      if (showToast) showToast('Please enter a resolution note.', 'error');
-      return;
-    }
-    
-    setResolvingId(ticketId);
-    try {
-      const { error } = await supabase.from('support_tickets')
-        .update({ status: 'resolved', resolution_note: note, resolved_at: new Date().toISOString() })
-        .eq('id', ticketId);
-      
-      if (error) throw error;
-      
-      if (showToast) showToast('Ticket resolved and user notified.', 'success');
-      setTickets(tickets.map(t => t.id === ticketId ? { ...t, status: 'resolved', resolution_note: note } : t));
-    } catch (err) {
-      if (showToast) showToast('Failed to resolve ticket.', 'error');
-    } finally {
-      setResolvingId(null);
-    }
-  }
 
   if (loading) return (
     <div style={{ ...S.pageWrapper, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -170,65 +135,7 @@ export function AdminOverview({ navigate, showToast }) {
           </div>
         </div>
 
-        {/* 🔥 ADMIN SUPPORT DESK 🔥 */}
-        <h2 style={{ ...S.header, fontSize: 20, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-          Support Desk 
-          {tickets.filter(t => t.status === 'open').length > 0 && (
-             <span style={{ background: '#ef4444', color: '#fff', fontSize: 11, padding: '2px 8px', borderRadius: 100 }}>{tickets.filter(t => t.status === 'open').length} Open</span>
-          )}
-        </h2>
-        
-        {tickets.length === 0 ? (
-          <div style={{ ...S.glassCard, textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>No support tickets exist in the system.</div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {tickets.map(ticket => (
-              <div key={ticket.id} style={{ ...S.glassCard, padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <span style={{ background: ticket.profiles?.role === 'creator' ? 'rgba(212,175,55,0.1)' : 'rgba(168,255,62,0.1)', color: ticket.profiles?.role === 'creator' ? '#D4AF37' : '#a8ff3e', fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase' }}>
-                        {ticket.profiles?.role || 'User'}
-                      </span>
-                      <span style={{ color: '#ffffff', fontSize: 14, fontWeight: 700 }}>{ticket.profiles?.full_name || ticket.profiles?.email}</span>
-                    </div>
-                    <div style={{ color: '#D4AF37', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>{ticket.category}</div>
-                  </div>
-                  <div style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: ticket.status === 'resolved' ? 'rgba(168,255,62,0.1)' : 'rgba(239,160,68,0.1)', color: ticket.status === 'resolved' ? '#a8ff3e' : '#efa044', border: `1px solid ${ticket.status === 'resolved' ? 'rgba(168,255,62,0.3)' : 'rgba(239,160,68,0.3)'}` }}>
-                    {ticket.status}
-                  </div>
-                </div>
-                
-                <div style={{ background: 'rgba(0,0,0,0.3)', padding: 16, borderRadius: 8, color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 1.6, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  {ticket.message}
-                </div>
-
-                {ticket.status === 'open' ? (
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <input 
-                      type="text" 
-                      placeholder="Type your resolution note here..." 
-                      style={{ ...S.input, flex: 1, marginBottom: 0 }} 
-                      value={resolutionNotes[ticket.id] || ''}
-                      onChange={(e) => setResolutionNotes({...resolutionNotes, [ticket.id]: e.target.value})}
-                    />
-                    <button 
-                      onClick={() => resolveTicket(ticket.id)} 
-                      disabled={resolvingId === ticket.id}
-                      style={{ ...S.btnSuccess, padding: '12px 24px', opacity: resolvingId === ticket.id ? 0.5 : 1 }}>
-                      Resolve & Notify
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: 16, borderRadius: 8, borderLeft: '3px solid #D4AF37' }}>
-                    <strong style={{ display: 'block', fontSize: 11, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>Admin Resolution:</strong>
-                    <span style={{ color: '#ffffff', fontSize: 13 }}>{ticket.resolution_note}</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <button onClick={()=>navigate('admin-support')} style={{...S.btnSuccess,padding:'16px 24px'}}>Open Support Desk →</button>
       </div>
     </div>
   );

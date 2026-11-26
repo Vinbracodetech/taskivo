@@ -25,6 +25,7 @@ import { About, Terms, Privacy, Disclaimer, DeleteAccount } from "./pages/Static
 import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
 import { EarningGuide, earningGuides } from "./pages/EarningGuides.jsx";
 import YoutubeMonetization from "./pages/YoutubeMonetization.jsx";
+const Support=lazy(()=>import("./pages/Support.jsx"));
 const AdminOverview=lazy(()=>import("./pages/AdminPanel.jsx").then(m=>({default:m.AdminOverview})));
 const AdminUsersComp=lazy(()=>import("./pages/AdminPanel.jsx").then(m=>({default:m.AdminUsers})));
 const AdminWithdrawalsComp=lazy(()=>import("./pages/AdminPanel.jsx").then(m=>({default:m.AdminWithdrawals})));
@@ -235,59 +236,8 @@ export default function App() {
     return()=>{active=false;window.removeEventListener('focus',checkLogin);document.removeEventListener('visibilitychange',checkLogin);};
   },[user?.id,user?.role,view]);
 
-  // --- 🔥 ROOT-LEVEL REFERRAL AIR-TRAFFIC CONTROLLER 🔥 ---
-  useEffect(function() {
-    if (typeof window !== "undefined") {
-      var refId = null;
-
-      // 1. Try checking standard query parameters (e.g. /?ref=123)
-      var standardParams = new URLSearchParams(window.location.search);
-      if (standardParams.has("ref")) {
-        refId = standardParams.get("ref");
-      } 
-      // 2. Fallback: Check inside the hash route (e.g. /#auth?ref=123)
-      else if (window.location.hash.includes("ref=")) {
-        var hashQuery = window.location.hash.split('?')[1];
-        if (hashQuery) {
-          var hashParams = new URLSearchParams(hashQuery);
-          refId = hashParams.get("ref");
-        }
-      }
-
-      // If a referral code exists, lock it in memory and force registration mode
-      if (refId) {
-        localStorage.setItem("taskivo_ref", refId);
-        setAuthMode("register"); 
-        navigate("auth"); 
-      }
-    }
-  }, []);
-
-  // --- 🔥 DEDICATED REFERRAL EXECUTION ENGINE 🔥 ---
-  // Guaranteed to fire on successful login, regardless of Supabase background triggers
-  useEffect(() => {
-    if (user) {
-      const refId = localStorage.getItem("taskivo_ref");
-      if (refId) {
-        supabase.rpc('apply_referral_bonus', {
-          new_user_id: user.id,
-          referrer_id: refId
-        }).then(({ error }) => {
-          // Always destroy the memory token immediately so it doesn't double-fire
-          localStorage.removeItem("taskivo_ref");
-          
-          if (!error) {
-            // Force the UI to refresh and trigger the global celebration popup
-            window.dispatchEvent(new CustomEvent("taskivo_points_updated", { 
-              detail: { points: 10, emoji: "🤝" } 
-            }));
-          } else {
-            console.error("Referral Engine Blocked:", error);
-          }
-        });
-      }
-    }
-  }, [user]);
+  // Referral bonuses and attribution are disabled until explicitly relaunched.
+  useEffect(()=>{localStorage.removeItem('taskivo_ref');},[]);
 
   // Listen for back/forward browser buttons
   useEffect(function() {
@@ -395,7 +345,7 @@ export default function App() {
   function routeByRole(role) {
     const next = sessionStorage.getItem("taskivo_return_to");
     sessionStorage.removeItem("taskivo_return_to");
-    if (["offerwalls","wallet","tasks","history"].includes(next) && ["admin","earner"].includes(role)) {navigate(next);return;}
+    if ((["support","profile"].includes(next)||(["offerwalls","wallet","tasks","history"].includes(next) && ["admin","earner"].includes(role))|| (next==="admin-support"&&role==="admin"))) {navigate(next);return;}
     localStorage.removeItem("taskivo_requested_service");
     localStorage.removeItem("taskivo_requested_package");
     if (role === "admin") navigate("admin-dashboard");
@@ -412,7 +362,7 @@ export default function App() {
 
   useEffect(() => {
     if (!loading && !user && !publicView && !["auth","create-task"].includes(view)) {
-      if (["offerwalls","wallet","tasks","history"].includes(view)) sessionStorage.setItem("taskivo_return_to",view);
+      if (["offerwalls","wallet","tasks","history","support","profile","admin-support"].includes(view)) sessionStorage.setItem("taskivo_return_to",view);
       setAuthMode("login");
       navigate("auth");
     }
@@ -466,6 +416,7 @@ export default function App() {
               <button onClick={() => navigate('admin-users')} style={{ background: 'transparent', border: 'none', color: view === 'admin-users' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Identity</button>
               <button onClick={() => navigate('admin-tasks')} style={{ background: 'transparent', border: 'none', color: view === 'admin-tasks' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Campaigns</button>
               <button onClick={() => navigate('admin-withdrawals')} style={{ background: 'transparent', border: 'none', color: view === 'admin-withdrawals' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Treasury</button>
+              <button onClick={()=>navigate('admin-support')} style={{background:'transparent',border:'none',color:view==='admin-support'?'var(--lime)':'var(--slate)',fontSize:12,fontWeight:800,cursor:'pointer',textTransform:'uppercase',letterSpacing:1}}>Support</button>
               <button onClick={() => navigate('admin-notifications')} style={{ background: 'transparent', border: 'none', color: view === 'admin-notifications' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Alerts</button>
               <button onClick={() => navigate('admin-blog')} style={{ background: 'transparent', border: 'none', color: view === 'admin-blog' ? 'var(--lime)' : 'var(--slate)', fontSize: 12, fontWeight: 800, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '1px' }}>Blog CMS</button>
             </div>
@@ -507,11 +458,15 @@ export default function App() {
             {view === "admin-tasks" && user?.role === "admin" && <OfficialTaskAdmin />}
             {view === "admin-withdrawals" && user?.role === "admin" && <AdminWithdrawalsComp showToast={showToast} />}
             {view === "admin-notifications" && user?.role === "admin" && <AdminNotificationsComp showToast={showToast} />}
+            {view === "admin-support" && user?.role === "admin" && <Support user={user} adminMode navigate={navigate}/>}
+            {view === "support" && user && <Support user={user} navigate={navigate}/>}
+            {view === "profile" && user?.role === "earner" && <Dashboard key="profile" user={user} navigate={navigate} showToast={showToast} inboxCount={inboxCount} walletSummary={walletSummary} initialEdit/>}
+            {view === "profile" && user && user.role !== "earner" && <main style={{maxWidth:800,margin:"auto",padding:"32px 5%"}}><h1>My Profile</h1><p>{user.full_name||"Account"}</p><p>{user.email}</p><button onClick={()=>navigate("support")} style={{padding:12,borderRadius:8}}>Help &amp; Support</button></main>}
             {view === "admin-blog" && user?.role === "admin" && <AdminBlogComp showToast={showToast} />}
           </Suspense></div>
         </div>
 
-        {user && <FloatingNav user={user} navigate={navigate} logout={logout} toggleTheme={toggleTheme} theme={theme} />}
+        {user && <FloatingNav user={user} navigate={navigate} view={view} inboxCount={inboxCount} logout={logout} toggleTheme={toggleTheme} theme={theme} />}
       </div>
       
       {/* 🔥 CUSTOM PWA INSTALL BANNER 🔥 */}

@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabase.js";
 
 export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [mode, setMode] = useState(function() {
-    if (typeof window !== "undefined" && (localStorage.getItem("taskivo_ref") || localStorage.getItem("taskivo_grant"))) {
+    if (typeof window !== "undefined" && localStorage.getItem("taskivo_grant")) {
       return "register";
     }
     return authMode || "login";
@@ -20,32 +20,7 @@ export default function Auth({ authMode, setAuthMode, navigate, loadProfile }) {
   var [error, setError] = useState("");
   var [mounted, setMounted] = useState(false);
 
-  // --- FIXED HYBRID URL SNIFFER ---
-  useEffect(function () {
-    if (typeof window !== "undefined") {
-      var refCode = null;
-      
-      // 1. Try checking standard query parameters
-      var params = new URLSearchParams(window.location.search);
-      refCode = params.get('ref');
-      
-      // 2. Fallback: Check inside the hash route (for #auth?ref=...)
-      if (!refCode && window.location.hash.includes('?')) {
-        var hashQuery = window.location.hash.split('?')[1];
-        var hashParams = new URLSearchParams(hashQuery);
-        refCode = hashParams.get('ref');
-      }
-
-      // If a code is found, lock it in and force registration mode
-      if (refCode) {
-        localStorage.setItem("taskivo_ref", refCode);
-        setMode("register"); 
-      }
-    }
-
-    var t = setTimeout(function () { setMounted(true); }, 50);
-    return function () { clearTimeout(t); };
-  }, []);
+  useEffect(()=>{const t=setTimeout(()=>setMounted(true),50);return()=>clearTimeout(t);},[]);
 
   // Session loading is handled centrally by App, outside the auth event callback.
 

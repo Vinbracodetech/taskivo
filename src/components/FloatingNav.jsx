@@ -7,21 +7,10 @@ const C = {
   lime: '#A8FF3E', limeText: 'var(--lime)', limeDim: 'var(--lime-dim)', red: '#ef4444',
 };
 
-export default function FloatingNav({ user, navigate, logout, toggleTheme, theme }) {
+export default function FloatingNav({ user, navigate, view, inboxCount, logout, toggleTheme, theme }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [currentHash, setCurrentHash] = useState(window.location.hash.replace('#', ''));
-
-  useEffect(() => {
-    const handleHashChange = () => {
-      setCurrentHash(window.location.hash.replace('#', ''));
-    };
-    
-    window.addEventListener('hashchange', handleHashChange);
-    
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
+  useEffect(()=>{setMenuOpen(false);},[view]);
+  useEffect(()=>{if(!menuOpen)return;const key=e=>{if(e.key==='Escape')setMenuOpen(false);};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);},[menuOpen]);
 
   if (!user) return null;
 
@@ -31,7 +20,6 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
   function handleNavigate(route) {
     closeMenu();
     navigate(route);
-    setCurrentHash(route);
   }
 
   function handleLogout() {
@@ -72,17 +60,17 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
   const IconTrash = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
   const IconLogout = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
 
-  function PillButton({ icon, onClick, isActive }) {
+  function PillButton({ icon, label, onClick, isActive }) {
     return (
       <button 
-        onClick={onClick}
+        onClick={onClick} aria-label={label} aria-current={isActive?'page':undefined}
         style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
           background: isActive ? C.card : 'transparent', border: isActive ? `1px solid ${C.line}` : 'none', 
-          borderRadius: 12, padding: '8px 16px', color: isActive ? C.limeText : C.textMuted, cursor: 'pointer', transition: 'all 0.2s ease'
+          borderRadius: 12, padding: '7px 5px', minWidth:0, flex:1, color: isActive ? C.limeText : C.textMuted, cursor: 'pointer', transition: 'all 0.2s ease'
         }}
       >
-        {icon}
+        {icon}<span style={{fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>{label}</span>
       </button>
     );
   }
@@ -105,44 +93,46 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
 
   return (
     <>
-      <div style={{ position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4, padding: '8px', background: C.glass, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.line}`, borderRadius: 100, zIndex: 9990, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+      <div style={{ position: 'fixed', bottom: 'max(12px,env(safe-area-inset-bottom))', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 3, padding: '6px', width:'calc(100% - 24px)',maxWidth:500,boxSizing:'border-box', background: C.surface, backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', border: `1px solid ${C.line}`, borderRadius: 100, zIndex: 9990, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
         
         <PillButton 
-          icon={IconHome} 
+          icon={IconHome} label="Home"
           onClick={() => handleNavigate(homeRoute)} 
-          isActive={currentHash === homeRoute || currentHash === ''} 
+          isActive={view === homeRoute || view === ''} 
         />
         
         {user.role === 'earner' && (
           <>
-            <PillButton icon={IconTasks} onClick={() => handleNavigate('tasks')} isActive={currentHash === 'tasks'} />
-            <PillButton icon={IconWallet} onClick={() => handleNavigate('wallet')} isActive={currentHash === 'wallet'} />
+            <PillButton icon={IconTasks} label="Tasks" onClick={() => handleNavigate('tasks')} isActive={view === 'tasks'||view==='offerwalls'} />
+            <PillButton icon={IconWallet} label="Wallet" onClick={() => handleNavigate('wallet')} isActive={view === 'wallet'} />
+            <PillButton icon={IconAdminList} label="Activity" onClick={()=>handleNavigate('history')} isActive={view==='history'}/>
           </>
         )}
         
         {user.role === 'creator' && (
           <>
-            <PillButton icon={<span style={{fontSize: 16}}>🚀</span>} onClick={() => handleNavigate('create-task')} isActive={currentHash === 'create-task'} />
-            <PillButton icon={IconAnalytics} onClick={() => handleNavigate('creator-analytics')} isActive={currentHash === 'creator-analytics'} />
+            <PillButton icon={<span style={{fontSize: 16}}>🚀</span>} label="Services" onClick={() => handleNavigate('create-task')} isActive={view === 'create-task'} />
+            <PillButton icon={IconAnalytics} label="Status" onClick={() => handleNavigate('creator-analytics')} isActive={view === 'creator-analytics'} />
           </>
         )}
         
         {user.role === 'admin' && (
           <>
-            <PillButton icon={IconUsers} onClick={() => handleNavigate('admin-users')} isActive={currentHash === 'admin-users'} />
-            <PillButton icon={IconAdminList} onClick={() => handleNavigate('admin-tasks')} isActive={currentHash === 'admin-tasks'} />
+            <PillButton icon={IconUsers} label="Users" onClick={() => handleNavigate('admin-users')} isActive={view === 'admin-users'} />
+            <PillButton icon={IconAdminList} label="Tasks" onClick={() => handleNavigate('admin-tasks')} isActive={view === 'admin-tasks'} />
+            <PillButton icon={IconProfile} label="Support" onClick={()=>handleNavigate('admin-support')} isActive={view==='admin-support'}/>
           </>
         )}
         
         <div style={{ width: 1, height: 24, background: C.line, margin: '0 4px' }} />
         
-        <PillButton icon={IconProfile} onClick={openMenu} isActive={menuOpen} />
+        <PillButton icon={IconProfile} label="Profile" onClick={openMenu} isActive={menuOpen||view==="profile"||view==="support"} />
       </div>
 
-      <div onClick={closeMenu} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9995, opacity: menuOpen ? 1 : 0, pointerEvents: menuOpen ? 'auto' : 'none', transition: 'opacity 0.3s ease' }} />
+      {menuOpen&&<><div onClick={closeMenu} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 9995, opacity: menuOpen ? 1 : 0, pointerEvents: menuOpen ? 'auto' : 'none', transition: 'opacity 0.3s ease' }} />
 
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999, background: C.surface, borderTop: `1px solid ${C.line}`, borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: '32px 5% 48px', margin: '0 auto', maxWidth: 800, transform: menuOpen ? 'translateY(0)' : 'translateY(100%)', transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 -20px 40px rgba(0,0,0,0.2)', fontFamily: "'Inter', sans-serif" }}>
-        <div style={{ width: 48, height: 4, background: C.line, borderRadius: 100, margin: '0 auto 32px' }} />
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999, background: C.surface, borderTop: `1px solid ${C.line}`, borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: '32px 5% 48px', margin: '0 auto', maxWidth: 800, maxHeight:'85dvh',overflowY:'auto',boxSizing:'border-box', transform: menuOpen ? 'translateY(0)' : 'translateY(100%)', transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)', boxShadow: '0 -20px 40px rgba(0,0,0,0.2)', fontFamily: "'Inter', sans-serif" }}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><strong>Account</strong><button aria-label="Close account menu" onClick={closeMenu} style={{background:"transparent",border:"1px solid var(--line)",color:"var(--ink)",borderRadius:8,padding:"6px 12px",fontSize:18}}>×</button></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
           <div style={{ width: 48, height: 48, borderRadius: '50%', background: C.limeDim, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.limeText, fontSize: 18, fontWeight: 800, border: `1px solid ${C.line}` }}>{user.email ? user.email.charAt(0).toUpperCase() : 'U'}</div>
           <div>
@@ -152,7 +142,12 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <MenuItem icon={IconProfile} label="My Profile" onClick={()=>handleNavigate("profile")}/>
+          <MenuItem icon={IconAdminList} label="Activity Ledger" onClick={()=>handleNavigate("history")}/>
+          <MenuItem icon={<span aria-hidden="true">🔔</span>} label={"Inbox & Alerts"+(inboxCount>0?" ("+inboxCount+")":"")} onClick={()=>{closeMenu();window.dispatchEvent(new Event("taskivo_open_inbox"));}}/>
+          <MenuItem icon={<span aria-hidden="true">🎧</span>} label={user.role==="admin"?"Support Desk":"Help & Support"} onClick={()=>handleNavigate(user.role==="admin"?"admin-support":"support")}/>
           <MenuItem icon={IconGlobe} label="Taskivo Homepage" onClick={() => handleNavigate('landing')} />
+          <MenuItem icon={IconGlobe} label="Blog" onClick={()=>handleNavigate("blog")}/>
           <MenuItem icon={IconHome} label="Dashboard" onClick={() => handleNavigate(homeRoute)} />
           
           {user.role === 'earner' && (<><MenuItem icon={IconTasks} label="Task Network" onClick={() => handleNavigate('tasks')} /><MenuItem icon={IconWallet} label="Wallet & Withdrawals" onClick={() => handleNavigate('wallet')} /></>)}
@@ -167,7 +162,7 @@ export default function FloatingNav({ user, navigate, logout, toggleTheme, theme
           <MenuItem icon={IconTrash} label="Delete Account" onClick={requestAccountDeletion} isDestructive={true} />
           <MenuItem icon={IconLogout} label="Secure Logout" onClick={handleLogout} isDestructive={true} />
         </div>
-      </div>
+      </div></>}
     </>
   );
 }

@@ -4,16 +4,15 @@ import DailyLoginStreak from '../components/DailySpin';
 import TelegramBonus from '../components/TelegramBonus';
 import { enforceDeviceFingerprint } from '../lib/security';
 
-export default function Dashboard({ user, navigate, showToast, inboxCount, walletSummary }) {
+export default function Dashboard({ user, navigate, showToast, inboxCount, walletSummary, initialEdit=false }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ completions: 0 });
-  const [referralCopied, setReferralCopied] = useState(false);
   
   // 🔥 INSTANT UI UPDATE STATE 🔥
   const [localPoints, setLocalPoints] = useState(user?.points || 0);
 
   // Profile States
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(initialEdit);
   const [editForm, setEditForm] = useState({ 
     full_name: user.full_name || '', 
     payout_bank_name: user.payout_bank_name || '',
@@ -24,59 +23,12 @@ export default function Dashboard({ user, navigate, showToast, inboxCount, walle
   const [savingProfile, setSavingProfile] = useState(false);
 
   // Inbox read state is managed by the global notification bell.
-  // Support Ticket States
-  const [tickets, setTickets] = useState([]);
-  const [showTicketModal, setShowTicketModal] = useState(false);
-  const [submittingTicket, setSubmittingTicket] = useState(false);
-  const [ticketForm, setTicketForm] = useState({ category: 'Missing Points', message: '' });
-
   useEffect(() => {
     if (!user) return;
-    fetchTickets();
     enforceDeviceFingerprint(user.id);
     setLoading(false);
   }, [user?.id]);
   useEffect(()=>{setLocalPoints(user?.points||0);},[user?.points]);
-
-  async function fetchTickets() {
-    try {
-      const { data, error } = await supabase
-        .from('support_tickets')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      if (!error && data) setTickets(data);
-    } catch (err) {
-      console.error("Error fetching tickets:", err);
-    }
-  }
-
-  async function handleSubmitTicket() {
-    if (!ticketForm.message.trim()) {
-      if (showToast) showToast('Please enter a detailed message.', 'error');
-      return;
-    }
-    
-    setSubmittingTicket(true);
-    try {
-      const { error } = await supabase.from('support_tickets').insert({
-        user_id: user.id,
-        category: ticketForm.category,
-        message: ticketForm.message
-      });
-
-      if (error) throw error;
-
-      if (showToast) showToast('Support ticket submitted successfully.', 'success');
-      setShowTicketModal(false);
-      setTicketForm({ category: 'Missing Points', message: '' });
-      fetchTickets();
-    } catch (err) {
-      if (showToast) showToast(`Submission failed: ${err.message}`, 'error');
-    } finally {
-      setSubmittingTicket(false);
-    }
-  }
 
   async function handleSaveProfile() {
     setSavingProfile(true);
@@ -182,6 +134,7 @@ export default function Dashboard({ user, navigate, showToast, inboxCount, walle
 
 
         <button type="button" onClick={()=>window.dispatchEvent(new Event('taskivo_open_inbox'))} style={{...S.glassCard,display:'flex',width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,padding:'18px 20px',marginBottom:24,textAlign:'left',cursor:'pointer',border:'1px solid '+(unreadCount>0?'var(--lime)':'var(--line)'),color:'var(--ink)'}}><span style={{display:'flex',alignItems:'center',gap:12}}><span aria-hidden="true" style={{fontSize:24}}>🔔</span><span><strong style={{display:'block',fontSize:16}}>Inbox &amp; Alerts</strong><span style={{fontSize:12,color:'var(--slate)'}}>Official announcements and direct messages</span></span></span><span style={{color:unreadCount?'var(--lime)':'var(--slate)',fontWeight:800,fontSize:12,whiteSpace:'nowrap'}}>{inboxCount===null?'Open inbox':unreadCount+' unread'} →</span></button>
+        <button type="button" onClick={()=>navigate('support')} style={{...S.glassCard,width:'100%',flexDirection:'row',justifyContent:'space-between',alignItems:'center',padding:'18px 20px',marginBottom:24,textAlign:'left',color:'var(--ink)',cursor:'pointer'}}><span><strong style={{display:'block',fontSize:16}}>🎧 Help &amp; Support</strong><span style={{fontSize:12,color:'var(--slate)'}}>FAQs, tickets and replies</span></span><strong style={{color:'var(--lime)'}}>Open →</strong></button>
         <DailyLoginStreak session={{user}}/>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,320px), 1fr))', gap: 24, marginBottom: 24, position: 'relative', zIndex: 1 }}>
           <div style={S.glassCard}>
@@ -215,84 +168,6 @@ export default function Dashboard({ user, navigate, showToast, inboxCount, walle
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{...S.premiumCard,border:'1px solid var(--lime)',marginBottom:28,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:20,padding:'clamp(20px,4vw,32px)'}}><div style={{flex:'1 1 230px'}}><span style={{...S.label,color:'var(--lime)',marginBottom:8}}>TASK NETWORK</span><h2 style={{fontSize:24,margin:'0 0 8px'}}>Offerwalls &amp; Internal Intel</h2><p style={{color:'var(--slate)',lineHeight:1.6,fontSize:14,margin:0}}>Explore partner surveys, two-minute blog tasks and official assignments.</p></div><div style={{display:'flex',gap:10,flexWrap:'wrap'}}><button style={S.btnPrimary} onClick={()=>navigate('tasks')}>Explore Tasks</button><button style={S.btnSecondary} onClick={()=>navigate('offerwalls')}>Offerwalls</button></div></div>
         </div>
-
-        <div style={{ ...S.premiumCard, marginBottom: 48, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1, opacity: 0.7 }}>
-          <div style={{ flex: '1 1 300px', position: 'relative', zIndex: 2 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--slate)', color: 'var(--slate)', background: 'rgba(255,255,255,0.05)', fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
-              ✦ VIP Network Bonus (Pending)
-            </div>
-            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, color: 'var(--ink)', marginBottom: 12, fontWeight: 800, letterSpacing: '-0.5px' }}>Referral System Coming Soon</h2>
-            <p style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, maxWidth: 500, margin: 0 }}>We are currently optimizing our invite system. The referral network is temporarily paused pending fixes, but will be back online soon!</p>
-          </div>
-          <button disabled style={{ position: 'relative', zIndex: 2, background: 'rgba(255,255,255,0.05)', color: 'var(--slate)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 100, padding: '14px 28px', fontSize: 13, fontWeight: 700, cursor: 'not-allowed', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', backdropFilter: 'blur(5px)' }}>
-            CURRENTLY UNAVAILABLE
-          </button>
-        </div>
-
-        <div style={{ ...S.glassCard, position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-            <div>
-              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, color: 'var(--ink)', margin: '0 0 4px 0', fontWeight: 800, letterSpacing: '-0.5px' }}>Help & Support</h2>
-              <p style={{ color: 'var(--slate)', fontSize: 14, margin: 0 }}>Submit a ticket to the central administration.</p>
-            </div>
-            <button onClick={() => setShowTicketModal(true)} style={S.btnPrimary}>+ New Ticket</button>
-          </div>
-
-          {tickets.length === 0 ? (
-            <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--slate)', fontSize: 14, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-              No open tickets. You are all caught up!
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {tickets.map(ticket => (
-                <div key={ticket.id} style={S.ticketCard}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '1px' }}>{ticket.category}</div>
-                    <div style={{ ...S.badge, ...(ticket.status === 'resolved' ? S.statusResolved : S.statusOpen) }}>{ticket.status}</div>
-                  </div>
-                  <p style={{ color: 'var(--slate)', fontSize: 14, margin: 0, lineHeight: 1.5 }}>{ticket.message}</p>
-                  {ticket.status === 'resolved' && ticket.resolution_note && (
-                    <div style={S.resolutionBox}>
-                      <strong style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>Admin Resolution:</strong>
-                      {ticket.resolution_note}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 16 }}>
-                    Submitted: {new Date(ticket.created_at).toLocaleDateString()}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* SUPPORT TICKET MODAL */}
-        {showTicketModal && (
-          <div style={S.modalOverlay}>
-            <div style={S.modalCard}>
-              <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 24, fontWeight: 800, color: 'var(--ink)', marginBottom: 8, letterSpacing: '-0.5px' }}>Submit Request</h2>
-              <p style={{ color: 'var(--slate)', fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>Our team will review your ticket and reply with a resolution note directly in your dashboard.</p>
-              
-              <label style={S.modalLabel}>Issue Category</label>
-              <select style={S.input} value={ticketForm.category} onChange={e => setTicketForm({...ticketForm, category: e.target.value})}>
-                <option value="Missing Points" style={{ color: '#000' }}>Missing Points</option>
-                <option value="Payout Issue" style={{ color: '#000' }}>Payout / Withdrawal Issue</option>
-                <option value="Bug Report" style={{ color: '#000' }}>Platform Bug Report</option>
-                <option value="General Question" style={{ color: '#000' }}>General Question</option>
-              </select>
-
-              <label style={S.modalLabel}>Detailed Message</label>
-              <textarea style={{ ...S.input, minHeight: 120, resize: 'vertical' }} placeholder="Explain the issue thoroughly so we can assist you quickly..." value={ticketForm.message} onChange={e => setTicketForm({...ticketForm, message: e.target.value})} />
-
-              <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                <button onClick={() => setShowTicketModal(false)} style={{ ...S.btnSecondary, flex: 1 }}>Cancel</button>
-                <button onClick={handleSubmitTicket} disabled={submittingTicket} style={{ ...S.btnPrimary, flex: 1, opacity: submittingTicket ? 0.5 : 1 }}>
-                  {submittingTicket ? 'Submitting...' : 'Send to Admin'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* PROFILE EDIT MODAL */}
         {showEditModal && (
