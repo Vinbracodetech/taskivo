@@ -1,6 +1,6 @@
 import {useState,useEffect,useRef} from 'react';
 import {supabase} from '../lib/supabase';
-const odds=[[1,'75%','70%'],[2,'20%','20%'],[3,'4.5%','7%'],[5,'0.5%','2%'],[10,'—','0.7%'],[25,'—','0.2%'],[50,'—','0.08%'],[100,'—','0.02%']];
+const odds=[[1,'60%','45%'],[2,'25%','25%'],[3,'12%','15%'],[5,'3%','8%'],[10,'—','4%'],[25,'—','2%'],[50,'—','0.8%'],[100,'—','0.2%']];
 export default function DailySpin({session,showToast}){
  const user=session?.user;
  const [state,setState]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[won,setWon]=useState(null),[now,setNow]=useState(Date.now());
