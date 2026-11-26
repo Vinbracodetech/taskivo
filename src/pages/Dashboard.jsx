@@ -1,19 +1,15 @@
-import { useLoginStreakBalance } from '../lib/useSpinBalance.js';
-import { useReadingBalance } from '../lib/useReadingBalance.js';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import DailyLoginStreak from '../components/DailySpin';
 import TelegramBonus from '../components/TelegramBonus';
 import { enforceDeviceFingerprint } from '../lib/security';
 
-export default function Dashboard({ user, navigate, showToast, inboxCount }) {
+export default function Dashboard({ user, navigate, showToast, inboxCount, walletSummary }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ completions: 0 });
   const [referralCopied, setReferralCopied] = useState(false);
   
   // 🔥 INSTANT UI UPDATE STATE 🔥
-  const readingPending=useReadingBalance(user?.id);
-  const loginCredits=useLoginStreakBalance(user?.id);
   const [localPoints, setLocalPoints] = useState(user?.points || 0);
 
   // Profile States
@@ -189,13 +185,13 @@ export default function Dashboard({ user, navigate, showToast, inboxCount }) {
         <DailyLoginStreak session={{user}}/>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,320px), 1fr))', gap: 24, marginBottom: 24, position: 'relative', zIndex: 1 }}>
           <div style={S.glassCard}>
-            <span style={S.label}>Wallet Balance · Recorded PTS</span>
+            <span style={S.label}>Wallet Balance</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
-              <div style={S.valueGlow}>{readingPending===null?"—":(Number(localPoints||0)+readingPending).toLocaleString()}</div>
+              <div style={S.valueGlow}>{walletSummary.total===null?"—":walletSummary.total.toLocaleString()}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
             </div>
             
-            <p style={{fontSize:13,color:'var(--slate)',lineHeight:1.6,marginBottom:16}}>Includes {readingPending===null?'an unavailable amount of':readingPending.toLocaleString()+' PTS in'} reading rewards. Your main balance includes {loginCredits===null?'daily login rewards':loginCredits.toLocaleString()+' PTS from daily login rewards'}. Cash withdrawals are currently unavailable.</p>
+            
             <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
               <button onClick={() => navigate('wallet')} style={{ ...S.btnPrimary, flex: 1 }}>View wallet</button>
               <button onClick={() => navigate('history')} style={{ ...S.btnSecondary, flex: 1 }}>Ledger</button>
@@ -206,20 +202,10 @@ export default function Dashboard({ user, navigate, showToast, inboxCount }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <span style={{ ...S.label, marginBottom: 0 }}>Task Progress</span>
               <div style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--ink)', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 100, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" }}>
-                {readingPending===null?'—':Math.floor(readingPending/3)} ARTICLES READ
+                {walletSummary.readingCount===null?'—':walletSummary.readingCount} ARTICLES READ
               </div>
             </div>
             
-            <div style={{ marginTop: 24, marginBottom: 32 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate)', fontWeight: 600, marginBottom: 12, fontFamily: "'Inter', sans-serif" }}>
-                <span>Blog rewards recorded</span>
-                <span style={{ color: 'var(--ink)' }}>{readingPending===null?'—':readingPending.toLocaleString()} PTS</span>
-              </div>
-              <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.02)' }}>
-                <div style={{ width: '0%', height: '100%', background: 'var(--lime)', borderRadius: 10, transition: 'width 0.5s ease-out' }}></div>
-              </div>
-            </div>
-
             <div style={{ marginTop: 'auto' }}>
               <button onClick={() => navigate('tasks')} style={{ ...S.btnPrimary, width: '100%', display: 'block' }}>Acquire More Tasks</button>
             </div>

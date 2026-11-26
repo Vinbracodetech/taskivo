@@ -6,18 +6,21 @@ export default function History({ session, navigate }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('engagements'); // 'engagements' | 'wallet'
   const [historyData, setHistoryData] = useState([]);
+  const [limit,setLimit]=useState(50);
+  const [more,setMore]=useState(false);
+  const [ledgerError,setLedgerError]=useState('');
 
   const isCreator = user?.role === 'creator';
 
   useEffect(() => {
     if (user?.id) fetchHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, activeTab]);
+  }, [user?.id, activeTab,limit]);
 
   async function fetchHistory() {
     try {
       setLoading(true);
-      setHistoryData([]); 
+      setHistoryData([]); setLedgerError('');setMore(false); 
 
       if (activeTab === 'engagements') {
         if (isCreator) {
@@ -27,23 +30,27 @@ export default function History({ session, navigate }) {
             .select('*')
             .eq('creator_id', user.id)
             .order('created_at', { ascending: false })
-            .limit(50);
+            .limit(limit);
           if (!error && data) setHistoryData(data.map(d => ({ ...d, _recordType: 'creator_deploy' })));
           
         } else {
           // ── EARNER LOGIC: UNIFIED TIMELINE MERGE ──
           
-          const [compRes, blogRes, spinRes, bonusRes, loginRes] = await Promise.allSettled([
-            supabase.from('completions').select(`id, created_at, platform, status, tasks ( title, reward_points )`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
-            supabase.from('blog_reads').select(`id, created_at, post_slug`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
-            supabase.from('daily_spin_rewards').select('id,created_at:claimed_at,reward_points:points').eq('user_id', user.id).eq('credited_to_main',true).order('claimed_at', { ascending: false }).limit(50),
+          const [compRes, blogRes, spinRes, bonusRes, loginRes, readingRes, officialRes, offerRes] = await Promise.allSettled([
+            supabase.from('completions').select(`id, created_at, platform, status, tasks ( title, reward_points )`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(limit),
+            supabase.from('blog_reads').select(`id, created_at, post_slug`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(limit),
+            supabase.from('daily_spin_rewards').select('id,created_at:claimed_at,reward_points:points').eq('user_id', user.id).eq('credited_to_main',true).order('claimed_at', { ascending: false }).limit(limit),
             
             // 🔥 FIXED: Pulling directly from the telegram_claims table which is guaranteed to exist
             supabase.from('telegram_claims').select(`id, created_at`).eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
-            supabase.from('daily_login_rewards').select('id,created_at:claimed_at,points,cycle_day').eq('user_id',user.id).order('claimed_at',{ascending:false}).limit(50)
+            supabase.from('daily_login_rewards').select('id,created_at:claimed_at,points,cycle_day').eq('user_id',user.id).order('claimed_at',{ascending:false}).limit(limit),
+            supabase.from('reading_task_completions').select('post_slug,points,completed_at').eq('user_id',user.id).order('completed_at',{ascending:false}).limit(limit),
+            supabase.from('official_task_submissions').select('id,task_id,status,created_at,official_tasks(title)').eq('user_id',user.id).order('created_at',{ascending:false}).limit(limit),
+            supabase.from('offerwall_gg_events').select('transaction_id,event_type,amount_pts,received_at').eq('user_id',user.id).order('received_at',{ascending:false}).limit(limit)
           ]);
 
           let mergedTimeline = [];
+          if([compRes,blogRes,spinRes,bonusRes,loginRes,readingRes,officialRes,offerRes].some(x=>x.status!=='fulfilled'||x.value.error))setLedgerError('Some activity records could not be loaded. Retry to refresh the ledger.');
 
           // 1. Inject Standard & Premium Campaigns
           if (compRes.status === 'fulfilled' && compRes.value.data) {
@@ -82,7 +89,8 @@ export default function History({ session, navigate }) {
               created_at: d.created_at,
               _recordType: 'official_blog',
               _title: `Internal Intel: ${d.post_slug.replace(/-/g, ' ')}`,
-              _pts: 3, 
+              _pts: null,
+              _status:'Historical record',
               _icon: '🎯'
             })));
           }
@@ -106,7 +114,8 @@ export default function History({ session, navigate }) {
               created_at: d.created_at,
               _recordType: 'telegram_bonus',
               _title: 'Community Network Reward',
-              _pts: 20, // Hardcoded since it doesn't store amounts directly in the claims table
+              _pts: null,
+              _status:'Historical record',
               _icon: '✈️'
             })));
           }
@@ -114,11 +123,21 @@ export default function History({ session, navigate }) {
           if(loginRes.status==='fulfilled'&&loginRes.value.data){
             mergedTimeline.push(...loginRes.value.data.map(d=>({id:d.id,created_at:d.created_at,_recordType:'daily_login',_title:'Daily Login Streak · Day '+d.cycle_day,_pts:d.points,_icon:'🔥'})));
           }
+          if(readingRes.status==='fulfilled'&&readingRes.value.data){
+            mergedTimeline.push(...readingRes.value.data.map(d=>({id:'reading:'+d.post_slug,created_at:d.completed_at,_recordType:'official_blog',_title:'Internal Intel: '+d.post_slug.replace(/-/g,' '),_pts:Number(d.points),_icon:'📖',_status:'Credited'})));
+          }
+          if(officialRes.status==='fulfilled'&&officialRes.value.data){
+            mergedTimeline.push(...officialRes.value.data.map(d=>({id:d.id,created_at:d.created_at,_recordType:'official_assignment',_title:d.official_tasks?.title||'Admin assignment',_pts:null,_icon:'📋',_status:d.status,_tagText:'Official task'})));
+          }
+          if(offerRes.status==='fulfilled'&&offerRes.value.data){
+            mergedTimeline.push(...offerRes.value.data.map(d=>({id:'offer:'+d.transaction_id+':'+d.event_type,created_at:d.received_at,_recordType:'offerwall_event',_title:d.event_type==='reversed'?'Offerwall reward reversal':'Survey / offer reward reported',_pts:Number(d.amount_pts),_icon:'🧾',_status:d.event_type==='reversed'?'Reversed':'Awaiting settlement',_tagText:'Offerwall.GG'})));
+          }
           // Sort the entire merged array by exact date & time
           mergedTimeline.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
           // Keep the top 50 most recent actions
-          setHistoryData(mergedTimeline.slice(0, 50));
+          setMore(mergedTimeline.length>limit||[compRes,blogRes,spinRes,loginRes,readingRes,officialRes,offerRes].some(x=>x.status==='fulfilled'&&x.value.data?.length===limit));
+          setHistoryData(mergedTimeline.slice(0,limit));
         }
       } else if (activeTab === 'wallet') {
         if (isCreator) {
@@ -130,7 +149,7 @@ export default function History({ session, navigate }) {
         }
       }
     } catch (err) {
-      console.error("Failed to fetch ledger", err);
+      console.error("Failed to fetch ledger", err);setLedgerError('Unable to load the ledger. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -190,9 +209,9 @@ export default function History({ session, navigate }) {
               <h1 style={{ fontSize: 32, color: 'var(--ink)', fontWeight: 800, fontFamily: "'Inter', sans-serif", marginBottom: 8, letterSpacing: '-0.5px' }}>
                 Activity <span style={{ color: 'var(--lime)' }}>Ledger</span>
               </h1>
-              <p style={{ color: 'var(--slate)', fontSize: 15, margin: 0 }}>An immutable record of your network engagements.</p>
+              <p style={{ color: 'var(--slate)', fontSize: 15, margin: 0 }}>Your task activity, rewards and transactions.</p>
             </div>
-            <button onClick={() => navigate('dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>
+            <button onClick={() => navigate(isCreator?'creator-dashboard':'user-dashboard')} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--ink)', borderRadius: 100, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>
               ← Back
             </button>
           </div>
@@ -200,13 +219,14 @@ export default function History({ session, navigate }) {
 
         <div style={S.tabWrap}>
           <button style={S.tab(activeTab === 'engagements')} onClick={() => setActiveTab('engagements')}>
-            {isCreator ? 'Deployments' : 'Engagements'}
+            {isCreator ? 'Deployments' : 'Activity'}
           </button>
           <button style={S.tab(activeTab === 'wallet')} onClick={() => setActiveTab('wallet')}>
             {isCreator ? 'Billing' : 'Transactions'}
           </button>
         </div>
 
+        {ledgerError&&<p role="alert" style={{color:'var(--slate)',fontSize:13}}>{ledgerError} <button onClick={fetchHistory} style={{cursor:'pointer',color:'var(--ink)',background:'transparent',border:'1px solid var(--line)',borderRadius:8,padding:6}}>Retry</button></p>}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--slate)', fontSize: 14 }}>
             <div style={{ width: 32, height: 32, border: '2px solid var(--line)', borderTopColor: 'var(--lime)', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
@@ -288,6 +308,7 @@ export default function History({ session, navigate }) {
                      }
                   }
                   
+                  if(item._recordType==='official_assignment'||item._recordType==='offerwall_event'||item._status==='Historical record')statusText=String(item._status||'Recorded');
                   return (
                     <div key={item.id || index} style={S.card(typeColor)}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -299,7 +320,7 @@ export default function History({ session, navigate }) {
                         </div>
                       </div>
                       <div>
-                        <div style={{ ...S.points, color: 'var(--ink)' }}>+{item._pts} <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>PTS</span></div>
+                        <div style={{ ...S.points, color: 'var(--ink)' }}>{item._pts==null?'—':(Number(item._pts)>=0?'+':'')+Number(item._pts).toLocaleString()} {item._pts!=null&&<span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 600 }}>PTS</span>}</div>
                         <div style={{ ...S.status, color: statusColor }}>{statusText}</div>
                       </div>
                     </div>
@@ -376,6 +397,7 @@ export default function History({ session, navigate }) {
             })}
           </div>
         )}
+        {!loading&&more&&activeTab==='engagements'&&limit<1000&&<button onClick={()=>setLimit(n=>Math.min(1000,n+50))} style={{...S.tab(false),border:'1px solid var(--line)',marginTop:20}}>Show more activity</button>}
       </div>
     </div>
   );

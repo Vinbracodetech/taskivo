@@ -1,5 +1,5 @@
 import { claimLoginReward } from './lib/loginStreak.js';
-import { useReadingBalance } from './lib/useReadingBalance.js';
+import { useWalletSummary } from './lib/useWalletSummary.js';
 import { useState, useEffect, lazy, Suspense } from "react";
 import NotificationBell from "./components/NotificationBell.jsx";
 import { supabase } from "./lib/supabase.js";
@@ -32,8 +32,7 @@ const AdminBlogComp=lazy(()=>import("./pages/AdminPanel.jsx").then(m=>({default:
 const AdminNotificationsComp=lazy(()=>import("./pages/AdminPanel.jsx").then(m=>({default:m.AdminNotifications})));
 
 // ── GLOBAL STICKY HEADER ──
-function TopNav({ navigate, user, setAuthMode, theme, toggleTheme, onInboxCount }) {
-  const readingPending=useReadingBalance(user?.id);
+function TopNav({ navigate, user, setAuthMode, theme, toggleTheme, onInboxCount, walletSummary }) {
   const IconMoon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
   const IconSun = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
 
@@ -104,7 +103,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme, onInboxCount 
           </div>
         ) : user.role === 'earner' ? (
           <div style={{ background: 'rgba(168,255,62,0.1)', border: '1px solid rgba(168,255,62,0.2)', color: 'var(--lime)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif", transition: 'all 0.3s ease' }}>
-            {readingPending===null?'—':(Number(user.points||0)+readingPending).toLocaleString()} PTS
+            {walletSummary.total===null?'—':walletSummary.total.toLocaleString()} PTS
           </div>
         ) : (
           <div 
@@ -148,6 +147,7 @@ export default function App() {
   var [view, setView] = useState(cleanPath);
   var [authMode, setAuthMode] = useState("login");
   var [user, setUser] = useState(null);
+  const walletSummary=useWalletSummary(user?.id,view);
   var [inboxCount,setInboxCount]=useState(null);
   var [loading, setLoading] = useState(true);
   var { toasts, show: showToast } = useToast();
@@ -458,7 +458,7 @@ export default function App() {
       <div className="app-shell" style={{ position: 'relative', minHeight: '100vh', background: 'var(--surface)' }}>
         <div className="main-content" style={{ paddingBottom: user ? 100 : 0 }}>
           
-          <style>{`@media(max-width:560px){.taskivo-topnav.signed-in{padding:0 3%!important}.signed-in .taskivo-nav-logo{width:88px!important}.signed-in .taskivo-nav-actions{gap:8px!important}.signed-in .taskivo-nav-blog{display:none}}`}</style><TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} theme={theme} toggleTheme={toggleTheme} onInboxCount={setInboxCount}/>
+          <style>{`@media(max-width:560px){.taskivo-topnav.signed-in{padding:0 3%!important}.signed-in .taskivo-nav-logo{width:88px!important}.signed-in .taskivo-nav-actions{gap:8px!important}.signed-in .taskivo-nav-blog{display:none}}`}</style><TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} theme={theme} toggleTheme={toggleTheme} onInboxCount={setInboxCount} walletSummary={walletSummary}/>
 
           {user && user.role === 'admin' && view.startsWith('admin-') && (
             <div style={{ background: 'var(--surface-card)', borderBottom: '1px solid var(--line)', padding: '12px 5%', display: 'flex', gap: 16, overflowX: 'auto', whiteSpace: 'nowrap', zIndex: 89, position: 'sticky', top: 72 }}>
@@ -487,11 +487,11 @@ export default function App() {
             {view === "youtube-monetization" && <YoutubeMonetization />}
             {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} user={user} setAuthMode={setAuthMode} />}
 
-            {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} inboxCount={inboxCount}/>}
+            {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} inboxCount={inboxCount} walletSummary={walletSummary}/>}
             {view === "tasks" && user && <EarningMarketplace navigate={navigate} user={user} />}
             {view.startsWith("player/") && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Earning opportunities</h1><p style={{lineHeight:1.7,color:'var(--slate)'}}>Legacy tasks are temporarily paused while reward verification is upgraded. Partner-funded surveys will open after settlement and safety checks.</p><button onClick={()=>navigate('offerwalls')} style={{background:'var(--lime)',color:'#000',border:0,borderRadius:12,padding:'12px 20px',fontWeight:700}}>Explore Offerwalls & Surveys</button></div>}
-            {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
-            {view === "history" && user && <History session={{user}} />}
+            {view === "wallet" && user && <Wallet user={user} navigate={navigate} walletSummary={walletSummary} />}
+            {view === "history" && user && <History session={{user}} navigate={navigate} />}
             
             {/* 🔥 NEW: Offerwalls Route Inserted Here */}
             {view === "offerwalls" && user && <Offerwalls session={{user}} navigate={navigate} />}
