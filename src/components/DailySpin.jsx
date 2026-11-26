@@ -1,172 +1,27 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-
-export default function DailySpin({ session, showToast }) {
-  const user = session?.user;
-  const [loading, setLoading] = useState(true);
-  const [canSpin, setCanSpin] = useState(false);
-  const [hoursLeft, setHoursLeft] = useState(0);
-  
-  // Animation States
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [displayNumber, setDisplayNumber] = useState("---");
-  const [winStatus, setWinStatus] = useState("");
-
-  useEffect(() => {
-    if (user?.id) fetchSpinStatus();
-  }, [user]);
-
-  async function fetchSpinStatus() {
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('last_claim_date')
-        .eq('id', user.id)
-        .single();
-
-      if (data) {
-        // 🔥 FIX: The NaN / 0-Hour Glitch Annihilator
-        // If the date is null, missing, or invalid, they are instantly eligible.
-        if (!data.last_claim_date) {
-          setCanSpin(true);
-          setDisplayNumber("READY");
-          return;
-        }
-
-        const claimDate = new Date(data.last_claim_date);
-        
-        // Failsafe in case the database saved a weird string
-        if (isNaN(claimDate.getTime())) {
-          setCanSpin(true);
-          setDisplayNumber("READY");
-          return;
-        }
-
-        const hoursSinceLastClaim = (new Date() - claimDate) / 3600000;
-
-        if (hoursSinceLastClaim >= 24) {
-          setCanSpin(true);
-          setDisplayNumber("READY");
-        } else {
-          setCanSpin(false);
-          setHoursLeft(Math.ceil(24 - hoursSinceLastClaim));
-          setDisplayNumber("LOCKED");
-        }
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // 🔥 THE NEW ECONOMY MATH 🔥
-  // Tightly controlled variable rewards to sustain the liquidity pool
-  function calculateReward() {
-    const rand = Math.random() * 100; 
-    if (rand < 60) return 1;          // 60% chance: 1 Point
-    if (rand < 85) return 2;          // 25% chance: 2 Points
-    if (rand < 96) return 5;          // 11% chance: 5 Points
-    if (rand < 99) return 10;         // 3% chance: 10 Points (Rare)
-    return 50;                        // 1% chance: 50 Points (Jackpot)
-  }
-
-  async function handleSpin() {
-    if (!canSpin || isSpinning) return;
-    
-    setIsSpinning(true);
-    setWinStatus("");
-    
-    const actualReward = calculateReward();
-
-    let cycles = 0;
-    const maxCycles = 25; 
-    
-    const spinInterval = setInterval(() => {
-      const randomDisplay = [1, 2, 5, 10, 50][Math.floor(Math.random() * 5)];
-      setDisplayNumber(randomDisplay);
-      cycles++;
-
-      if (cycles >= maxCycles) {
-        clearInterval(spinInterval);
-        finishSpin(actualReward);
-      }
-    }, 100);
-  }
-
-  async function finishSpin(rewardAmt) {
-    setDisplayNumber(rewardAmt);
-    
-    if (rewardAmt === 50) {
-      setWinStatus("JACKPOT! 🎉");
-    } else if (rewardAmt >= 10) {
-      setWinStatus("BIG WIN! 🔥");
-    } else {
-      setWinStatus("Yield Secured ✓");
-    }
-
-    try {
-      const { data: p } = await supabase
-        .from('profiles')
-        .select('points')
-        .eq('id', user.id)
-        .single();
-
-      await supabase
-        .from('profiles')
-        .update({
-          points: (p?.points || 0) + rewardAmt,
-          last_claim_date: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (user) {
-        user.points = (user.points || 0) + rewardAmt;
-      }
-
-      if (showToast) showToast(`Acquired ${rewardAmt} PTS!`, 'success');
-      
-      setCanSpin(false);
-      setHoursLeft(24);
-      
-    } catch (e) {
-      if (showToast) showToast("Network error synchronizing points.", "error");
-    } finally {
-      setIsSpinning(false);
-    }
-  }
-
-  if (loading) return null;
-
-  const S = {
-    card: { background: 'var(--surface-card)', border: '1px solid var(--line)', borderRadius: 20, padding: 24, textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: '0 16px 32px rgba(0,0,0,0.2)' },
-    title: { color: 'var(--ink)', fontSize: 16, fontWeight: 800, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" },
-    subtitle: { color: 'var(--slate)', fontSize: 13, marginBottom: 20, lineHeight: 1.4 },
-    screenBox: { background: '#0D0D14', border: `2px solid ${canSpin ? 'var(--lime)' : 'var(--line)'}`, borderRadius: 16, padding: '24px 10px', margin: '0 auto 24px', position: 'relative', boxShadow: canSpin ? 'inset 0 0 20px rgba(168,255,62,0.1)' : 'none', transition: 'all 0.3s' },
-    glowingNumber: { fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: canSpin || isSpinning || winStatus ? 'var(--lime)' : 'var(--slate)', lineHeight: 1, textShadow: (canSpin || isSpinning || winStatus) ? '0 0 20px rgba(168,255,62,0.4)' : 'none' },
-    statusText: { fontSize: 12, fontWeight: 800, color: 'var(--lime)', letterSpacing: '1px', marginTop: 8, height: 16, textTransform: 'uppercase' },
-    btnStyle: { background: canSpin && !isSpinning ? 'var(--lime)' : 'var(--surface)', color: canSpin && !isSpinning ? '#000' : 'var(--slate)', border: 'none', padding: '16px', borderRadius: 12, fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.5px', width: '100%', cursor: canSpin && !isSpinning ? 'pointer' : 'not-allowed', transition: 'all 0.2s ease', fontFamily: "'Inter', sans-serif" },
-  };
-
-  return (
-    <div style={S.card}>
-      <h3 style={S.title}>Daily Network Yield</h3>
-      <p style={S.subtitle}>Initiate the decrypter once every 24 hours to extract variable point rewards.</p>
-      
-      <div style={S.screenBox}>
-        <div style={S.glowingNumber}>
-          {displayNumber}
-        </div>
-        <div style={S.statusText}>
-          {winStatus || (isSpinning ? "DECRYPTING..." : "")}
-        </div>
-      </div>
-      
-      <button onClick={handleSpin} disabled={!canSpin || isSpinning} style={S.btnStyle}>
-        {isSpinning ? 'EXTRACTING...' : canSpin ? 'INITIATE EXTRACTION' : `LOCKED: ${hoursLeft}H REMAINING`}
-      </button>
-
-      <div style={{ fontSize: 11, color: 'var(--slate)', marginTop: 16, fontWeight: 600 }}>
-        Powered by Cryptographic Randomization
-      </div>
-    </div>
-  );
+import {useState,useEffect,useRef} from 'react';
+import {supabase} from '../lib/supabase';
+const odds=[[1,'75%','70%'],[2,'20%','20%'],[3,'4.5%','7%'],[5,'0.5%','2%'],[10,'—','0.7%'],[25,'—','0.2%'],[50,'—','0.08%'],[100,'—','0.02%']];
+export default function DailySpin({session,showToast}){
+ const user=session?.user;
+ const [state,setState]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[won,setWon]=useState(null),[now,setNow]=useState(Date.now());
+ const inFlight=useRef(false),mounted=useRef(true);
+ async function refresh(){try{const {data,error}=await supabase.rpc('daily_spin_status');if(error)throw error;if(mounted.current){setState(data);setError('');}}catch{if(mounted.current)setError('Unable to load spin status. Try refreshing.');}}
+ useEffect(()=>{mounted.current=true;if(user?.id)refresh();const t=setInterval(()=>setNow(Date.now()),30000);return()=>{mounted.current=false;clearInterval(t);};},[user?.id]);
+ useEffect(()=>{if(state?.next_at&&!state.eligible&&Date.parse(state.next_at)<=now&&!busy&&state.reason==='Next spin after cooldown')refresh();},[now,busy,state?.next_at,state?.eligible,state?.reason]);
+ async function claim(){if(!state?.eligible||inFlight.current)return;inFlight.current=true;setBusy(true);setError('');setWon(null);
+ try{const {data,error}=await supabase.rpc('claim_daily_spin');if(error||!data)throw error||Error('No response');if(!mounted.current)return;setState(data);setNow(Date.now());if(data.awarded_points!=null){setWon(Number(data.awarded_points));window.dispatchEvent(new Event('taskivo_spin_balance_updated'));if(showToast)showToast('+'+data.awarded_points+' PTS recorded, pending funding.','success');}else setError(data.reason||'Spin unavailable.');}
+ catch{if(mounted.current){setError('Could not confirm the spin. Refresh status before trying again.');await refresh();}}
+ finally{inFlight.current=false;if(mounted.current)setBusy(false);}}
+ const canSpin=!!state?.eligible&&!busy,active=!!state?.active_tier;
+ const mins=state?.next_at?Math.max(0,Math.ceil((Date.parse(state.next_at)-now)/60000)):0;
+ const remaining=Math.floor(mins/60)+'h '+(mins%60)+'m';
+ const card={background:'var(--surface-card)',border:'1px solid var(--line)',borderRadius:20,padding:'clamp(18px,4vw,24px)',textAlign:'center',boxShadow:'0 16px 32px rgba(0,0,0,0.2)',marginBottom:24};
+ const button={background:canSpin?'var(--lime)':'var(--surface)',color:canSpin?'#000':'var(--slate)',border:'1px solid var(--line)',padding:16,borderRadius:12,fontWeight:800,fontSize:14,width:'100%',cursor:canSpin?'pointer':'not-allowed'};
+ return <section style={card}><h3 style={{fontSize:16,fontWeight:800,textTransform:'uppercase',letterSpacing:1,margin:'0 0 4px'}}>Daily Network Yield</h3><p style={{fontSize:13,color:'var(--slate)',lineHeight:1.6,marginBottom:20}}>One free daily spin every 24 hours. No payment or ad interaction required.</p>
+ <div style={{background:'#0D0D14',border:'2px solid '+(canSpin?'var(--lime)':'var(--line)'),borderRadius:16,padding:'24px 10px',margin:'0 auto 20px',color:'#a8ff3e'}}><div role="status" aria-live="polite" style={{fontSize:44,fontWeight:800,lineHeight:1.15,letterSpacing:-1}}>{busy?'…':won!==null?'+'+won:!state?'—':state.eligible?'READY':state.last_points!=null?'+'+state.last_points:'LOCKED'}</div><div style={{fontSize:12,marginTop:8,fontWeight:700}}>{busy?'Checking server…':won!==null?'PTS recorded · pending funding':state?.eligible?'Free spin available':state?.last_points!=null?'Last recorded spin':'Daily spin'}</div></div>
+ <button style={button} onClick={claim} disabled={!canSpin}>{busy?'Recording reward…':canSpin?'SPIN FOR FREE':!state?'Loading status…':mins>0?'Next spin in '+remaining:state.reason||'Unavailable'}</button>
+ {error&&<p role="alert" style={{fontSize:13,color:'var(--slate)',marginTop:12}}>{error} <button type="button" onClick={refresh} style={{color:'var(--ink)',background:'transparent',border:0,textDecoration:'underline',cursor:'pointer'}}>Refresh status</button></p>}
+ <p style={{fontSize:13,lineHeight:1.6,color:'var(--slate)',margin:'14px 0'}}>Maximum {active?100:5} PTS for your current tier. {active?'Active tier unlocked.':'Active tier: account at least 14 days old, 10 recorded reading or approved admin tasks across 7 distinct UTC days in the last 14 days.'} {state&&'Current activity: '+(state.activity_tasks||0)+' tasks / '+(state.activity_days||0)+' days.'} All rewards are recorded pending funding; withdrawals are paused.</p>
+ <details style={{textAlign:'left',fontSize:13,color:'var(--slate)',borderTop:'1px solid var(--line)',paddingTop:12}}><summary style={{cursor:'pointer',fontWeight:700,color:'var(--ink)'}}>Reward probabilities &amp; eligibility</summary><div style={{overflowX:'auto',marginTop:12}}><table style={{width:'100%',borderCollapse:'collapse',textAlign:'right'}}><thead><tr><th style={{textAlign:'left'}}>PTS</th><th>Standard</th><th>Active</th></tr></thead><tbody>{odds.map(([p,a,b])=><tr key={p}><td style={{padding:'6px 0',textAlign:'left'}}>{p}</td><td>{a}</td><td>{b}</td></tr>)}</tbody></table></div><p style={{marginTop:12,lineHeight:1.6}}>The result is randomly selected and recorded by the server. Higher prizes are not guaranteed. Each account can claim once every 24 hours.</p></details>
+ </section>;
 }

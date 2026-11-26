@@ -1,3 +1,4 @@
+import { useSpinBalance } from '../lib/useSpinBalance.js';
 import { useReadingBalance } from '../lib/useReadingBalance.js';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
@@ -12,6 +13,7 @@ export default function Dashboard({ user, navigate, showToast }) {
   
   // 🔥 INSTANT UI UPDATE STATE 🔥
   const readingPending=useReadingBalance(user?.id);
+  const spinPending=useSpinBalance(user?.id);
   const [localPoints, setLocalPoints] = useState(user?.points || 0);
 
   // Profile States
@@ -226,15 +228,16 @@ export default function Dashboard({ user, navigate, showToast }) {
         </div>
 
 
+        <DailySpin session={{user}} showToast={showToast}/>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,320px), 1fr))', gap: 24, marginBottom: 24, position: 'relative', zIndex: 1 }}>
           <div style={S.glassCard}>
             <span style={S.label}>Wallet Balance · Recorded PTS</span>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 32, marginTop: 8 }}>
-              <div style={S.valueGlow}>{readingPending===null?"—":(Number(localPoints||0)+readingPending).toLocaleString()}</div>
+              <div style={S.valueGlow}>{readingPending===null||spinPending===null?"—":(Number(localPoints||0)+readingPending+spinPending).toLocaleString()}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lime)', letterSpacing: '1px', fontFamily: "'Inter', sans-serif" }}>PTS</div>
             </div>
             
-            <p style={{fontSize:13,color:'var(--slate)',lineHeight:1.6,marginBottom:16}}>Includes {readingPending===null?'an unavailable amount of':readingPending.toLocaleString()+' PTS in'} blog rewards pending funding. Withdrawals remain paused.</p>
+            <p style={{fontSize:13,color:'var(--slate)',lineHeight:1.6,marginBottom:16}}>Includes {readingPending===null?'an unavailable amount of':readingPending.toLocaleString()+' PTS in'} blog rewards pending funding, plus {spinPending===null?'an unavailable amount of':spinPending.toLocaleString()+' PTS in'} daily spin rewards pending funding. Withdrawals remain paused.</p>
             <div style={{ marginTop: 'auto', display: 'flex', gap: 12 }}>
               <button onClick={() => navigate('wallet')} style={{ ...S.btnPrimary, flex: 1 }}>View wallet</button>
               <button onClick={() => navigate('history')} style={{ ...S.btnSecondary, flex: 1 }}>Ledger</button>
