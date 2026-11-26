@@ -6,7 +6,7 @@ import DailyLoginStreak from '../components/DailySpin';
 import TelegramBonus from '../components/TelegramBonus';
 import { enforceDeviceFingerprint } from '../lib/security';
 
-export default function Dashboard({ user, navigate, showToast }) {
+export default function Dashboard({ user, navigate, showToast, inboxCount }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ completions: 0 });
   const [referralCopied, setReferralCopied] = useState(false);
@@ -27,14 +27,7 @@ export default function Dashboard({ user, navigate, showToast }) {
   });
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // Inbox & Alerts States
-  const [messages, setMessages] = useState([]);
-  const [showInboxModal, setShowInboxModal] = useState(false);
-  const [dismissedAlerts, setDismissedAlerts] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(`taskivo_dismissed_${user.id}`)) || []; } 
-    catch { return []; }
-  });
-
+  // Inbox read state is managed by the global notification bell.
   // Support Ticket States
   const [tickets, setTickets] = useState([]);
   const [showTicketModal, setShowTicketModal] = useState(false);
@@ -43,28 +36,11 @@ export default function Dashboard({ user, navigate, showToast }) {
 
   useEffect(() => {
     if (!user) return;
-    setLocalPoints(user.points); // Sync points if user object updates
-    fetchDashboardData();
     fetchTickets();
-    fetchMessages();
     enforceDeviceFingerprint(user.id);
-  }, [user]);
-
-  async function fetchDashboardData() {
-    try {
-      setLoading(true);
-      const { count } = await supabase
-        .from('completions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-        
-      setStats({ completions: count || 0 });
-    } catch (err) {
-      if (showToast) showToast('Failed to sync dashboard stats', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }
+    setLoading(false);
+  }, [user?.id]);
+  useEffect(()=>{setLocalPoints(user?.points||0);},[user?.points]);
 
   async function fetchTickets() {
     try {
@@ -77,25 +53,6 @@ export default function Dashboard({ user, navigate, showToast }) {
     } catch (err) {
       console.error("Error fetching tickets:", err);
     }
-  }
-
-  async function fetchMessages() {
-    try {
-      const { data, error } = await supabase
-        .from('user_messages')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10); 
-      if (!error && data) setMessages(data);
-    } catch (err) {
-      console.error("Error fetching messages:", err);
-    }
-  }
-
-  function dismissMessage(messageId) {
-    const updatedDismissed = [...dismissedAlerts, messageId];
-    setDismissedAlerts(updatedDismissed);
-    localStorage.setItem(`taskivo_dismissed_${user.id}`, JSON.stringify(updatedDismissed));
   }
 
   async function handleSubmitTicket() {
@@ -168,13 +125,13 @@ export default function Dashboard({ user, navigate, showToast }) {
   const progressPercent = Math.min((localPoints / minWithdrawal) * 100, 100);
   const isVerified = Boolean(user.payout_account && user.payout_bank_name);
   
-  const activeMessages = messages.filter(msg => !dismissedAlerts.includes(msg.id));
+  const unreadCount=Number(inboxCount||0);
 
   const S = {
-    pageWrapper: { minHeight: '100vh', backgroundColor: 'var(--surface)', backgroundImage: `radial-gradient(circle at top center, rgba(168,255,62,0.20) 0%, transparent 70%), url("data:image/svg+xml,%3Csvg width='80' height='138.6' viewBox='0 0 80 138.6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 138.6L0 115.5V69.3l40-23.1 40 23.1v46.2zM40 46.2L0 23.1V-23.1l40-23.1 40 23.1v46.2z' fill='none' stroke='%23A8FF3E' stroke-width='2' stroke-opacity='0.15'/%3E%3C/svg%3E")`, backgroundSize: '100%, 80px 138.6px', backgroundAttachment: 'fixed' },
+    pageWrapper: { minHeight: '100vh', backgroundColor: 'var(--surface)', backgroundImage: `radial-gradient(circle at top center, rgba(168,255,62,0.20) 0%, transparent 70%), url("data:image/svg+xml,%3Csvg width='80' height='138.6' viewBox='0 0 80 138.6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M40 138.6L0 115.5V69.3l40-23.1 40 23.1v46.2zM40 46.2L0 23.1V-23.1l40-23.1 40 23.1v46.2z' fill='none' stroke='%23A8FF3E' stroke-width='2' stroke-opacity='0.15'/%3E%3C/svg%3E")`, backgroundSize: '100%, 80px 138.6px', backgroundAttachment: 'scroll' },
     page: { padding: '40px 5%', maxWidth: 1040, margin: '0 auto', fontFamily: "'DM Sans', sans-serif", position: 'relative' },
-    glassCard: { background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' },
-    premiumCard: { background: 'var(--surface-card)', border: '1px solid var(--gold)', borderRadius: 24, padding: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', position: 'relative', overflow: 'hidden' },
+    glassCard: { background: 'var(--surface-card)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 32, display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' },
+    premiumCard: { background: 'var(--surface-card)', border: '1px solid var(--gold)', borderRadius: 24, padding: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.2)',  position: 'relative', overflow: 'hidden' },
     label: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--slate)', marginBottom: 16, display: 'block', fontFamily: "'Inter', sans-serif" },
     valueGlow: { fontFamily: "'Inter', sans-serif", fontSize: 48, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 },
     btnPrimary: { background: 'var(--lime)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: 100, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.5px', boxShadow: '0 8px 16px rgba(168,255,62,0.2)', textAlign: 'center', transition: 'all 0.2s' },
@@ -228,6 +185,7 @@ export default function Dashboard({ user, navigate, showToast }) {
         </div>
 
 
+        <button type="button" onClick={()=>window.dispatchEvent(new Event('taskivo_open_inbox'))} style={{...S.glassCard,display:'flex',width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,padding:'18px 20px',marginBottom:24,textAlign:'left',cursor:'pointer',border:'1px solid '+(unreadCount>0?'var(--lime)':'var(--line)'),color:'var(--ink)'}}><span style={{display:'flex',alignItems:'center',gap:12}}><span aria-hidden="true" style={{fontSize:24}}>🔔</span><span><strong style={{display:'block',fontSize:16}}>Inbox &amp; Alerts</strong><span style={{fontSize:12,color:'var(--slate)'}}>Official announcements and direct messages</span></span></span><span style={{color:unreadCount?'var(--lime)':'var(--slate)',fontWeight:800,fontSize:12,whiteSpace:'nowrap'}}>{inboxCount===null?'Open inbox':unreadCount+' unread'} →</span></button>
         <DailyLoginStreak session={{user}}/>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,320px), 1fr))', gap: 24, marginBottom: 24, position: 'relative', zIndex: 1 }}>
           <div style={S.glassCard}>
@@ -270,28 +228,6 @@ export default function Dashboard({ user, navigate, showToast }) {
 
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{...S.premiumCard,border:'1px solid var(--lime)',marginBottom:28,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:20,padding:'clamp(20px,4vw,32px)'}}><div style={{flex:'1 1 230px'}}><span style={{...S.label,color:'var(--lime)',marginBottom:8}}>TASK NETWORK</span><h2 style={{fontSize:24,margin:'0 0 8px'}}>Offerwalls &amp; Internal Intel</h2><p style={{color:'var(--slate)',lineHeight:1.6,fontSize:14,margin:0}}>Explore partner surveys, two-minute blog tasks and official assignments.</p></div><div style={{display:'flex',gap:10,flexWrap:'wrap'}}><button style={S.btnPrimary} onClick={()=>navigate('tasks')}>Explore Tasks</button><button style={S.btnSecondary} onClick={()=>navigate('offerwalls')}>Offerwalls</button></div></div>
-        </div>
-
-        <div 
-          onClick={() => setShowInboxModal(true)}
-          style={{ ...S.glassCard, position: 'relative', zIndex: 1, marginBottom: 48, cursor: 'pointer', transition: 'all 0.2s', border: activeMessages.length > 0 ? '1px solid rgba(168,255,62,0.3)' : '1px solid rgba(255,255,255,0.05)', background: activeMessages.length > 0 ? 'rgba(168,255,62,0.02)' : 'var(--surface-card)' }}
-          onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-          onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ background: activeMessages.length > 0 ? 'var(--lime)' : 'rgba(255,255,255,0.05)', color: activeMessages.length > 0 ? '#000' : 'var(--slate)', width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, transition: 'all 0.3s' }}>
-                {activeMessages.length > 0 ? '🔔' : '📭'}
-              </div>
-              <div>
-                <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, color: 'var(--ink)', margin: '0 0 4px 0', fontWeight: 800, letterSpacing: '-0.5px' }}>Inbox & Alerts</h2>
-                <p style={{ color: 'var(--slate)', fontSize: 14, margin: 0 }}>Official broadcasts and direct messages.</p>
-              </div>
-            </div>
-            <div style={{ background: activeMessages.length > 0 ? 'rgba(168,255,62,0.1)' : 'rgba(255,255,255,0.05)', color: activeMessages.length > 0 ? 'var(--lime)' : 'var(--slate)', padding: '6px 12px', borderRadius: 100, fontSize: 12, fontWeight: 800, fontFamily: "'Inter', sans-serif" }}>
-              {activeMessages.length} NEW
-            </div>
-          </div>
         </div>
 
         <div style={{ ...S.premiumCard, marginBottom: 48, display: 'flex', flexWrap: 'wrap', gap: 32, alignItems: 'center', justifyContent: 'space-between', zIndex: 1, opacity: 0.7 }}>
@@ -343,52 +279,6 @@ export default function Dashboard({ user, navigate, showToast }) {
             </div>
           )}
         </div>
-
-        {/* THE INBOX NOTIFICATION CENTER MODAL */}
-        {showInboxModal && (
-          <div style={S.modalOverlay}>
-            <div style={{...S.modalCard, maxWidth: 600, padding: 0, overflow: 'hidden'}}>
-              <div style={{ padding: '24px 32px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)' }}>
-                <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 20, fontWeight: 800, color: 'var(--ink)', margin: 0 }}>Notification Center</h2>
-                <button onClick={() => setShowInboxModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 24, cursor: 'pointer' }}>×</button>
-              </div>
-              
-              <div style={{ padding: 32, maxHeight: '60vh', overflowY: 'auto' }}>
-                {activeMessages.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--slate)' }}>
-                    <div style={{ fontSize: 40, marginBottom: 16 }}>📭</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', marginBottom: 8 }}>You're all caught up!</div>
-                    <div style={{ fontSize: 14 }}>No new alerts at this time.</div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {activeMessages.map(msg => (
-                      <div key={msg.id} style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, position: 'relative' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                          <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)', fontFamily: "'Inter', sans-serif", paddingRight: 40 }}>{msg.title}</div>
-                          <div style={{ fontSize: 11, color: 'var(--slate)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            {new Date(msg.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <div style={{ color: 'var(--slate)', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: 16 }}>
-                          {msg.message}
-                        </div>
-                        <button 
-                          onClick={() => dismissMessage(msg.id)}
-                          style={{ background: 'transparent', border: '1px solid var(--line)', color: 'var(--slate)', padding: '6px 16px', borderRadius: 100, fontSize: 11, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase', transition: 'all 0.2s' }}
-                          onMouseOver={(e) => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; e.currentTarget.style.background = 'rgba(239,68,68,0.05)'; }}
-                          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--slate)'; e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.background = 'transparent'; }}
-                        >
-                          ✕ Dismiss
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* SUPPORT TICKET MODAL */}
         {showTicketModal && (

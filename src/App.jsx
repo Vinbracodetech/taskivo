@@ -1,6 +1,7 @@
 import { claimLoginReward } from './lib/loginStreak.js';
 import { useReadingBalance } from './lib/useReadingBalance.js';
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
+import NotificationBell from "./components/NotificationBell.jsx";
 import { supabase } from "./lib/supabase.js";
 import CSS from "./styles/global.js";
 
@@ -9,44 +10,35 @@ import Toast from "./components/Toast.jsx";
 import useToast from "./components/useToast.js";
 
 import Landing from "./pages/Landing.jsx";
-import Auth from "./pages/Auth.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
-import Tasks from "./pages/Tasks.jsx";
-import TaskPlayer from "./pages/TaskPlayer.jsx";
-import Wallet from "./pages/Wallet.jsx";
-import History from "./pages/History.jsx"; 
-import Offerwalls from "./pages/Offerwalls.jsx"; // 🔥 NEW: Offerwalls Imported
+const Auth=lazy(()=>import("./pages/Auth.jsx"));
+const Dashboard=lazy(()=>import("./pages/Dashboard.jsx"));
+const Wallet=lazy(()=>import("./pages/Wallet.jsx"));
+const History=lazy(()=>import("./pages/History.jsx"));
+const Offerwalls=lazy(()=>import("./pages/Offerwalls.jsx"));
 
-import CreatorDashboard from "./pages/CreatorDashboard.jsx";
-import CreateTask from "./pages/CreateTask.jsx";
-import { CampaignRequest, EarningMarketplace } from "./pages/CampaignRequest.jsx";
-import { OfficialTaskAdmin } from "./pages/TaskNetwork.jsx";
-import CreatorTasks from "./pages/CreatorTasks.jsx";
-import CreatorAnalytics from "./pages/CreatorAnalytics.jsx";
-import CreatorApprovals from "./pages/CreatorApprovals.jsx";
+const CampaignRequest=lazy(()=>import("./pages/CampaignRequest.jsx").then(m=>({default:m.CampaignRequest})));
+const EarningMarketplace=lazy(()=>import("./pages/CampaignRequest.jsx").then(m=>({default:m.EarningMarketplace})));
+const OfficialTaskAdmin=lazy(()=>import("./pages/TaskNetwork.jsx").then(m=>({default:m.OfficialTaskAdmin})));
 
 // Static & Admin Pages
 import { About, Terms, Privacy, Disclaimer, DeleteAccount } from "./pages/StaticPages.jsx";
 import { BlogIndex, ArticleView } from "./pages/Blog.jsx";
 import { EarningGuide, earningGuides } from "./pages/EarningGuides.jsx";
 import YoutubeMonetization from "./pages/YoutubeMonetization.jsx";
-import {
-  AdminOverview,
-  AdminUsers as AdminUsersComp,
-  AdminTasks as AdminTasksComp,
-  AdminWithdrawals as AdminWithdrawalsComp,
-  AdminBlog as AdminBlogComp,
-  AdminNotifications as AdminNotificationsComp
-} from "./pages/AdminPanel.jsx";
+const AdminOverview=lazy(()=>import("./pages/AdminPanel.jsx").then(m=>({default:m.AdminOverview})));
+const AdminUsersComp=lazy(()=>import("./pages/AdminPanel.jsx").then(m=>({default:m.AdminUsers})));
+const AdminWithdrawalsComp=lazy(()=>import("./pages/AdminPanel.jsx").then(m=>({default:m.AdminWithdrawals})));
+const AdminBlogComp=lazy(()=>import("./pages/AdminPanel.jsx").then(m=>({default:m.AdminBlog})));
+const AdminNotificationsComp=lazy(()=>import("./pages/AdminPanel.jsx").then(m=>({default:m.AdminNotifications})));
 
 // ── GLOBAL STICKY HEADER ──
-function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
+function TopNav({ navigate, user, setAuthMode, theme, toggleTheme, onInboxCount }) {
   const readingPending=useReadingBalance(user?.id);
   const IconMoon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>;
   const IconSun = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>;
 
   return (
-    <nav style={{
+    <nav className={user?"taskivo-topnav signed-in":"taskivo-topnav"} style={{
       position: "sticky", top: 0, zIndex: 90,
       display: "flex", alignItems: "center", justifyContent: "space-between",
       height: 72, padding: "0 5%",
@@ -56,7 +48,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
     }}>
       
       <div 
-        style={{ width: 130, display: "flex", alignItems: "center", cursor: "pointer" }} 
+        className="taskivo-nav-logo" style={{ width: 130, flexShrink:0, display: "flex", alignItems: "center", cursor: "pointer" }} 
         onClick={function() { navigate("landing"); }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" style={{ width: '100%', height: 'auto', display: 'block' }}>
@@ -92,7 +84,7 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
         </svg>
       </div>
       
-      <div style={{ display: "flex", gap: 16, alignItems: "center", fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="taskivo-nav-actions" style={{ display: "flex", gap: 16, alignItems: "center", fontFamily: "'DM Sans', sans-serif" }}>
         
         <button 
           onClick={toggleTheme} 
@@ -102,8 +94,9 @@ function TopNav({ navigate, user, setAuthMode, theme, toggleTheme }) {
           {theme === 'dark' ? IconSun : IconMoon}
         </button>
 
-        <a href="/blog" style={{ color: "var(--slate)", fontSize: 14, fontWeight: 600 }} onClick={function(e) { if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate("blog"); }}>Blog</a>
+        <a className="taskivo-nav-blog" href="/blog" style={{ color: "var(--slate)", fontSize: 14, fontWeight: 600 }} onClick={function(e) { if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; e.preventDefault(); navigate("blog"); }}>Blog</a>
         
+        {user&&<NotificationBell key={user.id} user={user} onCount={onInboxCount}/>}
         {!user ? (
           <div style={{ display: "flex", gap: 8 }}>
             <button style={{ background: "transparent", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Inter', sans-serif" }} onClick={function() { if(setAuthMode) setAuthMode("login"); navigate("auth"); }}>Log in</button>
@@ -155,6 +148,7 @@ export default function App() {
   var [view, setView] = useState(cleanPath);
   var [authMode, setAuthMode] = useState("login");
   var [user, setUser] = useState(null);
+  var [inboxCount,setInboxCount]=useState(null);
   var [loading, setLoading] = useState(true);
   var { toasts, show: showToast } = useToast();
   var [theme, setTheme] = useState(localStorage.getItem("taskivo-theme") || "dark");
@@ -464,7 +458,7 @@ export default function App() {
       <div className="app-shell" style={{ position: 'relative', minHeight: '100vh', background: 'var(--surface)' }}>
         <div className="main-content" style={{ paddingBottom: user ? 100 : 0 }}>
           
-          <TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} theme={theme} toggleTheme={toggleTheme} />
+          <style>{`@media(max-width:560px){.taskivo-topnav.signed-in{padding:0 3%!important}.signed-in .taskivo-nav-logo{width:88px!important}.signed-in .taskivo-nav-actions{gap:8px!important}.signed-in .taskivo-nav-blog{display:none}}`}</style><TopNav navigate={navigate} user={user} setAuthMode={setAuthMode} theme={theme} toggleTheme={toggleTheme} onInboxCount={setInboxCount}/>
 
           {user && user.role === 'admin' && view.startsWith('admin-') && (
             <div style={{ background: 'var(--surface-card)', borderBottom: '1px solid var(--line)', padding: '12px 5%', display: 'flex', gap: 16, overflowX: 'auto', whiteSpace: 'nowrap', zIndex: 89, position: 'sticky', top: 72 }}>
@@ -477,7 +471,7 @@ export default function App() {
             </div>
           )}
 
-          <div className="animate-fadeIn" key={view}>
+          <div className="animate-fadeIn" key={view}><Suspense fallback={<div role="status" style={{padding:"48px 5%",textAlign:"center",color:"var(--slate)"}}>Loading page…</div>}>
             {view === "landing" && <Landing navigate={navigate} setAuthMode={setAuthMode} user={user} />}
             {view === "auth" && <Auth authMode={authMode} setAuthMode={setAuthMode} navigate={navigate} loadProfile={loadProfile} />}
             
@@ -493,7 +487,7 @@ export default function App() {
             {view === "youtube-monetization" && <YoutubeMonetization />}
             {view.startsWith("article-") && <ArticleView navigate={navigate} id={view} user={user} setAuthMode={setAuthMode} />}
 
-            {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} />}
+            {view === "user-dashboard" && user && <Dashboard user={user} navigate={navigate} showToast={showToast} inboxCount={inboxCount}/>}
             {view === "tasks" && user && <EarningMarketplace navigate={navigate} user={user} />}
             {view.startsWith("player/") && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Earning opportunities</h1><p style={{lineHeight:1.7,color:'var(--slate)'}}>Legacy tasks are temporarily paused while reward verification is upgraded. Partner-funded surveys will open after settlement and safety checks.</p><button onClick={()=>navigate('offerwalls')} style={{background:'var(--lime)',color:'#000',border:0,borderRadius:12,padding:'12px 20px',fontWeight:700}}>Explore Offerwalls & Surveys</button></div>}
             {view === "wallet" && user && <Wallet user={user} navigate={navigate} showToast={showToast} />}
@@ -514,7 +508,7 @@ export default function App() {
             {view === "admin-withdrawals" && user?.role === "admin" && <AdminWithdrawalsComp showToast={showToast} />}
             {view === "admin-notifications" && user?.role === "admin" && <AdminNotificationsComp showToast={showToast} />}
             {view === "admin-blog" && user?.role === "admin" && <AdminBlogComp showToast={showToast} />}
-          </div>
+          </Suspense></div>
         </div>
 
         {user && <FloatingNav user={user} navigate={navigate} logout={logout} toggleTheme={toggleTheme} theme={theme} />}

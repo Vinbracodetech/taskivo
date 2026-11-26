@@ -44,7 +44,8 @@ const styles=`
 function Photo({post,article=false}){
  const url=imageUrl(post.image_url);
  if(!url)return null;
- const image=<img src={url} alt={post.image_alt||post.title} width="1200" height={article?675:750} loading={article?'eager':'lazy'} decoding="async"/>;
+ const small=(w)=>{try{const u=new URL(url);if(u.hostname!=="images.unsplash.com")return url;u.searchParams.set("w",String(w));u.searchParams.set("q","75");return u.toString();}catch{return url;}};
+ const image=<img src={article?url:small(480)} srcSet={url.startsWith("https://images.unsplash.com/")?small(480)+" 480w, "+small(800)+" 800w, "+small(1200)+" 1200w":undefined} sizes={article?"(max-width: 900px) 90vw, 760px":"(max-width: 650px) 90vw, 340px"} alt={post.image_alt||post.title} width="1200" height={article?675:750} loading={article?'eager':'lazy'} decoding="async"/>;
  return article?<figure className="ed-feature">{image}{post.image_credit&&<figcaption>Illustrative photograph · {post.image_credit}</figcaption>}</figure>:image;
 }
 export function BlogIndex({initialPosts=null}){
