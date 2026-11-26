@@ -1,5 +1,5 @@
 import {supabase} from './supabase';
-export const loginSchedule=[1,1,2,2,3,3,4,4,5,6,7,9,12,30];
+export const loginSchedule=[1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,30];
 export async function claimLoginReward(){
  const {data,error}=await supabase.rpc('claim_daily_login');
  if(error||!data)throw error||new Error('Login reward unavailable');
