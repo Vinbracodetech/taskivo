@@ -38,8 +38,8 @@ export default function Offerwalls({ session, navigate }) {
 
   const partners = [{ id: 'offerwall-gg', name: 'Offerwall.GG — Surveys & Paid Offers', badge: 'Partner-funded rewards', description: 'Explore available surveys, sponsored offers and eligible game tasks. Availability varies by location. Verified rewards are credited to your wallet. Withdrawals follow the weekly Saturday schedule.', rewardEstimate: 'Rewards vary by offer', color: '#a8ff3e' }];
 
-  // Keep Moonetix hidden until the backend wallet and reversal flow passes launch checks.
-  if (import.meta.env.VITE_MOONETIX_LIVE_ENABLED === 'true') {
+  // Moonetix is enabled; signed links are still authorized on the server.
+  {
     partners.push({id:'moonetix',name:'Moonetix — Paid Offers',badge:'Partner-funded rewards',description:'Complete eligible sponsored offers. Availability varies by location. Rewards require provider verification. Withdrawals follow the weekly Saturday schedule.',rewardEstimate:'Rewards vary by offer',color:'#a8ff3e'});
   }
 

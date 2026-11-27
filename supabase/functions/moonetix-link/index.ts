@@ -23,10 +23,11 @@ Deno.serve(async (req) => {
   const supabase=createClient(url,anon,{global:{headers:{Authorization:"Bearer "+token}},auth:{persistSession:false,autoRefreshToken:false}});
   const {data,error}=await supabase.auth.getUser(token);
   if(error||!data.user||data.user.is_anonymous) return reply({error:"Sign in first"},401);
-  // Fail closed until reward settlement, reversal handling and the launch review are complete.
-  if(Deno.env.get("MOONETIX_LIVE_ENABLED")!=="true") return reply({enabled:false});
-  const {data:profile,error:profileError}=await supabase.from("profiles").select("role").eq("id",data.user.id).single();
+  // Launch authorized; an explicit false remains an emergency kill switch.
+  if(Deno.env.get("MOONETIX_LIVE_ENABLED")==="false") return reply({enabled:false});
+  const {data:profile,error:profileError}=await supabase.from("profiles").select("role,locked_until,lockout_until").eq("id",data.user.id).single();
   if(profileError||!profile||!["admin","earner"].includes(profile.role)) return reply({enabled:false});
+  if([profile.locked_until,profile.lockout_until].some(t=>t && Date.parse(t)>Date.now())) return reply({enabled:false});
   const salt=Deno.env.get("MOONETIX_LINK_HASH_SALT");
   if(!salt) return reply({error:"Provider not configured"},503);
   const userId=data.user.id;
