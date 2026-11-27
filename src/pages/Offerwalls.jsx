@@ -38,17 +38,25 @@ export default function Offerwalls({ session, navigate }) {
 
   const partners = [{ id: 'offerwall-gg', name: 'Offerwall.GG — Surveys & Paid Offers', badge: 'Partner-funded rewards', description: 'Explore available surveys, sponsored offers and eligible game tasks. Availability varies by location. Rewards are recorded after provider verification. Redemption requires settlement.', rewardEstimate: 'Rewards vary by offer', color: '#a8ff3e' }];
 
+  // Keep Moonetix hidden until the backend wallet and reversal flow passes launch checks.
+  if (import.meta.env.VITE_MOONETIX_LIVE_ENABLED === 'true') {
+    partners.push({id:'moonetix',name:'Moonetix — Paid Offers',badge:'Partner-funded rewards',description:'Complete eligible sponsored offers. Availability varies by location. Rewards require provider verification and settlement.',rewardEstimate:'Rewards vary by offer',color:'#a8ff3e'});
+  }
+
   async function openWall(partner) {
     if (requestLock.current) return;
     requestLock.current=true;
     setOpening(true);
     setNotice('');
     try {
-      const { data, error } = await supabase.functions.invoke('offerwall-gg-link', { body: {} });
+      const { data, error } = await supabase.functions.invoke(partner.id === 'moonetix' ? 'moonetix-link' : 'offerwall-gg-link', { body: {} });
       if (error) throw error;
       if (!data?.enabled) { setNotice('Offerwall access is not available for this account.'); return; }
       const link = new URL(data.url);
-      if (link.origin !== 'https://offerwall.gg' || !link.pathname.startsWith('/wall/')) throw new Error('Invalid wall URL');
+      const validLink = partner.id === 'moonetix'
+        ? link.origin === 'https://wall.moonetix.com' && link.pathname === '/808a5b2fd2760f39ed2cd6ea'
+        : link.origin === 'https://offerwall.gg' && link.pathname.startsWith('/wall/');
+      if (!validLink) throw new Error('Invalid wall URL');
       setActiveWall({ ...partner, url: link.href });
       setFrameAttempt(n=>n+1);
     } catch { setNotice('The offerwall is temporarily unavailable. Please try again later.'); }
@@ -178,7 +186,7 @@ export default function Offerwalls({ session, navigate }) {
           <div style={styles.modalBar}>
             <div style={{minWidth:0}}>
               <div style={{fontSize:10,color:'var(--lime)',fontWeight:800}}>OFFERWALL PORTAL</div>
-              <div style={{fontSize:14,fontWeight:800}}>Offerwall.GG</div>
+              <div style={{fontSize:14,fontWeight:800}}>{activeWall.id === 'moonetix' ? 'Moonetix' : 'Offerwall.GG'}</div>
             </div>
             <button style={styles.closeBtn} onClick={closeWall}>Close</button>
           </div>
