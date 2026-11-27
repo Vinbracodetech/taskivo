@@ -329,7 +329,7 @@ export default function App() {
   function routeByRole(role) {
     const next = sessionStorage.getItem("taskivo_return_to");
     sessionStorage.removeItem("taskivo_return_to");
-    if ((["support","profile"].includes(next)||(["offerwalls","wallet","tasks","history"].includes(next) && ["admin","earner"].includes(role))|| (next==="admin-support"&&role==="admin"))) {navigate(next);return;}
+    if ((["support","profile"].includes(next)||(["offerwalls","moonetix","offerwall-gg","wallet","tasks","history"].includes(next) && ["admin","earner"].includes(role))|| (next==="admin-support"&&role==="admin"))) {navigate(next);return;}
     localStorage.removeItem("taskivo_requested_service");
     localStorage.removeItem("taskivo_requested_package");
     if (role === "admin") navigate("admin-dashboard");
@@ -346,7 +346,7 @@ export default function App() {
 
   useEffect(() => {
     if (!loading && !user && !publicView && !["auth","create-task"].includes(view)) {
-      if (["offerwalls","wallet","tasks","history","support","profile","admin-support"].includes(view)) sessionStorage.setItem("taskivo_return_to",view);
+      if (["offerwalls","moonetix","offerwall-gg","wallet","tasks","history","support","profile","admin-support"].includes(view)) sessionStorage.setItem("taskivo_return_to",view);
       setAuthMode("login");
       navigate("auth");
     }
@@ -429,7 +429,7 @@ export default function App() {
             {view === "history" && user && <History session={{user}} navigate={navigate} />}
             
             {/* 🔥 NEW: Offerwalls Route Inserted Here */}
-            {view === "offerwalls" && user && <Offerwalls session={{user}} navigate={navigate} />}
+            {["offerwalls","moonetix","offerwall-gg"].includes(view) && user && <Offerwalls key={view} provider={view} session={{user}} navigate={navigate} />}
 
             {view === "creator-dashboard" && user && <CampaignRequest user={user} navigate={navigate} />}
             {view === "create-task" && <CampaignRequest user={user} navigate={navigate} setAuthMode={setAuthMode} />}
@@ -437,7 +437,7 @@ export default function App() {
             {view === "creator-analytics" && user && <CampaignRequest user={user} navigate={navigate} />}
             {view === "creator-approvals" && user && <div style={{padding:'48px 5%',maxWidth:900,margin:'0 auto',color:'var(--ink)'}}><h1 style={{fontSize:28,fontWeight:800}}>Campaigns temporarily paused</h1><p style={{color:'var(--slate)',lineHeight:1.7}}>We are upgrading payment verification. Do not make a campaign payment during maintenance. Existing records remain available.</p></div>}
 
-            {view === "admin-dashboard" && user?.role === "admin" && <><div style={{padding:"16px 5%"}}><button style={{background:"var(--lime)",color:"#111",padding:"12px 20px",border:0,borderRadius:8,fontWeight:700}} onClick={()=>navigate("offerwalls")}>Test Offerwall.GG</button></div><AdminOverview navigate={navigate} showToast={showToast} /></>}
+            {view === "admin-dashboard" && user?.role === "admin" && <><div style={{padding:"16px 5%"}}><button style={{background:"var(--lime)",color:"#111",padding:"12px 20px",border:0,borderRadius:8,fontWeight:700}} onClick={()=>navigate("offerwall-gg")}>Test Offerwall.GG</button></div><AdminOverview navigate={navigate} showToast={showToast} /></>}
             {view === "admin-users" && user?.role === "admin" && <AdminUsersComp showToast={showToast} currentUser={user} />}
             {view === "admin-tasks" && user?.role === "admin" && <OfficialTaskAdmin />}
             {view === "admin-withdrawals" && user?.role === "admin" && <AdminWithdrawalsComp showToast={showToast} />}

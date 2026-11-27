@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   const {data:profile,error:profileError}=await supabase.from("profiles").select("role,locked_until,lockout_until").eq("id",data.user.id).single();
   if(profileError||!profile||!["admin","earner"].includes(profile.role)) return reply({enabled:false});
   if([profile.locked_until,profile.lockout_until].some(t=>t && Date.parse(t)>Date.now())) return reply({enabled:false});
-  const salt=Deno.env.get("MOONETIX_LINK_HASH_SALT");
+  const salt=Deno.env.get("MOONETIX_LINK_HASH_SALT")?.trim();
   if(!salt) return reply({error:"Provider not configured"},503);
   const userId=data.user.id;
   const key=await crypto.subtle.importKey("raw",enc.encode(salt),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
