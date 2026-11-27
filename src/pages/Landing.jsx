@@ -40,12 +40,12 @@ export const landingStyles = `
 `;
 const cards=[
 {icon:'📋',title:'Surveys & offers',status:'Partner integration • limited pilot',desc:'Explore eligible surveys and sponsored offers through Offerwall.GG. Availability and reward approval depend on your country and the provider.',href:'/offerwalls',cta:'Explore offerwalls'},
-{icon:'📚',title:'Internal blog tasks',status:'2 minutes · 3 wallet PTS',desc:'Read a published article in our private ad-free reader. Add 3 points to your wallet once per article. Cash withdrawals are currently unavailable.',href:'/tasks',cta:'Explore blog tasks'},
+{icon:'📚',title:'Internal blog tasks',status:'2 minutes · 3 wallet PTS',desc:'Read a published article in our private ad-free reader. Add 3 points to your wallet once per article. Weekly withdrawal requests are subject to the Saturday window and account eligibility.',href:'/tasks',cta:'Explore blog tasks'},
 {icon:'📋',title:'Admin tasks',status:'As published',desc:'Complete official assignments published by the Taskivo administrator. Availability varies.',href:'/tasks',cta:'View admin tasks'}
 ];
 const faqs=[
-['Can I earn money on Taskivo?','Partner-funded rewards depend on eligible activities, provider verification and settlement. Offerwall.GG is in a limited pilot; withdrawals and general paid earning are not yet open.'],
-['How do internal tasks work?','Read an article in the private reader for two minutes. Each eligible article adds 3 wallet points once per account. Cash withdrawals are currently unavailable.'],
+['Can I earn money on Taskivo?','Withdrawal requests open every Saturday from 9:00 AM until midnight (Sunday 12:00 AM), West Africa Time (WAT), for eligible accounts with at least 100 PTS and valid bank details. Verified rewards are credited without waiting for provider settlement. Requests are reviewed for bank transfer.'],
+['How do internal tasks work?','Read an article in the private reader for two minutes. Each eligible article adds 3 wallet points once per account. Weekly withdrawal requests are subject to the Saturday window and account eligibility.'],
 ['When will rewarded videos be available?','We will open them after a suitable provider approves Taskivo and reward tracking is verified.'],
 ['Do I need to pay to join?','No. Registration and internal reading tasks are free. Read any third-party offer requirements before participating.'],
 ['Can businesses request services?','Yes. Contact Taskivo privately about video feedback, audience research, SEO, publisher optimization, app testing or original UGC. Self-service campaign purchases remain paused. YouTube channel growth support is available by enquiry.'],

@@ -130,7 +130,7 @@ export default function App() {
           <div style={{ fontSize: 64, marginBottom: 24 }}>🛠️</div>
           <h1 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 16px', letterSpacing: '-1px' }}>Network Upgrade in Progress</h1>
           <p style={{ color: 'var(--slate)', fontSize: 16, lineHeight: 1.6, margin: '0 0 32px' }}>
-            Taskivo is growing its contributor network. Paid offers are in a limited pilot, and withdrawals are paused. 
+            Taskivo is growing its contributor network. Withdrawal requests open every Saturday from 9:00 AM until midnight (Sunday 12:00 AM), West Africa Time (WAT), for eligible accounts with at least 100 PTS and valid bank details. Verified rewards are credited without waiting for provider settlement. Requests are reviewed for bank transfer. 
           </p>
           <div style={{ display: 'inline-block', background: 'rgba(168,255,62,0.1)', color: 'var(--lime)', border: '1px solid rgba(168,255,62,0.2)', padding: '8px 16px', borderRadius: 100, fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
             We will be back shortly

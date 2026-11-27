@@ -957,26 +957,14 @@ export function AdminWithdrawals({ showToast }) {
   }
 
   async function processRequest(req, action) {
-    if (!window.confirm(`Are you sure you want to ${action} this payout for ${req.amount} PTS?`)) return;
+    if (!window.confirm(`${action==='approve'?'Confirm only after you have transferred the money and checked the request for reversals.':'Reject this request and release its reserved points?'} Amount: ${req.amount} PTS.`)) return;
 
     try {
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
       
-      if (action === 'reject') {
-        const { data: userProfile, error: fetchError } = await supabase.from('profiles').select('points').eq('id', req.user_id).single();
-        if (fetchError) throw new Error("Cannot read earner balance: " + fetchError.message);
-        if (!userProfile) throw new Error("Earner profile not found in database.");
-
-        const refundAmount = parseInt(req.amount, 10);
-        const currentBalance = parseInt(userProfile.points, 10) || 0;
-        
-        const { data: updatedProfile, error: refundError } = await supabase.from('profiles').update({ points: currentBalance + refundAmount }).eq('id', req.user_id).select();
-        if (refundError) throw new Error("Database blocked the refund: " + refundError.message);
-        if (!updatedProfile || updatedProfile.length === 0) throw new Error("RLS Blocked the refund!");
-      }
-
-      const { error: statusError } = await supabase.from('withdrawals').update({ status: newStatus }).eq('id', req.id);
-      if (statusError) throw new Error("Failed to update ledger status: " + statusError.message);
+      if(!req.weekly_wallet) throw new Error('Historical requests require manual reconciliation.');
+      const {error:statusError}=await supabase.rpc('review_weekly_withdrawal',{p_id:req.id,p_paid:action==='approve'});
+      if(statusError) throw new Error(statusError.message);
 
       setRequests(requests.map(r => r.id === req.id ? { ...r, status: newStatus } : r));
       if (showToast) showToast(action === 'reject' ? 'Payout denied & points refunded.' : 'Payout authorized.', 'success');
@@ -989,9 +977,9 @@ export function AdminWithdrawals({ showToast }) {
 
   async function copyBankDetails(req) {
     const usdAmount = req.amount * usdPerPoint;
-    const nairaAmount = (usdAmount * usdToNairaRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    const nairaAmount = (req.weekly_wallet ? req.amount : usdAmount * usdToNairaRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
     
-    const clipboardText = `Name: ${req.account_name}\nBank: ${req.bank_name}\nAccount: ${req.account_number}\nAmount to Pay: ₦${nairaAmount} ($${usdAmount.toFixed(2)})`;
+    const clipboardText = `Name: ${req.account_name}\nBank: ${req.bank_name}\nAccount: ${req.account_number}\nAmount to Pay: ₦${nairaAmount} ${req.weekly_wallet?'':'(legacy conversion)'}`;
     try {
       await navigator.clipboard.writeText(clipboardText);
       if (showToast) showToast('Bank details copied to clipboard!', 'info');
@@ -1010,7 +998,7 @@ export function AdminWithdrawals({ showToast }) {
     <div style={S.pageWrapper}>
       <div style={S.page}>
         <h1 style={S.header}>Financial Treasury</h1>
-        <p style={S.subHeader}>Process earner liquidity requests.</p>
+        <p style={S.subHeader}>Review weekly requests. Confirm payments only after making the bank transfer; historical requests require reconciliation.</p>
 
         <div style={S.tableContainer}>
           <div style={{ ...S.tableHeader, gridTemplateColumns: '1.5fr 1fr 1fr 1fr' }} className="hide-on-mobile">
@@ -1027,7 +1015,7 @@ export function AdminWithdrawals({ showToast }) {
               {requests.map(req => {
                 // Real-time calculation showing both currencies
                 const usdValue = req.amount * usdPerPoint;
-                const nairaValue = (usdValue * usdToNairaRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
+                const nairaValue = (req.weekly_wallet ? req.amount : usdValue * usdToNairaRate).toLocaleString(undefined, { maximumFractionDigits: 0 });
 
                 return (
                   <div key={req.id} style={{ ...S.tableRow, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
@@ -1046,23 +1034,23 @@ export function AdminWithdrawals({ showToast }) {
                         {req.amount.toLocaleString()} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>PTS</span>
                       </div>
                       <div style={{ fontSize: 14, fontWeight: 800, color: '#a8ff3e', marginTop: 4, fontFamily: "'Inter', sans-serif" }}>
-                        ≈ ₦{nairaValue} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>(${usdValue.toFixed(2)})</span>
+                        ≈ ₦{nairaValue} <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{req.weekly_wallet?'':'(legacy conversion)'}</span>
                       </div>
                       <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{new Date(req.created_at).toLocaleDateString()}</div>
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      {req.status === 'pending' ? (
+                      {req.status === 'pending' && req.weekly_wallet ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
                           <button onClick={() => copyBankDetails(req)} style={{...S.btnAction, width: '100%', marginBottom: 8}}>📋 Copy Details</button>
                           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap', width: '100%' }}>
-                            <button onClick={() => processRequest(req, 'approve')} style={{...S.btnSuccess, flex: 1}}>Authorize</button>
+                            <button onClick={() => processRequest(req, 'approve')} style={{...S.btnSuccess, flex: 1}}>Mark paid</button>
                             <button onClick={() => processRequest(req, 'reject')} style={{...S.btnDanger, flex: 1}}>Deny</button>
                           </div>
                         </div>
                       ) : (
                         <span style={{ fontSize: 10, fontWeight: 800, padding: '4px 10px', borderRadius: 100, textTransform: 'uppercase', background: req.status === 'approved' ? 'rgba(168,255,62,0.1)' : 'rgba(239,68,68,0.1)', color: req.status === 'approved' ? '#a8ff3e' : '#ef4444', border: `1px solid ${req.status === 'approved' ? 'rgba(168,255,62,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
-                          {req.status}
+                          {req.status}{!req.weekly_wallet?' • legacy':''}
                         </span>
                       )}
                     </div>
